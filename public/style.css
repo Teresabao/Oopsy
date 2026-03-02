@@ -1,0 +1,404 @@
+/* ==========================================
+   全局重置与基础样式 (Global Styles)
+========================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    /* Matching your beautiful purple gradient! */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.container {
+    background: #ffffff;
+    width: 100%;
+    max-width: 900px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    padding: 30px;
+    height: fit-content;
+}
+
+/* ==========================================
+   头部导航 (Header & Nav)
+========================================== */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+header h1 {
+    color: #2d3748;
+    margin-bottom: 15px;
+    font-size: 2rem;
+}
+
+nav button {
+    background-color: #4299e1;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 0 10px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+nav button:hover {
+    background-color: #3182ce;
+}
+
+/* ==========================================
+   通用工具类 (Utilities)
+========================================== */
+.hidden {
+    display: none !important;
+}
+
+button {
+    cursor: pointer;
+    font-weight: 500;
+}
+
+input, select {
+    font-size: 1rem;
+    padding: 10px 15px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+input:focus, select:focus {
+    border-color: #4299e1;
+}
+
+/* ==========================================
+   管理视图 - 添加表单 (Manage View Form)
+========================================== */
+.card-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 30px;
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.card-form input {
+    flex: 1;
+    min-width: 200px;
+}
+
+.category-group {
+    display: flex;
+    gap: 10px;
+    flex: 1 0 auto;
+    min-width: 300px;
+}
+
+.category-group select {
+    flex: 1;
+}
+
+.add-category-btn {
+    background-color: #48bb78;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    white-space: nowrap;
+    flex-shrink: 0; /* ✨ 加上这一句，防止按钮被挤压变窄 */
+}
+
+.add-category-btn:hover {
+    background-color: #38a169;
+}
+
+.card-form > button {
+    background-color: #4299e1;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    white-space: nowrap;
+    flex-shrink: 0; /* ✨ 加上这一句，防止按钮被挤压变窄 */
+}
+
+.card-form > button:hover {
+    background-color: #3182ce;
+}
+
+/* ==========================================
+   卡片列表网格 (Flashcards Grid)
+========================================== */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.card-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card-content strong {
+    display: block;
+    font-size: 1.1rem;
+    color: #2d3748;
+    margin-bottom: 8px;
+}
+
+.card-content p {
+    color: #4a5568;
+    margin-bottom: 12px;
+}
+
+.card-content small {
+    display: inline-block;
+    background: #edf2f7;
+    color: #718096;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+.card-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.card-actions button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    background: #edf2f7;
+    color: #4a5568;
+    transition: background 0.2s;
+}
+
+.card-actions button:hover {
+    background: #e2e8f0;
+}
+
+.card-actions button:last-child:hover {
+    background: #fc8181;
+    color: white;
+}
+
+/* ==========================================
+   编辑视图表单 (Edit View)
+========================================== */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.form-actions button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+}
+
+.form-actions button:first-child {
+    background-color: #4299e1;
+    color: white;
+}
+
+.form-actions button:last-child {
+    background-color: #cbd5e0;
+    color: #4a5568;
+}
+
+/* ==========================================
+   学习模式视图 (Study Mode View)
+========================================== */
+.study-card {
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+    margin: 30px 0;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.study-card h3 {
+    font-size: 2rem;
+    color: #2d3748;
+    margin-bottom: 30px;
+}
+
+.study-card button {
+    background: transparent;
+    border: 2px solid #4299e1;
+    color: #4299e1;
+    padding: 10px 25px;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    transition: all 0.3s;
+}
+
+.study-card button:hover {
+    background: #4299e1;
+    color: white;
+}
+
+.study-controls {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.study-controls button {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    color: white;
+    font-weight: bold;
+}
+
+.study-controls button:first-child {
+    background-color: #48bb78; /* 已掌握 - 绿色 */
+}
+
+.study-controls button:last-child {
+    background-color: #f6ad55; /* 需复习 - 橙色 */
+}
+
+/* ==========================================
+   阶段一新增样式 (Phase 1 Updates)
+========================================== */
+
+/* 搜索框工具栏 */
+.toolbar {
+    margin-bottom: 20px;
+}
+.toolbar input {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 2px solid #e2e8f0;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+.toolbar input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* 学习设置面板 */
+.study-setup {
+    background: #f8fafc;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    margin: 40px auto;
+    max-width: 500px;
+    border: 1px solid #e2e8f0;
+}
+.study-setup h3 {
+    margin-bottom: 20px;
+    color: #2d3748;
+}
+.study-setup select {
+    width: 100%;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+.start-btn {
+    background: #667eea;
+    color: white;
+    font-size: 1.2rem;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    width: 100%;
+}
+.start-btn:hover {
+    background: #5a67d8;
+}
+
+/* 弹窗样式补充 */
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    z-index: 1000;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 400px;
+}
+.modal h3 { margin-bottom: 15px; }
+.modal input { width: 100%; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; }
+.modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 6px; }
+.modal-actions button:first-child { background: #48bb78; color: white; }
+.modal-actions button:last-child { background: #e2e8f0; color: #4a5568; }
+
+/* 📱 手机端响应式适配 (Mobile Responsiveness) */
+@media (max-width: 600px) {
+    .card-form {
+        flex-direction: column; /* 手机上竖向排列 */
+    }
+    .category-group {
+        flex-direction: column;
+        min-width: 100%;
+    }
+    .study-controls {
+        flex-direction: column;
+    }
+    .study-controls button {
+        width: 100%;
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "files.watcherExclude": {
+        "**/backup/**": true
+    },
+    "search.exclude": {
+        "**/backup/**": true
+    },
+    "files.exclude": {
+        "**/backup/**": true
+    }
+}
+// 防止备份报错代码
