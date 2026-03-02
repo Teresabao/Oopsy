@@ -107,3 +107,22 @@ export const deleteFlashcard = async (req: any, res: any) => {
         res.status(500).json({ error: '删除失败' });
     }
 };
+
+// ==========================================
+// 标记闪卡为已掌握 (Mark as Mastered)
+// ==========================================
+export const markAsMastered = async (req: any, res: any) => {
+    try {
+        const { id } = req.params;
+        // 找到这张卡，把 isMastered 改为 true
+        const updatedCard = await Flashcard.findByIdAndUpdate(
+            id, 
+            { isMastered: true },
+            { new: true }
+        );
+        if (!updatedCard) return res.status(404).json({ error: '找不到该卡片' });
+        res.json(updatedCard);
+    } catch (error) {
+        res.status(500).json({ error: '更新掌握状态失败' });
+    }
+};

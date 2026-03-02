@@ -85,17 +85,21 @@ async function loadFlashcards() {
 }
 
 // 渲染卡片列表 (方便搜索时复用)
+// 替换原来的 renderCards 函数
 function renderCards(cardsToRender) {
     const list = document.getElementById('flashcards-list');
     list.innerHTML = '';
     cardsToRender.forEach(card => {
         const categoryName = card.category ? card.category.name : '未分类';
+        // ✨ 新增：如果已掌握，就显示一个绿色的标记
+        const masteredBadge = card.isMastered ? '<span style="color: #48bb78; font-size: 0.85rem; margin-left: 8px; font-weight: bold;">✅ 已掌握</span>' : '';
+        
         list.innerHTML += `
             <div class="card-item">
                 <div class="card-content">
                     <strong>Q: ${card.question}</strong>
                     <p>A: ${card.answer}</p>
-                    <small>分类: ${categoryName}</small>
+                    <small>分类: ${categoryName}</small> ${masteredBadge}
                 </div>
                 <div class="card-actions">
                     <button onclick="editFlashcard('${card._id}')">编辑</button>
@@ -105,7 +109,6 @@ function renderCards(cardsToRender) {
         `;
     });
 }
-
 // ✨ 新增：实时搜索过滤功能
 function filterCards() {
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
@@ -169,22 +172,25 @@ async function updateFlashcard() {
 }
 
 // === ✨ 升级版学习模式逻辑 ===
+// 替换原来的 startStudyMode 函数
 function startStudyMode() {
     const selectedCategoryId = document.getElementById('study-category-select').value;
     
-    // 根据选择过滤卡片
+    // ✨ 核心魔法：只挑出 isMastered 为 false（未掌握）的卡片！
     if (selectedCategoryId === 'all') {
-        studyCards = [...allFlashcards];
+        studyCards = allFlashcards.filter(card => !card.isMastered);
     } else {
-        studyCards = allFlashcards.filter(card => card.category && card.category._id === selectedCategoryId);
+        studyCards = allFlashcards.filter(card => 
+            card.category && card.category._id === selectedCategoryId && !card.isMastered
+        );
     }
 
     if (studyCards.length === 0) {
-        alert('这个分类下还没有卡片哦，请先添加！');
+        alert('🎉 太棒了！这个分类下的卡片你已经全部掌握了！（不需要重复复习啦）');
+        showView('manage');
         return;
     }
     
-    // 打乱顺序，隐藏设置，显示卡片
     studyCards.sort(() => Math.random() - 0.5);
     currentStudyIndex = 0;
     
@@ -203,12 +209,45 @@ function renderStudyCard() {
     const card = studyCards[currentStudyIndex];
     document.getElementById('study-question').innerText = card.question;
     document.getElementById('study-answer').innerText = card.answer;
-    document.querySelector('.card-back').classList.add('hidden');
+    
+    // ✨ 确保每次显示新卡片时，都是正面朝上
+    const cardInner = document.getElementById('card-inner');
+    if (cardInner) cardInner.classList.remove('is-flipped');
+
+    // ✨ 更新进度条的文字和蓝色填充长度
+    const currentNum = currentStudyIndex + 1;
+    const totalNum = studyCards.length;
+    document.getElementById('study-progress-text').innerText = `当前第 ${currentNum} 张 / 共 ${totalNum} 张`;
+    
+    const percentage = (currentNum / totalNum) * 100;
+    document.getElementById('progress-bar-fill').style.width = `${percentage}%`;
 }
 
-function flipCard() { document.querySelector('.card-back').classList.remove('hidden'); }
+function flipCard() { 
+    // ✨ 核心魔法：不再是隐藏显示，而是给卡片添加/移除翻转的 CSS 类
+    document.getElementById('card-inner').classList.toggle('is-flipped'); 
+}
 function nextCard() { currentStudyIndex++; renderStudyCard(); }
-function markAsKnown() { nextCard(); }
+// 替换原来的 markAsKnown 函数
+async function markAsKnown() {
+    const currentCard = studyCards[currentStudyIndex];
+    
+    try {
+        // ✨ 告诉后端数据库：这张卡我彻底记住了！
+        await fetch(`/api/flashcards/${currentCard._id}/master`, {
+            method: 'PATCH'
+        });
+        
+        // 在前端内存里也同步改一下，这样退回管理页面时立刻就能看到 ✅ 标记
+        const cardInAll = allFlashcards.find(c => c._id === currentCard._id);
+        if (cardInAll) cardInAll.isMastered = true;
+        
+    } catch (error) {
+        console.error('标记掌握失败:', error);
+    }
+    
+    nextCard();
+}
 function markAsReview() {
     const currentCard = studyCards[currentStudyIndex];
     studyCards.push(currentCard); // 放到最后再复习一遍

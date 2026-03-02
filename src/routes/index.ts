@@ -4,21 +4,22 @@ import {
   getCategories, 
   createFlashcard, 
   getFlashcards,
-  updateFlashcard, // 👈 新引入的更新功能
-  deleteFlashcard  // 👈 新引入的删除功能
+  updateFlashcard,
+  deleteFlashcard,
+  markAsMastered // 👈 1. 引入新方法
 } from '../controllers'; 
 
 const router = Router();
 
-// Category Routes (分类接口)
 router.post('/categories', createCategory);
 router.get('/categories', getCategories);
 
-// Flashcard Routes (闪卡接口)
 router.post('/flashcards', createFlashcard);
 router.get('/flashcards', getFlashcards);
-// 👇 新增的两个通道
 router.put('/flashcards/:id', updateFlashcard);
 router.delete('/flashcards/:id', deleteFlashcard);
+
+// 👇 2. 新增专属通道：专门用来更新掌握状态
+router.patch('/flashcards/:id/master', markAsMastered);
 
 export default router;

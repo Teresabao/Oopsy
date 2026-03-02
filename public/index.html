@@ -81,19 +81,30 @@
             </div>
 
             <div id="study-card-area" class="hidden">
-                <div id="study-card" class="study-card">
-                    <div class="card-front">
-                        <h3 id="study-question"></h3>
-                        <button onclick="flipCard()">显示答案</button>
-                    </div>
-                    <div class="card-back hidden">
-                        <h3 id="study-answer"></h3>
-                        <button onclick="nextCard()">下一个</button>
+                
+                <div class="study-progress">
+                    <span id="study-progress-text">1 / 10</span>
+                    <div class="progress-bar-container">
+                        <div id="progress-bar-fill"></div>
                     </div>
                 </div>
+
+                <div id="study-card" class="study-card" onclick="flipCard()">
+                    <div id="card-inner" class="card-inner">
+                        <div class="card-front">
+                            <h3 id="study-question"></h3>
+                            <p class="flip-hint">👆 点击卡片翻看答案</p>
+                        </div>
+                        <div class="card-back">
+                            <h3 id="study-answer"></h3>
+                            <p class="flip-hint">👆 点击卡片翻回问题</p>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="study-controls">
-                    <button onclick="markAsKnown()">已掌握</button>
-                    <button onclick="markAsReview()">需要复习</button>
+                    <button onclick="markAsKnown()">已掌握 (下一个)</button>
+                    <button onclick="markAsReview()">需要复习 (重背)</button>
                 </div>
             </div>
         </div>
