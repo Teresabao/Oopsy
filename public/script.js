@@ -89,17 +89,27 @@ async function loadFlashcards() {
 function renderCards(cardsToRender) {
     const list = document.getElementById('flashcards-list');
     list.innerHTML = '';
+    
+    const now = new Date();
+    
     cardsToRender.forEach(card => {
         const categoryName = card.category ? card.category.name : '未分类';
-        // ✨ 新增：如果已掌握，就显示一个绿色的标记
-        const masteredBadge = card.isMastered ? '<span style="color: #48bb78; font-size: 0.85rem; margin-left: 8px; font-weight: bold;">✅ 已掌握</span>' : '';
         
+        // 兼容旧数据：如果没有 nextReviewDate，就当作需要立刻复习
+        const reviewDate = card.nextReviewDate ? new Date(card.nextReviewDate) : now;
+        const isDue = reviewDate <= now;
+        
+        // 智能状态显示
+        const statusHtml = isDue 
+            ? '<span style="color: #ed8936; font-size: 0.85rem; margin-left: 8px; font-weight: bold;">🔥 待复习</span>' 
+            : `<span style="color: #48bb78; font-size: 0.85rem; margin-left: 8px; font-weight: bold;">✅ ${reviewDate.getMonth()+1}月${reviewDate.getDate()}日复习</span>`;
+
         list.innerHTML += `
             <div class="card-item">
                 <div class="card-content">
                     <strong>Q: ${card.question}</strong>
                     <p>A: ${card.answer}</p>
-                    <small>分类: ${categoryName}</small> ${masteredBadge}
+                    <small>分类: ${categoryName}</small> ${statusHtml}
                 </div>
                 <div class="card-actions">
                     <button onclick="editFlashcard('${card._id}')">编辑</button>
@@ -175,18 +185,23 @@ async function updateFlashcard() {
 // 替换原来的 startStudyMode 函数
 function startStudyMode() {
     const selectedCategoryId = document.getElementById('study-category-select').value;
+    const now = new Date();
     
-    // ✨ 核心魔法：只挑出 isMastered 为 false（未掌握）的卡片！
+    // ✨ 核心：只筛选出“下次复习时间”小于或等于“现在”的卡片
     if (selectedCategoryId === 'all') {
-        studyCards = allFlashcards.filter(card => !card.isMastered);
+        studyCards = allFlashcards.filter(card => {
+            const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
+            return date <= now;
+        });
     } else {
-        studyCards = allFlashcards.filter(card => 
-            card.category && card.category._id === selectedCategoryId && !card.isMastered
-        );
+        studyCards = allFlashcards.filter(card => {
+            const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
+            return card.category && card.category._id === selectedCategoryId && date <= now;
+        });
     }
 
     if (studyCards.length === 0) {
-        alert('🎉 太棒了！这个分类下的卡片你已经全部掌握了！（不需要重复复习啦）');
+        alert('🎉 太棒了！今天这个分类下的复习任务已经全部清空啦！明天再来吧！');
         showView('manage');
         return;
     }
@@ -229,28 +244,24 @@ function flipCard() {
 }
 function nextCard() { currentStudyIndex++; renderStudyCard(); }
 // 替换原来的 markAsKnown 函数
-async function markAsKnown() {
+async function submitReview(isKnown) {
     const currentCard = studyCards[currentStudyIndex];
-    
     try {
-        // ✨ 告诉后端数据库：这张卡我彻底记住了！
-        await fetch(`/api/flashcards/${currentCard._id}/master`, {
-            method: 'PATCH'
+        await fetch(`/api/flashcards/${currentCard._id}/review`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isKnown })
         });
-        
-        // 在前端内存里也同步改一下，这样退回管理页面时立刻就能看到 ✅ 标记
-        const cardInAll = allFlashcards.find(c => c._id === currentCard._id);
-        if (cardInAll) cardInAll.isMastered = true;
-        
-    } catch (error) {
-        console.error('标记掌握失败:', error);
-    }
+    } catch (error) { console.error('记录失败:', error); }
     
-    nextCard();
-}
-function markAsReview() {
-    const currentCard = studyCards[currentStudyIndex];
-    studyCards.push(currentCard); // 放到最后再复习一遍
-    nextCard();
+    // 界面表现逻辑
+    if (isKnown) {
+        nextCard(); // 记住了，看下一张
+    } else {
+        studyCards.push(currentCard); // 忘了，把这张卡塞到队列最后面，今天必须再背一遍！
+        nextCard();
+    }
 }
 
+function markAsKnown() { submitReview(true); }
+function markAsReview() { submitReview(false); }

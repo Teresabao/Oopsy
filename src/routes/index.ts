@@ -6,7 +6,7 @@ import {
   getFlashcards,
   updateFlashcard,
   deleteFlashcard,
-  markAsMastered // 👈 1. 引入新方法
+  recordReview // 👈 1. 引入新方法
 } from '../controllers'; 
 
 const router = Router();
@@ -20,6 +20,6 @@ router.put('/flashcards/:id', updateFlashcard);
 router.delete('/flashcards/:id', deleteFlashcard);
 
 // 👇 2. 新增专属通道：专门用来更新掌握状态
-router.patch('/flashcards/:id/master', markAsMastered);
+router.patch('/flashcards/:id/review', recordReview);
 
 export default router;

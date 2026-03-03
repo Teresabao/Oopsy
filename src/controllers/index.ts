@@ -111,18 +111,42 @@ export const deleteFlashcard = async (req: any, res: any) => {
 // ==========================================
 // 标记闪卡为已掌握 (Mark as Mastered)
 // ==========================================
-export const markAsMastered = async (req: any, res: any) => {
+// ==========================================
+// 艾宾浩斯记忆算法：记录复习结果
+// ==========================================
+export const recordReview = async (req: any, res: any) => {
     try {
         const { id } = req.params;
-        // 找到这张卡，把 isMastered 改为 true
+        const { isKnown } = req.body; // 前端传过来：认识(true) 还是 忘了(false)
+        
+        const card = await Flashcard.findById(id);
+        if (!card) return res.status(404).json({ error: '找不到该卡片' });
+
+        let newInterval = card.interval;
+        let nextDate = new Date(); // 获取当前时间
+
+        if (isKnown) {
+            // 如果记住了，复习间隔呈指数级拉长（1天, 3天, 7天, 15天, 30天）
+            if (newInterval === 0) nextDate.setDate(nextDate.getDate() + 1);
+            else if (newInterval === 1) nextDate.setDate(nextDate.getDate() + 3);
+            else if (newInterval === 2) nextDate.setDate(nextDate.getDate() + 7);
+            else if (newInterval === 3) nextDate.setDate(nextDate.getDate() + 15);
+            else nextDate.setDate(nextDate.getDate() + 30); // 彻底印在脑子里了
+            
+            newInterval += 1; // 进入下一个记忆阶段
+        } else {
+            // 如果忘了，立刻打回原形
+            newInterval = 0; 
+            // nextDate 保持为当前时间，意味着今天必须再背一遍
+        }
+
         const updatedCard = await Flashcard.findByIdAndUpdate(
             id, 
-            { isMastered: true },
+            { interval: newInterval, nextReviewDate: nextDate },
             { new: true }
         );
-        if (!updatedCard) return res.status(404).json({ error: '找不到该卡片' });
         res.json(updatedCard);
     } catch (error) {
-        res.status(500).json({ error: '更新掌握状态失败' });
+        res.status(500).json({ error: '更新记忆曲线失败' });
     }
 };
