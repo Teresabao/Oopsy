@@ -185,28 +185,42 @@ async function updateFlashcard() {
 // 替换原来的 startStudyMode 函数
 function startStudyMode() {
     const selectedCategoryId = document.getElementById('study-category-select').value;
+    // 获取用户设置的上限数量
+    const limitInput = document.getElementById('study-limit').value;
+    const maxCards = parseInt(limitInput) || 20; 
+    
     const now = new Date();
     
-    // ✨ 核心：只筛选出“下次复习时间”小于或等于“现在”的卡片
-    if (selectedCategoryId === 'all') {
-        studyCards = allFlashcards.filter(card => {
-            const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
-            return date <= now;
-        });
-    } else {
-        studyCards = allFlashcards.filter(card => {
-            const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
-            return card.category && card.category._id === selectedCategoryId && date <= now;
-        });
-    }
+    // 1. 粗筛：找出所有到期的卡片
+    let dueCards = allFlashcards.filter(card => {
+        const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
+        // 如果选了分类，还要校验分类是否匹配
+        const isCategoryMatch = selectedCategoryId === 'all' || (card.category && card.category._id === selectedCategoryId);
+        return date <= now && isCategoryMatch;
+    });
 
-    if (studyCards.length === 0) {
-        alert('🎉 太棒了！今天这个分类下的复习任务已经全部清空啦！明天再来吧！');
+    if (dueCards.length === 0) {
+        alert('🎉 太棒了！当前分类下的复习任务已经全部清空啦！');
         showView('manage');
         return;
     }
     
-    studyCards.sort(() => Math.random() - 0.5);
+    // ✨ 2. 智能排序核心逻辑：优先复习旧卡片，再学新卡片
+    dueCards.sort((a, b) => {
+        // 如果有 interval (记忆阶段)，阶段越高的越优先复习，防止遗忘
+        const intervalA = a.interval || 0;
+        const intervalB = b.interval || 0;
+        if (intervalB !== intervalA) {
+            return intervalB - intervalA; 
+        }
+        // 如果都是新卡片，打乱顺序
+        return Math.random() - 0.5; 
+    });
+
+    // ✨ 3. 截断：只取用户设定好的数量！
+    studyCards = dueCards.slice(0, maxCards);
+    
+    // 准备进入学习
     currentStudyIndex = 0;
     
     document.getElementById('study-setup').classList.add('hidden');
@@ -265,3 +279,105 @@ async function submitReview(isKnown) {
 
 function markAsKnown() { submitReview(true); }
 function markAsReview() { submitReview(false); }
+
+// ==========================================
+// 批量导入逻辑 (Batch Import)
+// ==========================================
+function openBatchModal() {
+    // 每次打开弹窗时，把最新的分类列表同步过来
+    const selectBatch = document.getElementById('batch-category-select');
+    const selectManage = document.getElementById('category-select');
+    selectBatch.innerHTML = selectManage.innerHTML;
+    
+    document.getElementById('batch-input').value = ''; // 清空输入框
+    document.getElementById('batch-modal').style.display = 'block';
+    document.getElementById('modal-overlay').style.display = 'block';
+}
+
+function closeBatchModal() {
+    document.getElementById('batch-modal').style.display = 'none';
+    document.getElementById('modal-overlay').style.display = 'none';
+}
+
+async function confirmBatchImport() {
+    const categoryId = document.getElementById('batch-category-select').value;
+    const rawText = document.getElementById('batch-input').value.trim();
+    
+    if (!categoryId) return alert('请先选择要导入的分类！');
+    if (!rawText) return alert('你还没输入任何内容呢！');
+
+    // ✨ 核心解析器：将文本转换成卡片数据
+    const lines = rawText.split('\n');
+    const cardsToImport = [];
+
+    for (let line of lines) {
+        if (!line.trim()) continue; // 跳过空行
+        
+        // 兼容两种分隔符：制表符 \t (表格复制自带) 或者 竖线 |
+        let parts = line.split('\t'); 
+        if (parts.length < 2) parts = line.split('|');
+
+        if (parts.length >= 2) {
+            cardsToImport.push({
+                question: parts[0].trim(),
+                answer: parts[1].trim()
+            });
+        }
+    }
+
+    if (cardsToImport.length === 0) {
+        return alert('未能识别出有效的卡片，请检查格式是否正确。');
+    }
+
+    // 发送给后端
+    try {
+        const response = await fetch('/api/flashcards/batch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cards: cardsToImport, categoryId })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            alert(`🎉 ${result.message}`);
+            closeBatchModal();
+            loadFlashcards(); // 刷新列表，立刻看到新卡片
+        } else {
+            alert('导入失败，请检查网络或格式。');
+        }
+    } catch (error) {
+        console.error('批量导入出错:', error);
+    }
+}
+
+// ==========================================
+// 🔊 语音发音功能 (Text-to-Speech)
+// ==========================================
+// ==========================================
+// 🔊 智能双语发音功能 (Text-to-Speech)
+// ==========================================
+function speakWord(text, event) {
+    // 阻止事件冒泡，防止卡片翻转
+    if (event) event.stopPropagation(); 
+
+    // 取消当前正在播放的语音
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // ✨ 核心魔法：使用正则表达式检测是否包含中文字符
+    const isChinese = /[\u4e00-\u9fa5]/.test(text);
+
+    if (isChinese) {
+        // 如果检测到中文
+        utterance.lang = 'zh-CN'; // 切换到中文普通话
+        utterance.rate = 1.0;     // 中文用正常语速比较自然
+    } else {
+        // 如果没有中文（默认当做英文处理）
+        utterance.lang = 'en-US'; // 切换到美式英语
+        utterance.rate = 0.9;     // 英文稍微慢一点，方便听音
+    }
+    
+    // 让浏览器读出来！
+    window.speechSynthesis.speak(utterance);
+}

@@ -150,3 +150,29 @@ export const recordReview = async (req: any, res: any) => {
         res.status(500).json({ error: '更新记忆曲线失败' });
     }
 };
+
+// ==========================================
+// 批量导入闪卡 (Batch Import)
+// ==========================================
+export const createFlashcardsBatch = async (req: any, res: any) => {
+    try {
+        const { cards, categoryId } = req.body; 
+        
+        if (!cards || cards.length === 0 || !categoryId) {
+            return res.status(400).json({ error: '数据不完整' });
+        }
+
+        // 给每一张解析出来的卡片打上分类标签
+        const cardsToInsert = cards.map((card: any) => ({
+            question: card.question,
+            answer: card.answer,
+            category: categoryId
+        }));
+
+        // Mongoose 提供的超级大招：insertMany 一次性插入海量数据
+        const insertedCards = await Flashcard.insertMany(cardsToInsert);
+        res.status(201).json({ message: `成功导入 ${insertedCards.length} 张卡片!`, data: insertedCards });
+    } catch (error) {
+        res.status(500).json({ error: '批量导入失败' });
+    }
+};

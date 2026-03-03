@@ -28,7 +28,10 @@
                     <button type="button" class="add-category-btn" onclick="openCategoryModal()">+ 新增分类</button>
                 </div>
                 
-                <button onclick="createFlashcard()">添加卡片</button>
+                <div class="form-actions-row">
+                    <button onclick="createFlashcard()">添加单张卡片</button>
+                    <button type="button" class="batch-btn" onclick="openBatchModal()">⚡ 批量导入</button>
+                </div>
             </div>
             
             <div class="toolbar">
@@ -43,6 +46,26 @@
                 <div class="modal-actions">
                     <button onclick="confirmCategory()">确认</button>
                     <button onclick="closeCategoryModal()">取消</button>
+                </div>
+            </div>
+
+            <div id="batch-modal" class="modal" style="display: none;">
+                <h3>⚡ 批量导入卡片</h3>
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
+                    请直接从表格（如 Excel、钉钉表格）复制两列内容并粘贴在下方，或者手动输入，用竖线 "|" 分隔问题和答案：<br>
+                    <code>苹果 | Apple</code><br>
+                    <code>香蕉 | Banana</code>
+                </p>
+                
+                <select id="batch-category-select" class="form-control" style="margin-bottom: 15px;">
+                    <option value="">请选择要导入到哪个分类...</option>
+                </select>
+
+                <textarea id="batch-input" rows="8" placeholder="在此粘贴你的卡片数据..."></textarea>
+                
+                <div class="modal-actions">
+                    <button onclick="confirmBatchImport()">开始导入</button>
+                    <button onclick="closeBatchModal()">取消</button>
                 </div>
             </div>
         </div>
@@ -74,9 +97,16 @@
             
             <div id="study-setup" class="study-setup">
                 <h3>你想复习哪个分类？</h3>
-                <select id="study-category-select" class="form-control">
+                <select id="study-category-select" class="form-control" style="margin-bottom: 10px;">
                     <option value="all">📚 全部卡片 (混合复习)</option>
-                    </select>
+                </select>
+                
+                <div style="margin-bottom: 20px;">
+                    <label for="study-limit" style="font-size: 0.9rem; color: #4a5568;">本次最多学习：</label>
+                    <input type="number" id="study-limit" class="form-control" value="20" min="1" max="500" style="width: 100px; display: inline-block;">
+                    <span style="font-size: 0.9rem; color: #4a5568;"> 张</span>
+                </div>
+
                 <button onclick="startStudyMode()" class="start-btn">开始学习</button>
             </div>
 
@@ -92,12 +122,19 @@
                 <div id="study-card" class="study-card" onclick="flipCard()">
                     <div id="card-inner" class="card-inner">
                         <div class="card-front">
-                            <h3 id="study-question"></h3>
-                            <p class="flip-hint">👆 点击卡片翻看答案</p>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <h3 id="study-question"></h3>
+                                <button class="speak-btn" onclick="speakWord(document.getElementById('study-question').innerText, event)">🔊</button>
+                            </div>
+                            <p class="flip-hint">👆 点击空白处翻看答案</p>
                         </div>
+                        
                         <div class="card-back">
-                            <h3 id="study-answer"></h3>
-                            <p class="flip-hint">👆 点击卡片翻回问题</p>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <h3 id="study-answer"></h3>
+                                <button class="speak-btn" onclick="speakWord(document.getElementById('study-answer').innerText, event)">🔊</button>
+                            </div>
+                            <p class="flip-hint">👆 点击空白处翻回问题</p>
                         </div>
                     </div>
                 </div>
