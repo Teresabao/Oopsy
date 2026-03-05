@@ -1,688 +1,89 @@
 /* ==========================================
-   全局重置与基础样式 (Global Styles)
-========================================== */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
-
-body {
-    /* Matching your beautiful purple gradient! */
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #333;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    padding: 40px 20px;
-}
-
-.container {
-    background: #ffffff;
-    width: 100%;
-    max-width: 900px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    padding: 30px;
-    height: fit-content;
-}
-
-/* ==========================================
-   头部导航 (Header & Nav)
-========================================== */
-header {
-    text-align: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-header h1 {
-    color: #2d3748;
-    margin-bottom: 15px;
-    font-size: 2rem;
-}
-
-nav button {
-    background-color: #4299e1;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    margin: 0 10px;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-nav button:hover {
-    background-color: #3182ce;
-}
-
-/* ==========================================
-   通用工具类 (Utilities)
-========================================== */
-.hidden {
-    display: none !important;
-}
-
-button {
-    cursor: pointer;
-    font-weight: 500;
-}
-
-input, select {
-    font-size: 1rem;
-    padding: 10px 15px;
-    border: 1px solid #cbd5e0;
-    border-radius: 8px;
-    outline: none;
-    transition: border-color 0.3s;
-}
-
-input:focus, select:focus {
-    border-color: #4299e1;
-}
-
-/* ==========================================
-   管理视图 - 添加表单 (Manage View Form)
-========================================== */
-.card-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 30px;
-    background: #f8fafc;
-    padding: 20px;
-    border-radius: 12px;
-}
-
-.card-form input {
-    flex: 1;
-    min-width: 200px;
-}
-
-.category-group {
-    display: flex;
-    gap: 10px;
-    flex: 1 0 auto;
-    min-width: 300px;
-}
-
-.category-group select {
-    flex: 1;
-}
-
-.add-category-btn {
-    background-color: #48bb78;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 8px;
-    white-space: nowrap;
-    flex-shrink: 0; /* ✨ 加上这一句，防止按钮被挤压变窄 */
-}
-
-.add-category-btn:hover {
-    background-color: #38a169;
-}
-
-.card-form > button {
-    background-color: #4299e1;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: bold;
-    white-space: nowrap;
-    flex-shrink: 0; /* ✨ 加上这一句，防止按钮被挤压变窄 */
-}
-
-.card-form > button:hover {
-    background-color: #3182ce;
-}
-
-/* ==========================================
-   卡片列表网格 (Flashcards Grid)
-========================================== */
-.cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
-}
-
-.card-item {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.card-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-}
-
-.card-content strong {
-    display: block;
-    font-size: 1.1rem;
-    color: #2d3748;
-    margin-bottom: 8px;
-}
-
-.card-content p {
-    color: #4a5568;
-    margin-bottom: 12px;
-}
-
-.card-content small {
-    display: inline-block;
-    background: #edf2f7;
-    color: #718096;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-}
-
-.card-actions {
-    margin-top: 15px;
-    display: flex;
-    gap: 10px;
-}
-
-.card-actions button {
-    flex: 1;
-    padding: 8px;
-    border: none;
-    border-radius: 6px;
-    background: #edf2f7;
-    color: #4a5568;
-    transition: background 0.2s;
-}
-
-.card-actions button:hover {
-    background: #e2e8f0;
-}
-
-.card-actions button:last-child:hover {
-    background: #fc8181;
-    color: white;
-}
-
-/* ==========================================
-   编辑视图表单 (Edit View)
-========================================== */
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 20px;
-}
-
-.form-actions {
-    display: flex;
-    gap: 15px;
-    margin-top: 30px;
-}
-
-.form-actions button {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
-}
-
-.form-actions button:first-child {
-    background-color: #4299e1;
-    color: white;
-}
-
-.form-actions button:last-child {
-    background-color: #cbd5e0;
-    color: #4a5568;
-}
-
-/* ==========================================
-   学习模式视图 (Study Mode View)
-========================================== */
-.study-card {
-    background: #ffffff;
-    border: 2px solid #e2e8f0;
-    border-radius: 16px;
-    min-height: 300px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 40px;
-    margin: 30px 0;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-}
-
-.study-card h3 {
-    font-size: 2rem;
-    color: #2d3748;
-    margin-bottom: 30px;
-}
-
-.study-card button {
-    background: transparent;
-    border: 2px solid #4299e1;
-    color: #4299e1;
-    padding: 10px 25px;
-    border-radius: 25px;
-    font-size: 1.1rem;
-    transition: all 0.3s;
-}
-
-.study-card button:hover {
-    background: #4299e1;
-    color: white;
-}
-
-.study-controls {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-}
-
-.study-controls button {
-    padding: 15px 30px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    color: white;
-    font-weight: bold;
-}
-
-.study-controls button:first-child {
-    background-color: #48bb78; /* 已掌握 - 绿色 */
-}
-
-.study-controls button:last-child {
-    background-color: #f6ad55; /* 需复习 - 橙色 */
-}
-
-/* ==========================================
-   阶段一新增样式 (Phase 1 Updates)
-========================================== */
-
-/* 搜索框工具栏 */
-.toolbar {
-    margin-bottom: 20px;
-}
-.toolbar input {
-    width: 100%;
-    padding: 12px 15px;
-    border-radius: 8px;
-    border: 2px solid #e2e8f0;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-.toolbar input:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-}
-
-/* 学习设置面板 */
-.study-setup {
-    background: #f8fafc;
-    padding: 30px;
-    border-radius: 12px;
-    text-align: center;
-    margin: 40px auto;
-    max-width: 500px;
-    border: 1px solid #e2e8f0;
-}
-.study-setup h3 {
-    margin-bottom: 20px;
-    color: #2d3748;
-}
-.study-setup select {
-    width: 100%;
-    margin-bottom: 20px;
-    font-size: 1.1rem;
-}
-.start-btn {
-    background: #667eea;
-    color: white;
-    font-size: 1.2rem;
-    padding: 12px 30px;
-    border: none;
-    border-radius: 8px;
-    width: 100%;
-}
-.start-btn:hover {
-    background: #5a67d8;
-}
-
-/* 弹窗样式补充 */
-.modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    z-index: 1000;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    width: 90%;
-    max-width: 400px;
-}
-.modal h3 { margin-bottom: 15px; }
-.modal input { width: 100%; margin-bottom: 20px; }
-.modal-actions { display: flex; gap: 10px; }
-.modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 6px; }
-.modal-actions button:first-child { background: #48bb78; color: white; }
-.modal-actions button:last-child { background: #e2e8f0; color: #4a5568; }
-
-/* 📱 手机端响应式适配 (Mobile Responsiveness) */
-@media (max-width: 600px) {
-    .card-form {
-        flex-direction: column; /* 手机上竖向排列 */
-    }
-    .category-group {
-        flex-direction: column;
-        min-width: 100%;
-    }
-    .study-controls {
-        flex-direction: column;
-    }
-    .study-controls button {
-        width: 100%;
-    }
-}
-
-/* ==========================================
-   阶段二新增样式 (Phase 2 - 3D 动画与进度条)
-========================================== */
-
-/* 1. 进度条样式 */
-.study-progress {
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto 25px;
-    text-align: center;
-}
-#study-progress-text {
-    font-size: 1.1rem;
-    color: #4a5568;
-    font-weight: bold;
-    display: block;
-    margin-bottom: 10px;
-}
-.progress-bar-container {
-    width: 100%;
-    height: 12px;
-    background-color: #edf2f7;
-    border-radius: 6px;
-    overflow: hidden;
-}
-#progress-bar-fill {
-    height: 100%;
-    background-color: #667eea;
-    width: 0%;
-    transition: width 0.4s ease-out; /* 进度条增长时的平滑动画 */
-}
-
-/* 2. 3D 卡片翻转核心魔法 */
-.study-card {
-    background: transparent; 
-    border: none;
-    box-shadow: none;
-    perspective: 1000px; /* 开启 3D 视距，数值越小越夸张 */
-    padding: 0;
-    cursor: pointer;
-}
-
-.card-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    min-height: 350px;
-    text-align: center;
-    transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); /* 翻转时的物理回弹效果 */
-    transform-style: preserve-3d; /* 告诉浏览器这是一个 3D 盒子 */
-}
-
-/* 触发这个类时，卡片沿 Y 轴翻转 180 度 */
-.card-inner.is-flipped {
-    transform: rotateY(180deg);
-}
-
-.card-front, .card-back {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden; /* ✨ 关键：翻过去之后隐藏背面，防止透视 */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #ffffff;
-    border: 2px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 40px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-}
-
-.card-back {
-    transform: rotateY(180deg); /* 默认就把背面翻转过去贴在背后 */
-}
-
-/* 覆盖之前隐藏背面的旧逻辑 */
-.card-back.hidden {
-    display: flex !important; 
-}
-
-.flip-hint {
-    margin-top: 30px;
-    color: #a0aec0;
-    font-size: 0.9rem;
-}
-
-/* 批量导入相关样式 */
-.form-actions-row {
-    display: flex;
-    gap: 15px;
-}
-.batch-btn {
-    background: #ecc94b !important; 
-    color: #744210 !important;
-}
-.batch-btn:hover { background: #d69e2e !important; }
-
-#batch-input {
-    width: 100%;
-    padding: 15px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-family: monospace;
-    font-size: 1rem;
-    resize: vertical;
-    margin-bottom: 20px;
-    box-sizing: border-box;
-}
-#batch-input:focus {
-    border-color: #ecc94b;
-    outline: none;
-}
-
-/* 发音小喇叭样式 */
-.speak-btn {
-    background: none !important;
-    border: none !important;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 5px;
-    margin: 0;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.speak-btn:hover {
-    transform: scale(1.3); /* 鼠标移上去放大一点点 */
-}
-
-/* 拼写模式专属样式 */
-.spell-card {
-    background: white;
-    padding: 40px 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    text-align: center;
-    max-width: 500px;
-    margin: 0 auto;
-}
-#spell-input {
-    width: 80%;
-    padding: 15px;
-    font-size: 1.5rem;
-    border: 3px solid #e2e8f0;
-    border-radius: 10px;
-    margin: 20px 0;
-    text-align: center;
-    transition: border-color 0.2s;
-}
-#spell-input:focus {
-    border-color: #ecc94b;
-    outline: none;
-}
-#spell-input:disabled {
-    background: #f7fafc;
-    color: #a0aec0;
-}
-.check-btn {
-    background: #4299e1 !important; 
-    font-size: 1.1rem !important;
-}
-.check-btn:hover { background: #3182ce !important; }
-.feedback-text {
-    margin-top: 20px;
-    font-size: 1.2rem;
-    line-height: 1.6;
-}
-
-/* ==========================================
-   ✨ 现代极简风 UI 升级 (Apple & Duolingo Style)
+   🏛️ Flashcard Pro - 核心样式库
    ========================================== */
-
-/* 1. 全局背景与字体呼吸感 */
 body {
-    background-color: #f4f7f9; /* 非常柔和的高级灰蓝背景，护眼 */
+    margin: 0;
+    padding: 0;
+    background-color: #f4f7f9;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    height: 100vh;
+    overflow: hidden; 
 }
 
-/* 2. 拼写卡片主体：大圆角、弥散阴影 */
-.spell-card {
+/* --- 1. 左右分栏布局 --- */
+.app-layout { display: flex; height: 100vh; width: 100vw; }
+
+.sidebar {
+    width: 260px;
     background: #ffffff;
-    padding: 50px 40px;
-    border-radius: 24px; /* 苹果风的大圆角 */
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06); /* 极其柔和的弥散阴影 */
-    text-align: center;
-    max-width: 480px;
-    margin: 30px auto;
-    border: 1px solid rgba(255, 255, 255, 0.5); /* 玻璃质感的高光边缘 */
+    border-right: 1px solid #e2e8f0;
+    display: flex; flex-direction: column;
+    padding: 20px 0; z-index: 10;
 }
+.sidebar-logo { font-size: 1.5rem; font-weight: 800; color: #2b6cb0; padding: 0 24px 20px; border-bottom: 1px solid #edf2f7; margin-bottom: 10px; }
+.nav-menu { list-style: none; padding: 0 12px; margin: 0; flex: 1; overflow-y: auto; }
+.nav-item { padding: 12px 16px; margin-bottom: 4px; border-radius: 8px; color: #4a5568; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+.nav-item:hover { background: #edf2f7; }
+.nav-item.active { background: #ebf8ff; color: #3182ce; font-weight: 600; }
+.sidebar-footer { padding: 16px 24px; border-top: 1px solid #edf2f7; }
 
-/* 3. 单词标题排版 */
-#spell-question {
-    font-size: 2.2rem !important;
-    font-weight: 700;
-    color: #1a202c;
-    margin-bottom: 24px;
-    letter-spacing: 0.5px;
-}
+/* --- 2. 右侧主操作区 --- */
+.main-content { flex: 1; display: flex; flex-direction: column; background: #f4f7f9; height: 100vh; }
+.main-header { background: #ffffff; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
+.main-header h2 { margin: 0; font-size: 1.5rem; color: #1a202c; }
+.header-actions { display: flex; gap: 12px; }
+.header-actions button { padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
+.content-area { flex: 1; padding: 30px 40px; overflow-y: auto; }
 
-/* 4. 输入框：去掉死板的边框，改用胖乎乎的沉浸式设计 */
-#spell-input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 18px 20px;
-    font-size: 1.3rem;
-    color: #2d3748;
-    background-color: #edf2f7; /* 浅灰底色 */
-    border: 2px solid transparent !important;
-    border-radius: 16px;
-    text-align: center;
-    transition: all 0.3s ease;
-    margin-bottom: 24px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+/* --- 3. 卡片瀑布流 (Inbox 列表) --- */
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.card-item {
+    background: white; padding: 20px; border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    border: 1px solid #edf2f7; transition: transform 0.2s;
 }
+.card-item:hover { transform: translateY(-3px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
+.card-item strong { display: block; font-size: 1.2rem; margin-bottom: 8px; color: #2d3748; }
+.card-item p { color: #4a5568; margin-bottom: 15px; }
+.card-actions { display: flex; gap: 10px; margin-top: 15px; border-top: 1px solid #edf2f7; padding-top: 15px; }
+.card-actions button { flex: 1; padding: 8px; border: none; border-radius: 6px; background: #edf2f7; cursor: pointer; color: #4a5568; font-weight: 500;}
+.card-actions button:hover { background: #e2e8f0; }
 
-/* 输入框聚焦时的“呼吸灯”光晕效果 */
-#spell-input:focus {
-    background-color: #ffffff;
-    border-color: #4299e1 !important; /* 亮蓝色边框 */
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.15) !important;
+/* --- 4. 优雅弹窗 (Modal) --- */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 999; }
+.pro-modal {
+    display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: white; padding: 30px; border-radius: 20px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); width: 90%; max-width: 450px; z-index: 1000;
 }
+.pro-modal h3 { margin-top: 0; margin-bottom: 20px; color: #2d3748; }
+.pro-modal .form-control { width: 100%; box-sizing: border-box; margin-bottom: 15px; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
 
-/* 5. 提交按钮：消灭黑边框，增加悬浮动画 */
-.check-btn {
-    border: none !important; /* 强制干掉图3里的黑边框 */
-    outline: none;
-    border-radius: 16px !important;
-    padding: 16px 24px !important;
-    font-weight: 600;
-    cursor: pointer;
-    background: #4299e1 !important;
-    color: white !important;
-    font-size: 1.2rem !important;
-    width: 100%; /* 让按钮和输入框一样宽，显得更大气 */
-    box-shadow: 0 4px 10px rgba(66, 153, 225, 0.2);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* --- 5. 隐藏工具类 --- */
+.hidden { display: none !important; }
 
-.check-btn:hover {
-    background: #3182ce !important;
-    transform: translateY(-2px); /* 鼠标移上去微微上浮 */
-    box-shadow: 0 6px 15px rgba(66, 153, 225, 0.3);
-}
+/* --- 6. 学习与默写模式专属样式 --- */
+.study-card { width: 100%; max-width: 500px; height: 300px; margin: 0 auto; perspective: 1000px; cursor: pointer; }
+.card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
+.card-inner.is-flipped { transform: rotateY(180deg); }
+.card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 20px; box-sizing: border-box; border: 1px solid #edf2f7; }
+.card-back { transform: rotateY(180deg); border: 2px solid #48bb78; }
+.card-front h3, .card-back h3 { font-size: 2rem; color: #2d3748; margin: 0; }
+.flip-hint { color: #a0aec0; font-size: 0.9rem; margin-top: 20px; }
 
-.check-btn:active {
-    transform: translateY(0); /* 按下去的时候回弹 */
-}
+.study-controls { display: flex; justify-content: center; gap: 15px; margin-top: 30px; }
+.study-controls button { padding: 12px 24px; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; }
+.study-controls button:nth-child(2) { background: #48bb78; } /* 已掌握 */
+.study-controls button:nth-child(3) { background: #ed8936; } /* 需要复习 */
+.study-controls button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
-/* 6. 小喇叭按钮：做成可爱的圆形拟物按钮 */
-.speak-btn {
-    background: #f7fafc !important;
-    border: none !important;
-    border-radius: 50% !important;
-    width: 44px;
-    height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    margin-left: 10px;
-}
-.speak-btn:hover {
-    background: #edf2f7 !important;
-    transform: scale(1.1);
-}
-
-/* 7. 下一张按钮：优化配色和圆角 */
-#spell-next-control button {
-    border: none !important;
-    background: #ed8936 !important;
-    color: white !important;
-    padding: 14px 35px !important;
-    border-radius: 24px !important;
-    font-size: 1.1rem !important;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(237, 137, 54, 0.25);
-    transition: all 0.2s ease;
-}
-#spell-next-control button:hover {
-    background: #dd6b20 !important;
-    transform: translateY(-2px);
-}
+.spell-card { background: white; padding: 50px 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); text-align: center; max-width: 480px; margin: 0 auto; border: 1px solid #edf2f7; }
+#spell-question { font-size: 2.2rem; font-weight: 700; color: #1a202c; margin-bottom: 24px; }
+#spell-input { width: 100%; box-sizing: border-box; padding: 18px 20px; font-size: 1.3rem; color: #2d3748; background: #edf2f7; border: 2px solid transparent; border-radius: 16px; text-align: center; transition: all 0.3s ease; margin-bottom: 24px; }
+#spell-input:focus { background: #ffffff; border-color: #4299e1; outline: none; box-shadow: 0 0 0 4px rgba(66,153,225,0.15); }
+#spell-input:disabled { background: #f7fafc; color: #a0aec0; }
+.check-btn { border: none; border-radius: 16px; padding: 16px 24px; font-weight: 600; cursor: pointer; background: #4299e1; color: white; font-size: 1.2rem; width: 100%; transition: 0.2s; }
+.check-btn:hover { background: #3182ce; transform: translateY(-2px); }
+.speak-btn { background: #f7fafc; border: none; border-radius: 50%; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-left: 10px; cursor: pointer;}
+.speak-btn:hover { background: #edf2f7; transform: scale(1.1); }
+.feedback-text { margin-top: 20px; font-size: 1.2rem; line-height: 1.6; }
