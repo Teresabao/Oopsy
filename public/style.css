@@ -114,8 +114,10 @@ body {
 
 /* 🌟 核心品牌色：选中的激活状态 (极客靛蓝) */
 .nav-item.active {
-    background-color: #e0e7ff; 
-    color: #4f46e5; 
+    background-color: #f0f4ff !important; /* 极淡蓝 */
+    color: #4f46e5 !important;           /* 品牌靛蓝 */
+    border-left: 3px solid #4f46e5;      /* 重点强调线 */
+    border-radius: 0 8px 8px 0;          /* 只圆右边，左边贴齐 */
     font-weight: 600;
 }
 
@@ -141,4 +143,197 @@ body {
 .toggle-arrow:hover {
     background-color: #e2e8f0;
     color: #475569;
+}
+
+/* ✨ V2.0 文件夹侧边新建图标样式 */
+.folder-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+}
+
+/* 鼠标放上导航条时显示加号 */
+.nav-item:hover .folder-actions {
+    opacity: 1;
+}
+
+.folder-actions:hover {
+    background-color: #e2e8f0;
+    color: #4f46e5;
+}
+
+/* ✨ 移动端适配核心样式 */
+
+/* 1. 默认移动端汉堡按钮（在大屏隐藏） */
+.menu-toggle {
+    display: none;
+    padding: 8px;
+    cursor: pointer;
+    color: #475569;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        left: -260px; /* 默认躲在屏幕左边外面 */
+        top: 0;
+        bottom: 0;
+        z-index: 1000;
+        transition: 0.3s ease;
+        box-shadow: 10px 0 15px rgba(0,0,0,0.1);
+    }
+
+    .sidebar.mobile-active {
+        left: 0; /* 激活时滑入屏幕 */
+    }
+
+    .menu-toggle {
+        display: block; /* 手机端显示汉堡按钮 */
+    }
+
+    .main-content {
+        padding: 10px !important; /* 手机端缩小留白 */
+    }
+
+    /* 遮罩层：侧边栏打开时，点击右侧空白区域自动关闭 */
+    .mobile-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 999;
+    }
+    
+    .mobile-overlay.active {
+        display: block;
+    }
+}
+
+/* ==========================================
+   📱 移动端专项优化 (响应式补丁)
+   ========================================== */
+@media (max-width: 768px) {
+    /* 1. 强制横向排版，防止标题竖过来 */
+    .main-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 15px;
+        padding: 15px !important;
+    }
+
+    .main-header h2 {
+        font-size: 1.2rem !important;
+        white-space: nowrap;
+    }
+
+    /* 2. 按钮区自动换行且间距均匀 */
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px !important;
+    }
+
+    /* 3. 在手机上弱化按钮文字，改用图标为主，防止太挤 */
+    .header-actions button {
+        padding: 8px 12px !important;
+        font-size: 0.8rem !important;
+        flex: 1; /* 按钮平分宽度 */
+        justify-content: center;
+    }
+
+    /* 4. 侧边栏滑入动画 */
+    .sidebar {
+        position: fixed;
+        left: -280px; 
+        top: 0;
+        bottom: 0;
+        z-index: 2000;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 260px;
+        background: white;
+        box-shadow: 15px 0 30px rgba(0,0,0,0.1);
+    }
+
+    .sidebar.mobile-active {
+        transform: translateX(280px);
+    }
+
+    /* 5. 手机端卡片列表间距优化 */
+    .cards-grid {
+        grid-template-columns: 1fr !important; /* 手机端强制一列 */
+        padding: 10px !important;
+    }
+}
+
+/* ==========================================
+   📱 移动端专项优化 (终极强力修复版)
+   ========================================== */
+@media (max-width: 768px) {
+    /* 1. 强制显示汉堡按钮 */
+    #mobile-menu-btn {
+        display: block !important;
+    }
+
+    /* 2. 侧边栏：强行拔出原有布局，死死钉在屏幕最左边外侧 */
+    .sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: -320px !important; /* 彻底藏在左边屏幕外面 */
+        height: 100vh !important; /* 撑满整个屏幕高度 */
+        width: 280px !important;
+        z-index: 2000 !important; /* 绝对在最上层 */
+        background-color: white !important;
+        transition: left 0.3s ease-in-out !important; /* 用 left 做动画最稳妥 */
+        transform: none !important; /* 废掉冲突的 transform */
+        box-shadow: 5px 0 20px rgba(0,0,0,0.15) !important;
+    }
+
+    /* 3. 激活状态：让它从左边回到坐标 0 的位置 */
+    .sidebar.mobile-active {
+        left: 0 !important; 
+    }
+
+    /* 4. 遮罩层：强行铺满整个屏幕 */
+    #mobile-overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: rgba(15, 23, 42, 0.4) !important; /* 更有质感的深蓝灰遮罩 */
+        z-index: 1500 !important;
+    }
+
+    /* 5. 修复主内容区标题和按钮排版 */
+    .main-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 15px !important;
+        padding: 15px !important;
+    }
+    
+    .header-actions {
+        width: 100% !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+    
+    .header-actions button {
+        flex: 1 !important; /* 按钮平均分配宽度 */
+        padding: 10px 8px !important; /* 加大手指点击区域 */
+        font-size: 0.85rem !important;
+        justify-content: center !important;
+    }
+    
+    .cards-grid {
+        grid-template-columns: 1fr !important; /* 手机端强制单列大卡片 */
+        padding: 10px !important;
+    }
 }

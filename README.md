@@ -69,6 +69,10 @@ This project is licensed under the MIT License.
 2. `git commit -m "备份描述"`
 3. `git push`
 
+git add . 
+git commit -m "开始着手手机界面"         
+git push   
+
 ## 其它
 - 启动服务器：`npm run dev` 或 `node server.ts`
 - 数据库：MongoDB

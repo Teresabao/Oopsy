@@ -64,19 +64,20 @@ async function loadCategories() {
                 <div style="height: 1px; background: #e2e8f0; margin: 10px 0;"></div>
             `;
             
+            // ✨ 给“所有卡片”也装上同款极简加号
             const rootArrow = rootCollapsed ? icons.arrowRight : icons.arrowDown;
             html += `
-                <li class="nav-item root-nav ${currentCategoryId === 'all' ? 'active' : ''}">
-                    <div class="toggle-arrow" onclick="toggleRoot(event)">${rootArrow}</div>
-                    <div style="flex:1; display:flex; align-items:center; gap:8px;" onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', this.parentElement)">
+                <li class="nav-item root-nav ${currentCategoryId === 'all' ? 'active' : ''}" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;" onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', this.parentElement)">
+                        <div class="toggle-arrow" onclick="toggleRoot(event)">${rootArrow}</div>
                         ${icons.all} <span>所有卡片</span>
+                    </div>
+                    
+                    <div class="folder-actions" onclick="quickCreateSubCategory(event, '')" title="新建顶级文件夹">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     </div>
                 </li>
                 <div id="user-folders-container" style="display: ${rootCollapsed ? 'none' : 'block'}; padding-left: 14px;">
-                    
-                    <li class="nav-item uncat-nav ${currentCategoryId === 'uncategorized' ? 'active' : ''}" onclick="selectSidebarItem('uncategorized', '未分类区', 'vocabulary', this)">
-                        ${icons.uncat} <span>未分类区</span>
-                    </li>
             `;
 
             const parents = allCategories.filter(c => !c.parentId);
@@ -90,10 +91,14 @@ async function loadCategories() {
                 const isActive = currentCategoryId === p._id ? 'active' : '';
                 
                 html += `
-                    <li class="nav-item parent-nav ${isActive}">
-                        <div class="toggle-arrow" style="visibility: ${hasChildren ? 'visible' : 'hidden'}" onclick="toggleFolder(event, '${p._id}')">${arrow}</div>
-                        <div style="flex:1; display:flex; align-items:center; gap:8px;" onclick="selectSidebarItem('${p._id}', '${p.name}', '${p.type}', this.parentElement)">
-                            ${icon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.name}</span>
+                    <li class="nav-item parent-nav ${isActive}" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex: 1;" onclick="selectSidebarItem('${p._id}', '${p.name}', '${p.type}', this.parentElement)">
+                            <div class="toggle-arrow" style="visibility: ${hasChildren ? 'visible' : 'hidden'}" onclick="toggleFolder(event, '${p._id}')">${arrow}</div>
+                            ${icon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${p.name}</span>
+                        </div>
+                        
+                        <div class="folder-actions" onclick="quickCreateSubCategory(event, '${p._id}')" title="在此文件夹下新建">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </div>
                     </li>
                     <div id="children-of-${p._id}" style="display: ${isCollapsed ? 'none' : 'block'}; padding-left: 28px;">
@@ -140,29 +145,39 @@ function refreshSelectOptions() {
 function toggleRoot(event) { event.stopPropagation(); rootCollapsed = !rootCollapsed; loadCategories(); }
 function toggleFolder(event, folderId) { event.stopPropagation(); if (collapsedFolders.has(folderId)) collapsedFolders.delete(folderId); else collapsedFolders.add(folderId); loadCategories(); }
 
+// ✨ 侧边栏点击逻辑 (终极防弹版)
 function selectSidebarItem(id, title, type, element) {
-    document.getElementById('current-view-title').innerText = title;
-    
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    if (element) element.classList.add('active');
-    
-    currentCategoryId = id; 
-    showMainView('manage-view'); 
-    
-    const settingsBtn = document.getElementById('category-settings-btn');
-    if (settingsBtn) {
-        if (id === 'all' || id === 'uncategorized') settingsBtn.classList.add('hidden');
-        else settingsBtn.classList.remove('hidden');
-    }
+    try {
+        currentCategoryId = id;
+        
+        // 1. 安全更新标题
+        const titleEl = document.getElementById('current-view-title');
+        if (titleEl) titleEl.textContent = title;
 
-    const headerActions = document.querySelector('.header-actions');
-    if (headerActions) {
-        const spellBtn = headerActions.querySelector('button:nth-child(3)'); 
-        if (spellBtn && spellBtn.innerText.includes('默写')) {
-            spellBtn.style.display = (type === 'notes') ? 'none' : 'inline-flex';
+        // 2. 更新左侧高亮状态
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        if (element) {
+            element.classList.add('active');
+        } else {
+            const root = document.querySelector('.root-nav');
+            if (root) root.classList.add('active');
         }
+
+        // 3. 渲染数据并切回列表页
+        renderCards(); 
+        // ⚠️ 关键修正：确保切回的是 manage-view (卡片管理列表)
+        showMainView('manage-view'); 
+
+        // 4. 手机端点完自动收起
+        if (window.innerWidth <= 768) {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            if (sidebar) sidebar.classList.remove('mobile-active');
+            if (overlay) overlay.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("侧边栏点击出错:", error);
     }
-    filterCards(); 
 }
 
 function selectDashboard(element) {
@@ -269,8 +284,19 @@ function filterCards() {
 }
 
 function renderCards(cardsToRender) {
+    // 1. 严格保留你的专属 ID
     const list = document.getElementById('flashcards-list');
     if (!list) return;
+
+    // ✨ 2. 新增：防崩溃与空数据优雅展示
+    if (!cardsToRender || cardsToRender.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding: 60px 20px; color: #94a3b8; font-size: 0.95rem;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" style="margin-bottom:12px; display:block; margin-left:auto; margin-right:auto;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            这里空空如也，赶快添加或导入几张卡片吧！
+        </div>`;
+        return;
+    }
+
     const now = new Date();
     
     list.innerHTML = cardsToRender.map(card => {
@@ -278,26 +304,51 @@ function renderCards(cardsToRender) {
         const reviewDate = card.nextReviewDate ? new Date(card.nextReviewDate) : now;
         const isDue = reviewDate <= now;
         
-        // 纯 SVG 高级徽章
-        const stageIcon = card.stage >= 1 
-            ? `<span style="display:inline-flex; align-items:center; gap:4px; color:#d97706;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 可默写</span>` 
-            : `<span style="display:inline-flex; align-items:center; gap:4px; color:#718096;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> 待进阶</span>`;
+        // ✨ 极简卡片动作按钮样式 (全局复用)
+        const actionBtnBase = "display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:8px; border:none; cursor:pointer; font-size:0.85rem; font-weight:500; transition:0.2s;";
 
+        // 1. 优化徽章样式 (Stage Badge)
+        const stageIcon = card.stage >= 1 
+            ? `<span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:#fef3c7; color:#b45309; border-radius:12px; font-size:0.75rem;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 
+                可默写</span>` 
+            : `<span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:#f1f5f9; color:#64748b; border-radius:12px; font-size:0.75rem;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> 
+                待进阶</span>`;
+
+        // 2. 优化状态样式 (Status Badge)
         const statusHtml = isDue 
-            ? `<span style="color: #e53e3e; font-size: 0.85rem; margin-left: 8px; font-weight: bold; display:inline-flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg> 待复习</span>` 
-            : `<span style="color: #48bb78; font-size: 0.85rem; margin-left: 8px; font-weight: bold; display:inline-flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> ${reviewDate.getMonth()+1}月${reviewDate.getDate()}日</span>`;
+            ? `<span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:#fff1f2; color:#e11d48; border-radius:12px; font-size:0.75rem; font-weight:bold;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg> 
+                待复习</span>` 
+            : `<span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:#ecfdf5; color:#059669; border-radius:12px; font-size:0.75rem; font-weight:bold;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> 
+                ${reviewDate.getMonth()+1}月${reviewDate.getDate()}日</span>`;
 
         return `
-            <div class="card-item" style="padding: 20px; border-radius: 16px; background: white; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px;">
-                <strong style="color: #1e293b; font-size: 1.1rem;">Q: ${card.question}</strong>
-                <p style="color: #475569; margin: 0;">A: ${card.answer}</p>
-                <small style="color: #a0aec0; display: flex; align-items: center; gap: 8px; margin-top: 4px;">${categoryName} | ${stageIcon} ${statusHtml}</small>
-                <div class="card-actions" style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button onclick="editCard('${card._id}')" style="display:inline-flex; align-items:center; gap:4px; padding:6px 12px; border-radius:6px; border:1px solid #e2e8f0; background:white; color:#4a5568; cursor:pointer; font-size:0.85rem; transition:0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='white'">
+            <div class="card-item" style="padding: 24px; border-radius: 20px; background: white; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); display: flex; flex-direction: column; gap: 10px; transition: 0.3s;" onmouseover="this.style.borderColor='#e2e8f0'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#f1f5f9'; this.style.transform='translateY(0)'">
+                <strong style="color: #1e293b; font-size: 1.15rem; letter-spacing: -0.2px;">Q: ${card.question}</strong>
+                <p style="color: #475569; margin: 0; line-height: 1.5;">A: ${card.answer}</p>
+                
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap;">
+                    <span style="color: #94a3b8; font-size: 0.75rem; font-weight: 500;">${categoryName}</span>
+                    <span style="color: #e2e8f0;">|</span>
+                    ${stageIcon}
+                    ${statusHtml}
+                </div>
+
+                <div class="card-actions" style="display: flex; gap: 10px; margin-top: 14px;">
+                    <button onclick="editCard('${card._id}')" 
+                        style="${actionBtnBase} background:#f8fafc; color:#64748b;" 
+                        onmouseover="this.style.backgroundColor='#f1f5f9'; this.style.color='#1e293b'" 
+                        onmouseout="this.style.backgroundColor='#f8fafc'; this.style.color='#64748b'">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 
                         编辑
                     </button>
-                    <button onclick="deleteCard('${card._id}')" style="display:inline-flex; align-items:center; gap:4px; padding:6px 12px; border-radius:6px; border:1px solid #fee2e2; background:#fff5f5; color:#e53e3e; cursor:pointer; font-size:0.85rem; transition:0.2s;" onmouseover="this.style.backgroundColor='#fed7d7'" onmouseout="this.style.backgroundColor='#fff5f5'">
+                    <button onclick="deleteCard('${card._id}')" 
+                        style="${actionBtnBase} background:#fff1f2; color:#fb7185;" 
+                        onmouseover="this.style.backgroundColor='#ffe4e6'; this.style.color='#e11d48'" 
+                        onmouseout="this.style.backgroundColor='#fff1f2'; this.style.color='#fb7185'">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 
                         删除
                     </button>
@@ -452,23 +503,57 @@ function flipCard() { document.getElementById('card-inner').classList.toggle('is
 function nextStudyCard() { currentStudyIndex++; renderStudyCard(); }
 function prevStudyCard() { if (currentStudyIndex > 0) { currentStudyIndex--; renderStudyCard(); } }
 
+// ✨ 1. 核心复习提交逻辑 (防弹容错版)
 async function submitReview(isKnown) {
+    // 🛡️ 防弹衣 1：如果数组为空或越界，立刻拦截，防止崩溃！
+    if (!studyCards || studyCards.length === 0 || currentStudyIndex >= studyCards.length) return;
+
     const currentCard = studyCards[currentStudyIndex];
-    try { await fetch(`/api/flashcards/${currentCard._id}/review`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isKnown }) }); } catch (e) {}
     
-    // ✨ 核心修复：立刻更新本地数据，防止它再次阴魂不散地出现！
+    // 🛡️ 防弹衣 2：网络请求失败绝不准卡死本地界面
+    try { 
+        await fetch(`/api/flashcards/${currentCard._id}/review`, { 
+            method: 'PATCH', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ isKnown }) 
+        }); 
+    } catch (e) {
+        console.warn("网络开小差了，但不影响本地背单词哦~");
+    }
+    
+    // ✨ 核心机制：本地立刻篡改数据
     if (isKnown) {
-        // 答对了，强行把本地复习时间推迟到明天，并直接升 1 级！
         currentCard.nextReviewDate = new Date(Date.now() + 86400000).toISOString(); 
         currentCard.stage = (currentCard.stage || 0) + 1; 
     } else {
-        studyCards.push(currentCard); // 答错塞回队尾
+        studyCards.push(currentCard); // 答错无情塞回队尾
     }
     
+    // 走向下一题
     nextStudyCard();
 }
+
 function markAsKnown() { submitReview(true); }
 function markAsReview() { submitReview(false); }
+
+// ✨ 2. 必须配套更新的“下一题”逻辑
+function nextStudyCard() {
+    currentStudyIndex++;
+    
+    // 🛡️ 防弹衣 3：安全判断是否已经背完？
+    if (currentStudyIndex >= studyCards.length) {
+        // 延迟 100 毫秒弹窗，让最后一个按钮的点击动画能播完，体验更好
+        setTimeout(() => {
+            alert('🎉 恭喜！本次复习任务已全部搞定！');
+            showMainView('manage-view'); // 切回列表界面
+            loadFlashcards(); // 重新向服务器拉取最新数据，刷新全局状态
+        }, 100);
+        return;
+    }
+    
+    // 如果还没背完，继续渲染下一张卡
+    renderStudyCard();
+}
 
 // --- 2. 默写模式 ---
 function startSpellMode() {
@@ -575,3 +660,96 @@ document.addEventListener('keydown', function(event) {
         }
     }
 });
+
+// ✨ 快捷新建子分类逻辑
+function quickCreateSubCategory(event, parentId) {
+    event.stopPropagation(); // 防止触发文件夹的选择事件
+    
+    // 1. 打开弹窗
+    openCategoryModal();
+    
+    // 2. 自动选中父级文件夹
+    const parentSelect = document.getElementById('parent-category-select');
+    if (parentSelect) {
+        parentSelect.value = parentId;
+    }
+}
+
+// ✨ 移动端侧边栏切换逻辑
+function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('mobile-sidebar-overlay');
+    
+    sidebar.classList.toggle('mobile-active');
+    overlay.classList.toggle('active');
+}
+
+// ✨ 修改原有的 selectSidebarItem 函数，加入自动关闭功能
+const originalSelectSidebarItem = selectSidebarItem;
+selectSidebarItem = function(id, title, type, element) {
+    originalSelectSidebarItem(id, title, type, element);
+    
+    // 如果是手机端，点击完选项自动收起菜单
+    if (window.innerWidth <= 768) {
+        toggleMobileSidebar();
+    }
+};
+
+function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('mobile-overlay');
+    
+    if (sidebar.classList.contains('mobile-active')) {
+        sidebar.classList.remove('mobile-active');
+        overlay.style.display = 'none';
+    } else {
+        sidebar.classList.add('mobile-active');
+        overlay.style.display = 'block';
+    }
+}
+
+// ✨ 2. 移动端侧边栏切换逻辑
+function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('mobile-overlay');
+    if(!sidebar || !overlay) return;
+    
+    if (sidebar.classList.contains('mobile-active')) {
+        sidebar.classList.remove('mobile-active');
+        overlay.style.display = 'none';
+    } else {
+        sidebar.classList.add('mobile-active');
+        overlay.style.display = 'block';
+    }
+}
+
+// ✨ 3. 侧边栏点击逻辑 (防弹版)
+function selectSidebarItem(id, title, type, element) {
+    try {
+        currentCategoryId = id;
+        
+        const titleEl = document.getElementById('current-view-title');
+        if (titleEl) titleEl.textContent = title;
+
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        if (element) {
+            element.classList.add('active');
+        } else {
+            const root = document.querySelector('.root-nav');
+            if (root) root.classList.add('active');
+        }
+
+        renderCards(); // 重新渲染卡片
+        showMainView('dashboard-view'); // ⚠️ 确保你的 index.html 里有 id 为 dashboard-view 的元素，如果没有，请改成 'manage-view'
+
+        // 手机端自动收起侧边栏
+        if (window.innerWidth <= 768) {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            if (sidebar) sidebar.classList.remove('mobile-active');
+            if (overlay) overlay.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("侧边栏点击报错拦截:", error);
+    }
+}
