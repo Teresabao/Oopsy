@@ -70,7 +70,7 @@ This project is licensed under the MIT License.
 3. `git push`
 
 git add . 
-git commit -m "开始着手手机界面"         
+git commit -m "手机界面初步完成"         
 git push   
 
 ## 其它
