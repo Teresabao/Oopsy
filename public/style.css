@@ -95,18 +95,25 @@ body {
     .sidebar {
         position: fixed !important;
         top: 0 !important;
-        left: -320px !important; 
+        /* 1. 将 left 固定在 0，通过 transform 移出屏幕 */
+        left: 0 !important; 
+        transform: translateX(-110%) !important; 
+        
         height: 100vh !important; 
         width: 280px !important;
         z-index: 2000 !important; 
         background-color: white !important;
-        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        transform: none !important; 
+        
+        /* 2. 这里的 transition 改为监听 transform */
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        
         box-shadow: 5px 0 20px rgba(0,0,0,0.15) !important;
     }
 
-    /* 3. 侧边栏滑入动画 */
-    .sidebar.mobile-active { left: 0 !important; }
+    /* 3. 激活状态也对应修改 */
+    .sidebar.mobile-active {
+        transform: translateX(0) !important;
+    }
 
     /* 4. 修复主内容区标题和顶部按钮排版 */
     .main-header {
