@@ -61,3 +61,16 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 ## License
 
 This project is licensed under the MIT License.
+
+# My Quiz App 备忘录
+
+## 常用备份命令
+1. `git add .`
+2. `git commit -m "备份描述"`
+3. `git push`
+
+## 其它
+- 启动服务器：`npm run dev` 或 `node server.ts`
+- 数据库：MongoDB
+MONGODB_URI=mongodb+srv://pte-assist:k0wAaDX4jMY2ggCA@cluster0.uysipp5.mongodb.net/quizlet-clone?retryWrites=true&w=majority&appName=Cluster0
+PORT=3000

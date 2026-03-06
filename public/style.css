@@ -87,3 +87,58 @@ body {
 .speak-btn { background: #f7fafc; border: none; border-radius: 50%; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-left: 10px; cursor: pointer;}
 .speak-btn:hover { background: #edf2f7; transform: scale(1.1); }
 .feedback-text { margin-top: 20px; font-size: 1.2rem; line-height: 1.6; }
+/* --- 7. V2.0 左侧菜单嵌套样式 --- */
+.nav-item.is-child { margin-left: 20px; font-size: 0.95rem; border-left: 2px solid #e2e8f0; border-radius: 0 8px 8px 0; }
+.nav-item.is-child:hover { border-left-color: #3182ce; }
+
+/* ✨ V2.0 导航栏高级质感样式 (新增) */
+.nav-item {
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    border-radius: 8px; /* 柔和的胶囊圆角 */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px; /* 图标和文字的间距 */
+    color: #475569; /* 沉稳的深青灰色 */
+    font-weight: 500;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+/* 鼠标悬停时的微光效 */
+.nav-item:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+/* 🌟 核心品牌色：选中的激活状态 (极客靛蓝) */
+.nav-item.active {
+    background-color: #e0e7ff; 
+    color: #4f46e5; 
+    font-weight: 600;
+}
+
+/* 统一控制所有 SVG 图标的大小和线条粗细 */
+.nav-icon {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.2;
+    flex-shrink: 0;
+}
+
+/* 折叠小箭头的独立样式 */
+.toggle-arrow {
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.toggle-arrow:hover {
+    background-color: #e2e8f0;
+    color: #475569;
+}

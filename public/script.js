@@ -1,244 +1,398 @@
 // ==========================================
-// 🔌 Flashcard Pro 核心控制逻辑 (修复增删改查)
+// 🔌 Flashcard Pro V2.0 终极控制逻辑 (纯净无 Emoji 极简版)
 // ==========================================
 
 let allCards = []; 
-let currentCategoryId = 'all'; // 记录当前左侧选中的分类
+let allCategories = []; 
+let currentCategoryId = 'all'; 
 let editingCardId = null;
+
+let collapsedFolders = new Set();
+let rootCollapsed = false; 
 
 document.addEventListener('DOMContentLoaded', () => {
     loadCategories();
     loadFlashcards();
+
+    // ✨ 强行接管“添加”按钮，绑定带有智能预填分类的专属函数
+    const addBtn = document.getElementById('btn-add-card');
+    if (addBtn) {
+        addBtn.onclick = (e) => {
+            e.preventDefault();
+            openAddCardModal();
+        };
+    }
 });
 
-// --- 1. 视图切换 ---
+// --- 1. 视图切换引擎 ---
 function showMainView(viewId) {
-    document.getElementById('manage-view').classList.add('hidden');
-    if (document.getElementById('study-view')) document.getElementById('study-view').classList.add('hidden');
-    if (document.getElementById('spell-view')) document.getElementById('spell-view').classList.add('hidden');
-    
-    document.getElementById(viewId).classList.remove('hidden');
-}
+    const views = ['manage-view', 'study-view', 'spell-view', 'dashboard-view']; 
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+    const target = document.getElementById(viewId);
+    if (target) target.classList.remove('hidden');
 
-// --- 2. 分类管理与导航 ---
+    // ✨ 核心修复：退出学习模式回到主界面时，静默去服务器拉取最新卡片状态！
+    if (viewId === 'manage-view' || viewId === 'dashboard-view') {
+        loadFlashcards();
+    }
+}
+// --- 2. V2.0 终极折叠式树形导航栏 ---
 async function loadCategories() {
     try {
         const response = await fetch('/api/categories');
-        const categories = await response.json();
+        allCategories = await response.json();
 
-        // 渲染左侧导航栏
         const sidebarMenu = document.getElementById('sidebar-menu');
         if (sidebarMenu) {
-            sidebarMenu.innerHTML = `<li class="nav-item active" onclick="selectSidebarItem('all', '📥 所有卡片', this)">📥 所有卡片</li>`;
-            categories.forEach(cat => {
-                sidebarMenu.innerHTML += `<li class="nav-item" onclick="selectSidebarItem('${cat._id}', '📂 ${cat.name}', this)">📂 ${cat.name}</li>`;
+            const icons = {
+                dashboard: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`,
+                all: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+                uncat: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+                folder: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+                doc: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+                arrowRight: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
+                arrowDown: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>`
+            };
+
+            let html = `
+                <li class="nav-item ${currentCategoryId === 'dashboard' ? 'active' : ''}" onclick="selectDashboard(this)">
+                    ${icons.dashboard} <span>学习数据</span>
+                </li>
+                <div style="height: 1px; background: #e2e8f0; margin: 10px 0;"></div>
+            `;
+            
+            const rootArrow = rootCollapsed ? icons.arrowRight : icons.arrowDown;
+            html += `
+                <li class="nav-item root-nav ${currentCategoryId === 'all' ? 'active' : ''}">
+                    <div class="toggle-arrow" onclick="toggleRoot(event)">${rootArrow}</div>
+                    <div style="flex:1; display:flex; align-items:center; gap:8px;" onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', this.parentElement)">
+                        ${icons.all} <span>所有卡片</span>
+                    </div>
+                </li>
+                <div id="user-folders-container" style="display: ${rootCollapsed ? 'none' : 'block'}; padding-left: 14px;">
+                    
+                    <li class="nav-item uncat-nav ${currentCategoryId === 'uncategorized' ? 'active' : ''}" onclick="selectSidebarItem('uncategorized', '未分类区', 'vocabulary', this)">
+                        ${icons.uncat} <span>未分类区</span>
+                    </li>
+            `;
+
+            const parents = allCategories.filter(c => !c.parentId);
+            const children = allCategories.filter(c => c.parentId);
+
+            parents.forEach(p => {
+                const hasChildren = children.some(c => c.parentId === p._id);
+                const isCollapsed = collapsedFolders.has(p._id);
+                const arrow = isCollapsed ? icons.arrowRight : icons.arrowDown;
+                const icon = p.type === 'notes' ? icons.doc : icons.folder;
+                const isActive = currentCategoryId === p._id ? 'active' : '';
+                
+                html += `
+                    <li class="nav-item parent-nav ${isActive}">
+                        <div class="toggle-arrow" style="visibility: ${hasChildren ? 'visible' : 'hidden'}" onclick="toggleFolder(event, '${p._id}')">${arrow}</div>
+                        <div style="flex:1; display:flex; align-items:center; gap:8px;" onclick="selectSidebarItem('${p._id}', '${p.name}', '${p.type}', this.parentElement)">
+                            ${icon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.name}</span>
+                        </div>
+                    </li>
+                    <div id="children-of-${p._id}" style="display: ${isCollapsed ? 'none' : 'block'}; padding-left: 28px;">
+                `;
+                
+                children.filter(c => c.parentId === p._id).forEach(child => {
+                    const cIcon = child.type === 'notes' ? icons.doc : icons.doc;
+                    const cActive = currentCategoryId === child._id ? 'active' : '';
+                    html += `
+                        <li class="nav-item is-child ${cActive}" onclick="selectSidebarItem('${child._id}', '${child.name}', '${child.type}', this)">
+                            ${cIcon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${child.name}</span>
+                        </li>`;
+                });
+                html += `</div>`; 
             });
+            html += `</div>`; 
+            
+            sidebarMenu.innerHTML = html;
         }
 
-        // 渲染所有弹窗里的下拉框
-        const selects = ['modal-category-select', 'batch-category-select', 'edit-category-select'];
-        selects.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.innerHTML = categories.map(cat => `<option value="${cat._id}">${cat.name}</option>`).join('');
-            }
-        });
+        refreshSelectOptions(); 
     } catch (error) { console.error('加载分类失败:', error); }
 }
 
-function selectSidebarItem(id, title, element) {
+function refreshSelectOptions() {
+    const selects = ['modal-category-select', 'batch-category-select', 'edit-category-select'];
+    selects.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = `<option value="">(无) 未分类</option>` + 
+                           allCategories.map(cat => `<option value="${cat._id}">${cat.name}</option>`).join('');
+        }
+    });
+
+    const parentSelect = document.getElementById('parent-category-select');
+    if (parentSelect) {
+        parentSelect.innerHTML = '<option value="">(无) 作为顶级文件夹</option>';
+        allCategories.filter(c => !c.parentId).forEach(cat => {
+            parentSelect.innerHTML += `<option value="${cat._id}">归属于 -> ${cat.name}</option>`;
+        });
+    }
+}
+
+function toggleRoot(event) { event.stopPropagation(); rootCollapsed = !rootCollapsed; loadCategories(); }
+function toggleFolder(event, folderId) { event.stopPropagation(); if (collapsedFolders.has(folderId)) collapsedFolders.delete(folderId); else collapsedFolders.add(folderId); loadCategories(); }
+
+function selectSidebarItem(id, title, type, element) {
     document.getElementById('current-view-title').innerText = title;
     
-    // 处理侧边栏高亮
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     if (element) element.classList.add('active');
     
-    currentCategoryId = id; // 更新当前选中的分类
-    showMainView('manage-view'); // 确保显示的是管理列表
-    filterCards(); // 触发过滤
+    currentCategoryId = id; 
+    showMainView('manage-view'); 
+    
+    const settingsBtn = document.getElementById('category-settings-btn');
+    if (settingsBtn) {
+        if (id === 'all' || id === 'uncategorized') settingsBtn.classList.add('hidden');
+        else settingsBtn.classList.remove('hidden');
+    }
+
+    const headerActions = document.querySelector('.header-actions');
+    if (headerActions) {
+        const spellBtn = headerActions.querySelector('button:nth-child(3)'); 
+        if (spellBtn && spellBtn.innerText.includes('默写')) {
+            spellBtn.style.display = (type === 'notes') ? 'none' : 'inline-flex';
+        }
+    }
+    filterCards(); 
 }
 
-async function confirmCategory() {
-    const name = document.getElementById('new-category-input').value;
-    if (!name) return alert('请输入名称');
+function selectDashboard(element) {
+    document.getElementById('current-view-title').innerText = '数据看板';
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    if (element) element.classList.add('active');
+    const settingsBtn = document.getElementById('category-settings-btn');
+    if (settingsBtn) settingsBtn.classList.add('hidden');
+    showMainView('dashboard-view');
+    renderDashboard();
+}
+
+// --- 3. ⚙️ V2.0 大一统：文件夹设置中心 ---
+function openCategorySettingsModal() {
+    const cat = allCategories.find(c => c._id === currentCategoryId);
+    if (!cat) return;
+    document.getElementById('edit-cat-name').value = cat.name;
+    document.getElementById('edit-cat-type').value = cat.type || 'vocabulary';
+    const parentSelect = document.getElementById('edit-cat-parent');
+    parentSelect.innerHTML = '<option value="">(无) 作为顶级文件夹</option>';
+    allCategories.forEach(c => {
+        if (!c.parentId && c._id !== cat._id) {
+            parentSelect.innerHTML += `<option value="${c._id}" ${cat.parentId === c._id ? 'selected' : ''}>归属于 -> ${c.name}</option>`;
+        }
+    });
+    openModal('category-settings-modal');
+}
+
+async function submitCategorySettings() {
+    const name = document.getElementById('edit-cat-name').value;
+    const parentId = document.getElementById('edit-cat-parent').value;
+    const type = document.getElementById('edit-cat-type').value;
+    if (!name) return alert('名称不能为空！');
     try {
-        await fetch('/api/categories', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
-        });
-        closeAllModals();
-        loadCategories();
+        await fetch(`/api/categories/${currentCategoryId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, parentId, type }) });
+        closeAllModals(); await loadCategories();
+        document.getElementById('current-view-title').innerText = name;
+        const navItems = document.querySelectorAll('.nav-item');
+        let activeEl = null; navItems.forEach(el => { if(el.classList.contains('active')) activeEl = el; });
+        selectSidebarItem(currentCategoryId, name, type, activeEl);
     } catch (error) { console.error(error); }
 }
 
-// --- 3. 卡片管理 (增删改查) ---
+async function deleteCurrentCategory() {
+    if (!confirm('确定要彻底删除该文件夹吗？\n\n放心，里面的卡片不会丢失，会被自动移入【未分类区】池中保护！')) return;
+    try {
+        await fetch(`/api/categories/${currentCategoryId}`, { method: 'DELETE' });
+        closeAllModals();
+        await loadCategories();
+        await loadFlashcards();
+        
+        const uncatItem = document.querySelector('.uncat-nav');
+        if (uncatItem) {
+            selectSidebarItem('uncategorized', '未分类区', 'vocabulary', uncatItem);
+        } else {
+            const rootItem = document.querySelector('.root-nav');
+            selectSidebarItem('all', '所有卡片', 'vocabulary', rootItem);
+        }
+    } catch (error) { console.error(error); }
+}
+
+// --- 4. 卡片管理与渲染 ---
+async function confirmCategory() {
+    const name = document.getElementById('new-category-input').value;
+    const parentId = document.getElementById('parent-category-select') ? document.getElementById('parent-category-select').value : null;
+    const type = document.getElementById('category-type-select') ? document.getElementById('category-type-select').value : 'vocabulary';
+    if (!name) return alert('请输入名称');
+    try { await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, parentId: parentId || null, type }) }); closeAllModals(); loadCategories(); } catch (error) { console.error(error); }
+}
+
 async function loadFlashcards() {
     try {
         const response = await fetch('/api/flashcards');
         allCards = await response.json();
-        filterCards(); // 加载后应用过滤
+        filterCards(); 
+        const dashView = document.getElementById('dashboard-view');
+        if(dashView && !dashView.classList.contains('hidden')) renderDashboard(); 
     } catch (error) { console.error('加载卡片失败:', error); }
 }
 
-// ✨ 找回：分类点击与顶部搜索框的过滤逻辑
 function filterCards() {
     const searchInput = document.getElementById('search-input');
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
     
     const filtered = allCards.filter(card => {
-        // 1. 匹配左侧选中的分类
-        const matchesCategory = currentCategoryId === 'all' || (card.category && card.category._id === currentCategoryId);
-        // 2. 匹配搜索文本
+        let isMatch = false;
+        if (currentCategoryId === 'all') {
+            isMatch = true; 
+        } else if (currentCategoryId === 'uncategorized') {
+            isMatch = !card.category; 
+        } else if (!card.category) {
+            isMatch = false; 
+        } else {
+            const isDirectMatch = card.category._id === currentCategoryId;
+            const isChildMatch = card.category.parentId === currentCategoryId;
+            isMatch = isDirectMatch || isChildMatch;
+        }
+
         const matchesSearch = card.question.toLowerCase().includes(searchTerm) || card.answer.toLowerCase().includes(searchTerm);
-        
-        return matchesCategory && matchesSearch;
+        return isMatch && matchesSearch;
     });
     
     renderCards(filtered);
 }
 
-// ✨ 找回：带“待复习状态”和“编辑按钮”的卡片渲染
 function renderCards(cardsToRender) {
     const list = document.getElementById('flashcards-list');
     if (!list) return;
     const now = new Date();
     
     list.innerHTML = cardsToRender.map(card => {
-        const categoryName = card.category ? card.category.name : '未分类';
+        const categoryName = card.category ? card.category.name : '未分类区';
         const reviewDate = card.nextReviewDate ? new Date(card.nextReviewDate) : now;
         const isDue = reviewDate <= now;
         
+        // 纯 SVG 高级徽章
+        const stageIcon = card.stage >= 1 
+            ? `<span style="display:inline-flex; align-items:center; gap:4px; color:#d97706;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 可默写</span>` 
+            : `<span style="display:inline-flex; align-items:center; gap:4px; color:#718096;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> 待进阶</span>`;
+
         const statusHtml = isDue 
-            ? '<span style="color: #ed8936; font-size: 0.85rem; margin-left: 8px; font-weight: bold;">🔥 待复习</span>' 
-            : `<span style="color: #48bb78; font-size: 0.85rem; margin-left: 8px; font-weight: bold;">✅ ${reviewDate.getMonth()+1}月${reviewDate.getDate()}日</span>`;
+            ? `<span style="color: #e53e3e; font-size: 0.85rem; margin-left: 8px; font-weight: bold; display:inline-flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg> 待复习</span>` 
+            : `<span style="color: #48bb78; font-size: 0.85rem; margin-left: 8px; font-weight: bold; display:inline-flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> ${reviewDate.getMonth()+1}月${reviewDate.getDate()}日</span>`;
 
         return `
-            <div class="card-item">
-                <strong>Q: ${card.question}</strong>
-                <p>A: ${card.answer}</p>
-                <small style="color: #a0aec0;">分类: ${categoryName} ${statusHtml}</small>
-                <div class="card-actions">
-                    <button onclick="editCard('${card._id}')">✏️ 编辑</button>
-                    <button onclick="deleteCard('${card._id}')">🗑️ 删除</button>
+            <div class="card-item" style="padding: 20px; border-radius: 16px; background: white; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px;">
+                <strong style="color: #1e293b; font-size: 1.1rem;">Q: ${card.question}</strong>
+                <p style="color: #475569; margin: 0;">A: ${card.answer}</p>
+                <small style="color: #a0aec0; display: flex; align-items: center; gap: 8px; margin-top: 4px;">${categoryName} | ${stageIcon} ${statusHtml}</small>
+                <div class="card-actions" style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button onclick="editCard('${card._id}')" style="display:inline-flex; align-items:center; gap:4px; padding:6px 12px; border-radius:6px; border:1px solid #e2e8f0; background:white; color:#4a5568; cursor:pointer; font-size:0.85rem; transition:0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='white'">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 
+                        编辑
+                    </button>
+                    <button onclick="deleteCard('${card._id}')" style="display:inline-flex; align-items:center; gap:4px; padding:6px 12px; border-radius:6px; border:1px solid #fee2e2; background:#fff5f5; color:#e53e3e; cursor:pointer; font-size:0.85rem; transition:0.2s;" onmouseover="this.style.backgroundColor='#fed7d7'" onmouseout="this.style.backgroundColor='#fff5f5'">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 
+                        删除
+                    </button>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// --- 4. 弹窗控制中心 ---
-function openAddCardModal() {
-    document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('add-card-modal').style.display = 'block';
+function renderDashboard() {
+    const elTotal = document.getElementById('dash-total-cards');
+    const elStage0 = document.getElementById('dash-stage0-cards');
+    const elStage1 = document.getElementById('dash-stage1-cards');
+    if (elTotal) elTotal.innerText = allCards.length;
+    if (elStage0) elStage0.innerText = allCards.filter(c => c.stage === 0).length;
+    if (elStage1) elStage1.innerText = allCards.filter(c => c.stage >= 1).length;
 }
 
-function openCategoryModal() {
-    document.getElementById('new-category-input').value = '';
-    document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('category-modal').style.display = 'block';
+// --- 5. 弹窗与增删改查 ---
+function openAddCardModal() { 
+    document.getElementById('modal-question').value = '';
+    document.getElementById('modal-answer').value = '';
+
+    const selectEl = document.getElementById('modal-category-select');
+    if (currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized') {
+        selectEl.value = currentCategoryId; 
+    } else {
+        selectEl.value = ""; 
+    }
+
+    document.getElementById('modal-overlay').style.display = 'block'; 
+    document.getElementById('add-card-modal').style.display = 'block'; 
 }
 
-function openBatchModal() {
-    document.getElementById('batch-input').value = '';
-    document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('batch-modal').style.display = 'block';
+function openBatchModal() { 
+    document.getElementById('batch-input').value = ''; 
+    
+    const selectEl = document.getElementById('batch-category-select');
+    if (currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized') {
+        selectEl.value = currentCategoryId;
+    } else {
+        selectEl.value = "";
+    }
+
+    document.getElementById('modal-overlay').style.display = 'block'; 
+    document.getElementById('batch-modal').style.display = 'block'; 
 }
 
-function closeAllModals() {
-    document.getElementById('modal-overlay').style.display = 'none';
-    document.querySelectorAll('.pro-modal').forEach(m => m.style.display = 'none');
-}
+function openCategoryModal() { document.getElementById('new-category-input').value = ''; document.getElementById('modal-overlay').style.display = 'block'; document.getElementById('category-modal').style.display = 'block'; }
+function closeAllModals() { document.getElementById('modal-overlay').style.display = 'none'; document.querySelectorAll('.pro-modal').forEach(m => m.style.display = 'none'); }
+function openModal(id) { document.getElementById('modal-overlay').style.display = 'block'; document.getElementById(id).style.display = 'block'; }
 
-// --- 5. 核心交互逻辑 (增改导) ---
 async function createFlashcardFromModal() {
     const question = document.getElementById('modal-question').value;
     const answer = document.getElementById('modal-answer').value;
-    const categoryId = document.getElementById('modal-category-select').value;
-
+    const categoryId = document.getElementById('modal-category-select').value || null;
     if (!question || !answer) return alert('请填写完整内容');
-
-    try {
-        const response = await fetch('/api/flashcards', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question, answer, categoryId })
-        });
-        if (response.ok) {
-            document.getElementById('modal-question').value = '';
-            document.getElementById('modal-answer').value = '';
-            closeAllModals();
-            loadFlashcards();
-        }
-    } catch (error) { console.error(error); }
+    try { await fetch('/api/flashcards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, answer, categoryId }) }); document.getElementById('modal-question').value = ''; document.getElementById('modal-answer').value = ''; closeAllModals(); loadFlashcards(); } catch (error) { console.error(error); }
 }
 
-// ✨ 找回：编辑卡片功能
 function editCard(id) {
     const card = allCards.find(c => c._id === id);
     if (!card) return;
     editingCardId = id;
-    
     document.getElementById('edit-question').value = card.question;
     document.getElementById('edit-answer').value = card.answer;
-    if (card.category) document.getElementById('edit-category-select').value = card.category._id;
-    
-    document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('edit-card-modal').style.display = 'block';
+    document.getElementById('edit-category-select').value = card.category ? card.category._id : '';
+    openModal('edit-card-modal');
 }
 
 async function updateCard() {
     const question = document.getElementById('edit-question').value;
     const answer = document.getElementById('edit-answer').value;
-    const categoryId = document.getElementById('edit-category-select').value;
-    
-    try {
-        await fetch(`/api/flashcards/${editingCardId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question, answer, categoryId })
-        });
-        closeAllModals();
-        loadFlashcards();
-    } catch (error) { console.error('更新失败:', error); }
+    let categoryId = document.getElementById('edit-category-select').value;
+    if (categoryId === "") categoryId = null; 
+    try { await fetch(`/api/flashcards/${editingCardId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, answer, categoryId }) }); closeAllModals(); loadFlashcards(); } catch (error) { console.error('更新失败:', error); }
 }
 
-async function deleteCard(id) {
-    if (!confirm('确定要删除这张卡片吗？')) return;
-    try {
-        await fetch(`/api/flashcards/${id}`, { method: 'DELETE' });
-        loadFlashcards();
-    } catch (error) { console.error(error); }
-}
+async function deleteCard(id) { if (confirm('确定要彻底删除这张卡片吗？')) { try { await fetch(`/api/flashcards/${id}`, { method: 'DELETE' }); loadFlashcards(); } catch (error) { console.error(error); } } }
 
-// ✨ 找回：批量导入功能
 async function confirmBatchImport() {
     const text = document.getElementById('batch-input').value;
-    const categoryId = document.getElementById('batch-category-select').value;
+    const categoryId = document.getElementById('batch-category-select').value || null;
     if(!text.trim()) return alert('请输入内容');
-
     const lines = text.split('\n');
     for (let line of lines) {
-        let parts = line.split('\t'); 
-        if (parts.length < 2) parts = line.split(/[|｜]/);
-        
-        if (parts.length >= 2) {
-            await fetch('/api/flashcards', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: parts[0].trim(), answer: parts[1].trim(), categoryId })
-            });
-        }
+        let parts = line.split('\t'); if (parts.length < 2) parts = line.split(/[|｜]/);
+        if (parts.length >= 2) { await fetch('/api/flashcards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: parts[0].trim(), answer: parts[1].trim(), categoryId }) }); }
     }
-    closeAllModals();
-    loadFlashcards();
+    closeAllModals(); loadFlashcards();
 }
 
-// --- 6. 预留：背诵与默写入口 ---
 // ==========================================
-// 📖 核心学习逻辑与全键盘监听 (完全复活版)
+// 📖 核心学习逻辑与全键盘监听
 // ==========================================
-
 let studyCards = []; let currentStudyIndex = 0;
 let spellCards = []; let currentSpellIndex = 0;
 
@@ -253,47 +407,45 @@ function speakWord(text, event) {
 }
 
 // --- 1. 背诵模式 ---
-// --- 1. 背诵模式 ---
-function startReciteMode() {
-    // ✨ 动态读取你设置的数量，如果没有设置就默认 20
+// ✨ 关键修复：名字与 HTML 一致
+function startStudyMode() {
     const limitInput = document.getElementById('study-limit');
     const maxCards = limitInput ? parseInt(limitInput.value) || 20 : 20;
-
     const now = new Date();
-    // 智能筛选：只学当前左侧选中的分类，并且到期的卡片
+    
     let dueCards = allCards.filter(card => {
         const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
-        const isMatch = currentCategoryId === 'all' || (card.category && card.category._id === currentCategoryId);
-        return date <= now && isMatch;
+        const isDue = date <= now;
+        
+        let isMatch = false;
+        if (currentCategoryId === 'all') {
+            isMatch = true;
+        } else if (currentCategoryId === 'uncategorized') {
+            isMatch = !card.category; 
+        } else if (card.category) {
+            isMatch = (card.category._id === currentCategoryId) || (card.category.parentId === currentCategoryId);
+        }
+        
+        return isDue && isMatch;
     });
 
-    if (dueCards.length === 0) return alert('🎉 太棒了！当前分类下没有需要复习的卡片！');
-
+    if (dueCards.length === 0) return alert('太棒了！当前分类下没有需要复习的卡片！');
     dueCards.sort((a, b) => (b.interval || 0) - (a.interval || 0) || Math.random() - 0.5);
-    
-    // ✨ 使用你自定义的数量进行截断
-    studyCards = dueCards.slice(0, maxCards); 
-    currentStudyIndex = 0;
-
-    showMainView('study-view');
-    renderStudyCard();
+    studyCards = dueCards.slice(0, maxCards); currentStudyIndex = 0;
+    showMainView('study-view'); renderStudyCard();
 }
 
 function renderStudyCard() {
-    if (currentStudyIndex >= studyCards.length) {
-        alert('🎉 恭喜你，完成了本次复习！');
-        return showMainView('manage-view');
-    }
+    if (currentStudyIndex >= studyCards.length) { alert('恭喜你，完成了本次复习！'); return showMainView('manage-view'); }
     const card = studyCards[currentStudyIndex];
-    document.getElementById('study-question').innerText = card.question;
-    document.getElementById('study-answer').innerText = card.answer;
+    document.getElementById('study-question').innerText = card.question; document.getElementById('study-answer').innerText = card.answer;
+    const cardInner = document.getElementById('card-inner'); if (cardInner) cardInner.classList.remove('is-flipped');
     
-    const cardInner = document.getElementById('card-inner');
-    if (cardInner) cardInner.classList.remove('is-flipped');
-
-    document.getElementById('study-progress-text').innerText = `当前第 ${currentStudyIndex + 1} 张 / 共 ${studyCards.length} 张`;
+    const centerProgress = document.getElementById('study-progress-center');
+    if (centerProgress) {
+        centerProgress.innerText = `${currentStudyIndex + 1} / ${studyCards.length}`;
+    }
     document.getElementById('progress-bar-fill').style.width = `${((currentStudyIndex + 1) / studyCards.length) * 100}%`;
-    document.getElementById('study-prev-btn').style.display = currentStudyIndex === 0 ? 'none' : 'inline-block';
 }
 
 function flipCard() { document.getElementById('card-inner').classList.toggle('is-flipped'); }
@@ -302,118 +454,109 @@ function prevStudyCard() { if (currentStudyIndex > 0) { currentStudyIndex--; ren
 
 async function submitReview(isKnown) {
     const currentCard = studyCards[currentStudyIndex];
-    try {
-        await fetch(`/api/flashcards/${currentCard._id}/review`, {
-            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isKnown })
-        });
-    } catch (e) { console.error('记录失败:', e); }
-    if (!isKnown) studyCards.push(currentCard); // 忘了就塞到队尾重背
+    try { await fetch(`/api/flashcards/${currentCard._id}/review`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isKnown }) }); } catch (e) {}
+    
+    // ✨ 核心修复：立刻更新本地数据，防止它再次阴魂不散地出现！
+    if (isKnown) {
+        // 答对了，强行把本地复习时间推迟到明天，并直接升 1 级！
+        currentCard.nextReviewDate = new Date(Date.now() + 86400000).toISOString(); 
+        currentCard.stage = (currentCard.stage || 0) + 1; 
+    } else {
+        studyCards.push(currentCard); // 答错塞回队尾
+    }
+    
     nextStudyCard();
 }
 function markAsKnown() { submitReview(true); }
 function markAsReview() { submitReview(false); }
 
-
-// --- 2. 默写模式 ---
 // --- 2. 默写模式 ---
 function startSpellMode() {
-    // ✨ 同样动态读取数量
     const limitInput = document.getElementById('study-limit');
     const maxCards = limitInput ? parseInt(limitInput.value) || 20 : 20;
-
     const now = new Date();
-    let dueCards = allCards.filter(card => {
-        const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
-        const isMatch = currentCategoryId === 'all' || (card.category && card.category._id === currentCategoryId);
-        return date <= now && isMatch;
-    });
-
-    if (dueCards.length === 0) return alert('🎉 太棒了！今天没有需要检验的卡片！');
-
-    dueCards.sort((a, b) => (b.interval || 0) - (a.interval || 0) || Math.random() - 0.5);
     
-    // ✨ 使用你自定义的数量
-    spellCards = dueCards.slice(0, maxCards);
-    currentSpellIndex = 0;
+    let dueCards = allCards.filter(card => {
+            // 1. 判断是否“到期” (SM-2 算法给出的下次复习时间 <= 当前时间)
+            const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
+            const isDue = date <= now; 
+            
+            // 2. 判断是否“有资格” (必须是背熟了的，stage >= 1)
+            const isReadyForSpell = card.stage >= 1; 
+            
+            // 3. 判断是否属于当前选中的分类
+            let isMatch = false;
+            if (currentCategoryId === 'all') {
+                isMatch = true;
+            } else if (currentCategoryId === 'uncategorized') {
+                isMatch = !card.category;
+            } else if (card.category) {
+                isMatch = (card.category._id === currentCategoryId) || (card.category.parentId === currentCategoryId);
+            }
+            
+            // ✨ 关键修复：必须同时满足“有资格”且“到期了”，才会被抓出来默写！
+            return isReadyForSpell && isMatch && isDue; 
+        });
 
-    showMainView('spell-view');
+    if (dueCards.length === 0) return alert('提示：当前没有[可默写]的单词！\n\n原因可能是：\n1. 单词都已复习完\n2. 单词还处于初级阶段，请先在[背诵模式]里将它们背对 1 次，才能解锁默写哦！');
+    dueCards.sort((a, b) => (b.interval || 0) - (a.interval || 0) || Math.random() - 0.5);
+    spellCards = dueCards.slice(0, maxCards); 
+    currentSpellIndex = 0;
+    showMainView('spell-view'); 
     renderSpellCard();
 }
 
 function renderSpellCard() {
-    if (currentSpellIndex >= spellCards.length) {
-        alert('🏆 恭喜你，完成了所有的拼写检验！');
-        return showMainView('manage-view');
-    }
+    if (currentSpellIndex >= spellCards.length) { alert('恭喜你，完成了所有的拼写检验！'); return showMainView('manage-view'); }
     const card = spellCards[currentSpellIndex];
     document.getElementById('spell-question').innerText = card.question || '（空问题）';
+    const inputEl = document.getElementById('spell-input'); inputEl.value = ''; inputEl.disabled = false; inputEl.focus(); 
+    document.getElementById('spell-feedback').innerHTML = ''; document.getElementById('spell-next-control').classList.add('hidden');
     
-    const inputEl = document.getElementById('spell-input');
-    inputEl.value = ''; inputEl.disabled = false; inputEl.focus(); 
-    
-    document.getElementById('spell-feedback').innerHTML = '';
-    document.getElementById('spell-next-control').classList.add('hidden');
-    document.getElementById('spell-progress-text').innerText = `当前第 ${currentSpellIndex + 1} 张 / 共 ${spellCards.length} 张`;
-    document.getElementById('spell-prev-btn').style.display = currentSpellIndex === 0 ? 'none' : 'inline-block';
+    document.getElementById('spell-prev-btn').style.display = currentSpellIndex === 0 ? 'none' : 'inline-flex';
 }
 
 function prevSpellCard() { if (currentSpellIndex > 0) { currentSpellIndex--; renderSpellCard(); } }
 function nextSpellCard() { currentSpellIndex++; renderSpellCard(); }
-
-function handleSpellEnter(event) {
-    if (event.key === 'Enter') {
-        const inputEl = document.getElementById('spell-input');
-        if (inputEl.disabled) nextSpellCard(); else checkSpelling();
-    }
-}
+function handleSpellEnter(event) { if (event.key === 'Enter') { const inputEl = document.getElementById('spell-input'); if (inputEl.disabled) nextSpellCard(); else checkSpelling(); } }
 
 async function checkSpelling() {
     const inputEl = document.getElementById('spell-input');
     if (inputEl.disabled) return nextSpellCard(); 
-
     const inputStr = inputEl.value.trim().toLowerCase(); 
-    if (inputStr === '') {
-        inputEl.style.borderColor = '#e53e3e'; 
-        inputEl.placeholder = '⚠️ 请先输入单词哦！';
-        setTimeout(() => { inputEl.style.borderColor = 'transparent'; inputEl.placeholder = '请在此输入答案...'; }, 1500);
-        return; 
-    }
+    if (inputStr === '') { inputEl.style.borderColor = '#e53e3e'; inputEl.placeholder = '请先输入单词哦！'; setTimeout(() => { inputEl.style.borderColor = 'transparent'; inputEl.placeholder = '请在此输入答案...'; }, 1500); return; }
 
     const card = spellCards[currentSpellIndex];
     const answerStr = card.answer.trim().toLowerCase();  
-    const feedbackEl = document.getElementById('spell-feedback');
-    inputEl.disabled = true; 
-
+    const feedbackEl = document.getElementById('spell-feedback'); inputEl.disabled = true; 
     const isCorrect = (inputStr === answerStr);
 
     if (isCorrect) {
-        feedbackEl.innerHTML = '✅ <strong>拼写正确！</strong> 完全掌握！';
-        feedbackEl.style.color = '#48bb78';
-        speakWord(card.answer, null); 
+        feedbackEl.innerHTML = '<div style="display:flex;align-items:center;gap:6px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#48bb78" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>拼写正确！完全掌握！</strong></div>'; 
+        feedbackEl.style.color = '#48bb78'; speakWord(card.answer, null); 
+        
+        // ✨ 核心修复：拼写正确，推迟到明天复习，并继续升级！
+        card.nextReviewDate = new Date(Date.now() + 86400000).toISOString();
+        card.stage = (card.stage || 0) + 1;
     } else {
-        feedbackEl.innerHTML = `❌ <strong>拼写错误。</strong><br><br>你的输入：<span style="color:red; text-decoration: line-through;">${inputStr}</span><br>正确答案：<span style="color:green;">${card.answer}</span>`;
-        feedbackEl.style.color = '#e53e3e';
+        feedbackEl.innerHTML = `<div style="display:flex;align-items:flex-start;gap:6px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" stroke-width="2.5" style="flex-shrink:0;margin-top:2px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> <div><strong>拼写错误。卡片已降级，请重新通过背诵找回语感。</strong><br><br>你的输入：<span style="color:red; text-decoration: line-through;">${inputStr}</span><br>正确答案：<span style="color:green;">${card.answer}</span></div></div>`;
+        feedbackEl.style.color = '#e53e3e'; 
         spellCards.push(card); 
+        
+        // ✨ 核心修复：拼写错误，无情降级！
+        card.stage = Math.max(0, (card.stage || 0) - 1);
     }
-
-    try {
-        await fetch(`/api/flashcards/${card._id}/review`, {
-            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isKnown: isCorrect })
-        });
-    } catch(e) {}
-
+    try { await fetch(`/api/flashcards/${card._id}/review`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isKnown: isCorrect }) }); } catch(e) {}
     document.getElementById('spell-next-control').classList.remove('hidden');
 }
 
-// --- 3. 全局键盘快捷键 ---
+// --- 6. 全局键盘快捷键 ---
 document.addEventListener('keydown', function(event) {
     const activeTag = document.activeElement.tagName.toLowerCase();
     const isTyping = (activeTag === 'input' || activeTag === 'textarea');
     const isSpellInput = (document.activeElement.id === 'spell-input');
     if (isTyping && !isSpellInput) return;
-
-    const studyArea = document.getElementById('study-view');
-    const spellArea = document.getElementById('spell-view');
+    const studyArea = document.getElementById('study-view'); const spellArea = document.getElementById('spell-view');
 
     if (studyArea && !studyArea.classList.contains('hidden')) {
         switch(event.code) {
@@ -424,19 +567,11 @@ document.addEventListener('keydown', function(event) {
             case 'Digit2': markAsKnown(); break;
         }
     }
-
     if (spellArea && !spellArea.classList.contains('hidden')) {
         switch(event.code) {
             case 'ArrowLeft': prevSpellCard(); break;
             case 'ArrowRight': nextSpellCard(); break;
-            case 'Enter': 
-            case 'NumpadEnter':
-                const inputEl = document.getElementById('spell-input');
-                if (inputEl && inputEl.disabled) {
-                    event.preventDefault(); 
-                    nextSpellCard();
-                }
-                break;
+            case 'Enter': case 'NumpadEnter': const inputEl = document.getElementById('spell-input'); if (inputEl && inputEl.disabled) { event.preventDefault(); nextSpellCard(); } break;
         }
     }
 });
