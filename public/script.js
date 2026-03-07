@@ -499,16 +499,105 @@ async function updateCard() {
 
 async function deleteCard(id) { if (confirm('确定要彻底删除这张卡片吗？')) { try { await fetch(`/api/flashcards/${id}`, { method: 'DELETE' }); loadFlashcards(); } catch (error) { console.error(error); } } }
 
-async function confirmBatchImport() {
-    const text = document.getElementById('batch-input').value;
-    const categoryId = document.getElementById('batch-category-select').value || null;
-    if(!text.trim()) return alert('请输入内容');
-    const lines = text.split('\n');
-    for (let line of lines) {
-        let parts = line.split('\t'); if (parts.length < 2) parts = line.split(/[|｜]/);
-        if (parts.length >= 2) { await fetch('/api/flashcards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: parts[0].trim(), answer: parts[1].trim(), categoryId }) }); }
+// ✨ 完美适配你 UI 的批量导入核心逻辑
+// ✨ 终极批量导入：智能抓取分类 + 暴力过滤垃圾字符 + 报错透传
+async function confirmBatchImport(event) {
+    // 1. 兼容抓取输入框（无论你 HTML 里叫 batch-input 还是 import-text，统统拿下）
+    const textInput = document.getElementById('batch-input') || document.getElementById('import-text');
+    // 兼容抓取下拉分类框
+    const categorySelect = document.getElementById('modal-category-select') || document.getElementById('import-category-select');
+    
+    if (!textInput || !textInput.value.trim()) {
+        alert("⚠️ 请输入需要导入的单词！");
+        return;
     }
-    closeAllModals(); loadFlashcards();
+
+    const text = textInput.value.trim();
+    const lines = text.split('\n');
+    const newCards = [];
+    
+    // 2. 智能确定要存入哪个文件夹
+    let categoryId = null;
+    if (categorySelect && categorySelect.value) {
+        categoryId = categorySelect.value; // 优先取你弹窗里选的文件夹
+    } else if (currentCategoryId && currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized') {
+        categoryId = currentCategoryId; // 备用：取你左侧高亮的文件夹
+    }
+
+    // 3. 强力解析引擎
+    for (let line of lines) {
+        line = line.trim();
+        // 🔪 过滤 1：跳过空行、表头
+        if (!line || line.toLowerCase().includes('english') || line.includes('中文')) continue; 
+        
+        // 🔪 过滤 2 (关键修复)：暴力踢掉全都是减号和竖线的排版行 (例如 |---------|------|)
+        if (/^[\-\|\s]+$/.test(line)) continue;
+
+        let parts = [];
+        if (line.startsWith('|') && line.endsWith('|')) {
+            parts = line.split('|').map(p => p.trim()).filter(p => p !== ''); 
+        } else if (line.includes('|')) {
+            parts = line.split('|').map(p => p.trim());
+        } else {
+            parts = line.split(/\t+| {2,}| - |:/); 
+        }
+
+        // ... 前面的解析代码保持不变 ...
+        
+        if (parts.length >= 2) {
+            newCards.push({
+                question: parts[0],
+                answer: parts[1],
+                categoryId: categoryId // 🔴 关键修复：把 category 改成了 categoryId！和你的单张添加保持绝对一致！
+            });
+        }
+    }
+
+    if (newCards.length === 0) {
+        alert("❌ 没有识别到有效的卡片！请检查格式是否正确。");
+        return;
+    }
+
+    // 4. 发送给后端并记录成功率
+    try {
+        let successCount = 0;
+        for (const card of newCards) {
+            const response = await fetch('/api/flashcards', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(card)
+            });
+            
+            if (response.ok) {
+                successCount++;
+            } else {
+                // 🕵️‍♂️ 抓虫神器：如果后端还是拒收，直接把后端的“骂人话”打印出来！
+                const errData = await response.json().catch(()=>({}));
+                console.error("后端拒绝了这张卡:", card, "原因:", errData);
+            }
+        }
+
+        alert(`🎉 解析了 ${newCards.length} 张，实际成功存入数据库 ${successCount} 张！`);
+        
+        // 5. 收尾：关弹窗、清数据、重渲染
+        if (successCount > 0) {
+            textInput.value = ''; 
+            
+            // 兼容各种关弹窗的方法
+            if (typeof closeAllModals === 'function') {
+                closeAllModals(); 
+            } else {
+                const modal = textInput.closest('div[style*="position: fixed"]');
+                if (modal) modal.style.display = 'none';
+            }
+            
+            if (typeof renderCards === 'function') renderCards(); 
+        }
+
+    } catch (error) {
+        console.error("批量导入网络报错:", error);
+        alert("⚠️ 导入过程出现网络异常，请看控制台。");
+    }
 }
 
 // ==========================================
