@@ -185,20 +185,31 @@ function refreshSelectOptions() {
 }
 
 
-// ✨ 1. 修复文件夹展开/折叠功能
-function toggleFolder(event, folderId) {
-    event.stopPropagation(); // 关键：拦截点击，防止触发“选中文件夹”
+// ✨ 极速响应版：修复文件夹展开/折叠
+function toggleFolder(folderId, event) {
+    // 1. 兼容性拦截：确保 event 存在并阻止冒泡
+    const e = event || window.event;
+    if (e) {
+        if (e.stopPropagation) e.stopPropagation();
+        else e.cancelBubble = true;
+    }
+
     const childrenContainer = document.getElementById(`children-of-${folderId}`);
-    const arrowIcon = event.currentTarget; 
+    const arrowContainer = e.currentTarget; 
     
-    if (childrenContainer.style.display === 'none') {
-        childrenContainer.style.display = 'block';
+    if (!childrenContainer) return;
+
+    // 2. 切换状态：不再操作 innerHTML，改用 CSS 类名控制
+    const isHidden = childrenContainer.classList.contains('folder-hidden');
+    
+    if (isHidden) {
+        childrenContainer.classList.remove('folder-hidden');
+        arrowContainer.classList.add('arrow-rotated'); // 旋转箭头
         collapsedFolders.delete(folderId);
-        arrowIcon.innerHTML = icons.arrowDown; // 变向下箭头
     } else {
-        childrenContainer.style.display = 'none';
+        childrenContainer.classList.add('folder-hidden');
+        arrowContainer.classList.remove('arrow-rotated'); // 恢复箭头
         collapsedFolders.add(folderId);
-        arrowIcon.innerHTML = icons.arrowRight; // 变向右箭头
     }
 }
 
@@ -1599,6 +1610,21 @@ function injectQuickCategoryModal() {
 }
 
 function openQuickCategoryModal() {
+    const sourceModalId = window.quickCreateSourceModal || 'add-card-modal';
+    const baseModal = document.getElementById(sourceModalId);
+    
+    if (baseModal) {
+        // 🌟 针对手机端：模糊度调低（防止GPU过载），仅变暗即可
+        baseModal.style.filter = 'brightness(0.6)'; 
+        baseModal.style.pointerEvents = 'none';
+    }
+
+    // 🌟 核心：确保快捷弹窗在最最最上层
+    const quickModal = document.getElementById('quick-category-modal');
+    const quickOverlay = document.getElementById('quick-category-overlay');
+
+    quickModal.style.zIndex = '20000';
+    quickOverlay.style.zIndex = '19999';
     const addCardModal = document.getElementById('add-card-modal');
     addCardModal.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
     addCardModal.style.filter = 'blur(6px) brightness(0.85)';

@@ -144,3 +144,59 @@ body {
         gap: 15px !important;
     }
 }
+
+
+/* 子文件夹容器：默认状态 */
+.folder-children {
+    display: block; /* 保持 DOM 存在 */
+    transition: all 0.2s ease-out;
+}
+
+/* 隐藏状态：手机端用高度和透明度切换比 display 更顺滑 */
+.folder-hidden {
+    display: none !important;
+}
+
+/* 箭头旋转特效：不再替换图标，直接旋转原有的箭头 */
+.folder-arrow {
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+
+.arrow-rotated {
+    transform: rotate(90deg); /* 假设你默认是向右，转 90 度向下 */
+}
+
+/* ✨ 手机端专用 UI 优化 */
+@media (max-width: 600px) {
+    /* 1. 标题栏改为上下两排 */
+    .header-content { 
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px;
+    }
+
+    /* 2. 标题和按钮各占一行 */
+    .header-top-row {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        align-items: center;
+    }
+
+    /* 3. 搜索框横向撑满 */
+    .search-container {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    .search-input {
+        width: 100% !important;
+    }
+
+    /* 4. 批量操作栏按钮文字简化，防止重叠 */
+    .batch-actions-bar button {
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+    }
+}

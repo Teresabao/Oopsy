@@ -70,7 +70,7 @@ This project is licensed under the MIT License.
 3. `git push`
 
 git add . 
-git commit -m "新增卡片导出功能"         
+git commit -m "调整手机 UI 界面 test"         
 git push   
 
 ## 其它
