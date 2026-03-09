@@ -69,9 +69,9 @@ This project is licensed under the MIT License.
 2. `git commit -m "备份描述"`
 3. `git push`
 
-git add . 
-git commit -m "调整手机 UI 界面 test"         
-git push   
+git add .
+git commit -m "feat(Oopsy): 重构移动端丝滑抽屉与极简图标，彻底打通默写闭环"
+git push 
 
 ## 其它
 - 启动服务器：`npm run dev` 或 `node server.ts`

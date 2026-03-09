@@ -1,5 +1,5 @@
 /* ==========================================
-   🏛️ Flashcard Pro - 核心样式库
+   🏛️ Flashcard Pro - 核心样式库 (终极重构版)
    ========================================== */
 body {
     margin: 0;
@@ -22,12 +22,9 @@ body {
 }
 .sidebar-logo { font-size: 1.5rem; font-weight: 800; color: #2b6cb0; padding: 0 24px 20px; border-bottom: 1px solid #edf2f7; margin-bottom: 10px; }
 .nav-menu { list-style: none; padding: 0 12px; margin: 0; flex: 1; overflow-y: auto; }
-.nav-item { padding: 12px 16px; margin-bottom: 4px; border-radius: 8px; color: #4a5568; cursor: pointer; font-weight: 500; transition: all 0.2s; }
-.nav-item:hover { background: #edf2f7; }
-.nav-item.active { background: #ebf8ff; color: #3182ce; font-weight: 600; }
 
 /* --- 2. 右侧主操作区 --- */
-.main-content { flex: 1; display: flex; flex-direction: column; background: #f4f7f9; height: 100vh; }
+.main-content { flex: 1; display: flex; flex-direction: column; background: #f4f7f9; height: 100vh; position: relative; } /* 添加 relative 以便定位遮罩 */
 .main-header { background: #ffffff; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
 .main-header h2 { margin: 0; font-size: 1.5rem; color: #1a202c; }
 .header-actions { display: flex; gap: 12px; }
@@ -66,9 +63,9 @@ body {
 .spell-card { background: white; padding: 50px 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); text-align: center; max-width: 480px; margin: 0 auto; border: 1px solid #edf2f7; }
 #spell-question { font-size: 2.2rem; font-weight: 700; color: #1a202c; margin-bottom: 24px; }
 #spell-input { width: 100%; box-sizing: border-box; padding: 18px 20px; font-size: 1.3rem; color: #2d3748; background: #edf2f7; border: 2px solid transparent; border-radius: 16px; text-align: center; transition: all 0.3s ease; margin-bottom: 24px; }
-#spell-input:focus { background: #ffffff; border-color: #4299e1; outline: none; box-shadow: 0 0 0 4px rgba(66,153,225,0.15); }
+#spell-input:focus { background: #ffffff; border-color: #3b82f6; outline: none; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); } /* 统一使用莫兰迪蓝 */
 #spell-input:disabled { background: #f7fafc; color: #a0aec0; }
-.check-btn { border: none; border-radius: 16px; padding: 16px 24px; font-weight: 600; cursor: pointer; background: #4299e1; color: white; font-size: 1.2rem; width: 100%; transition: 0.2s; }
+.check-btn { border: none; border-radius: 16px; padding: 16px 24px; font-weight: 600; cursor: pointer; background: #3b82f6; color: white; font-size: 1.2rem; width: 100%; transition: 0.2s; }
 .speak-btn { background: #f7fafc; border: none; border-radius: 50%; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-left: 10px; cursor: pointer;}
 .feedback-text { margin-top: 20px; font-size: 1.2rem; line-height: 1.6; }
 
@@ -76,43 +73,49 @@ body {
 .nav-item { padding: 10px 14px; margin-bottom: 6px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #475569; font-weight: 500; transition: all 0.2s ease; font-size: 0.95rem; }
 .nav-item.is-child { margin-left: 20px; border-left: 2px solid #e2e8f0; border-radius: 0 8px 8px 0; }
 .nav-item:hover { background-color: #f1f5f9; color: #0f172a; }
-.nav-item.active { background-color: #f0f4ff !important; color: #4f46e5 !important; border-left: 3px solid #4f46e5; border-radius: 0 8px 8px 0; font-weight: 600; }
+.nav-item.active { background-color: #eff6ff !important; color: #3b82f6 !important; border-left: 3px solid #3b82f6; border-radius: 0 8px 8px 0; font-weight: 600; } /* 统一使用莫兰迪蓝 */
 .nav-icon { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
-.toggle-arrow { cursor: pointer; padding: 4px; border-radius: 4px; color: #94a3b8; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
+
+/* 箭头与文件夹动画 */
+.toggle-arrow { cursor: pointer; padding: 4px; border-radius: 4px; color: #94a3b8; transition: transform 0.2s ease-in-out; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
 .toggle-arrow:hover { background-color: #e2e8f0; color: #475569; }
+.arrow-rotated { transform: rotate(90deg) !important; } /* 向下旋转 */
+.folder-children { display: block; transition: all 0.2s ease-out; }
+.folder-hidden { display: none !important; }
+
 .folder-actions { opacity: 0; transition: opacity 0.2s ease; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #94a3b8; }
 .nav-item:hover .folder-actions { opacity: 1; }
-.folder-actions:hover { background-color: #e2e8f0; color: #4f46e5; }
+.folder-actions:hover { background-color: #e2e8f0; color: #3b82f6; }
+
 
 /* ==========================================
-   📱 7. 移动端终极覆盖响应式补丁 (千万不能删)
+   📱 7. 移动端终极覆盖响应式补丁 (纯净抽屉版)
    ========================================== */
 @media (max-width: 768px) {
     /* 1. 强制显示汉堡按钮 */
     #mobile-menu-btn { display: block !important; }
 
-    /* 2. 侧边栏：强行拔出并藏在屏幕左边外侧 */
+    /* 2. 完美的抽屉式侧边栏 */
     .sidebar {
         position: fixed !important;
         top: 0 !important;
-        /* 1. 将 left 固定在 0，通过 transform 移出屏幕 */
-        left: 0 !important; 
-        transform: translateX(-110%) !important; 
-        
+        left: -100% !important; /* 默认完全隐藏 */
         height: 100vh !important; 
         width: 280px !important;
         z-index: 2000 !important; 
         background-color: white !important;
-        
-        /* 2. 这里的 transition 改为监听 transform */
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        
-        box-shadow: 5px 0 20px rgba(0,0,0,0.15) !important;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; /* 丝滑滑出 */
+        box-shadow: 4px 0 15px rgba(0,0,0,0.1) !important;
     }
 
-    /* 3. 激活状态也对应修改 */
+    /* 3. 抽屉呼出状态 */
     .sidebar.mobile-active {
-        transform: translateX(0) !important;
+        left: 0 !important;
+    }
+    
+    /* 确保手机端遮罩层层级正确 */
+    #mobile-overlay {
+        z-index: 1999 !important; 
     }
 
     /* 4. 修复主内容区标题和顶部按钮排版 */
@@ -140,63 +143,90 @@ body {
     /* 5. 卡片与内容区调整 */
     .content-area { padding: 15px !important; }
     .cards-grid {
-        grid-template-columns: 1fr !important; /* 强制单列 */
+        grid-template-columns: 1fr !important; /* 强制单列，防止拥挤 */
         gap: 15px !important;
     }
 }
 
-
-/* 子文件夹容器：默认状态 */
-.folder-children {
-    display: block; /* 保持 DOM 存在 */
-    transition: all 0.2s ease-out;
-}
-
-/* 隐藏状态：手机端用高度和透明度切换比 display 更顺滑 */
-.folder-hidden {
-    display: none !important;
-}
-
-/* 箭头旋转特效：不再替换图标，直接旋转原有的箭头 */
-.folder-arrow {
-    transition: transform 0.2s ease;
-    display: inline-block;
-}
-
-.arrow-rotated {
-    transform: rotate(90deg); /* 假设你默认是向右，转 90 度向下 */
-}
-
-/* ✨ 手机端专用 UI 优化 */
+/* ✨ 手机端极小屏幕 UI 彻底重排 (针对 iPhone SE 等) */
 @media (max-width: 600px) {
-    /* 1. 标题栏改为上下两排 */
-    .header-content { 
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 12px;
-    }
+    .header-content { flex-direction: column !important; padding: 12px !important; gap: 10px; }
+    .header-top-row { display: flex; justify-content: space-between; width: 100%; align-items: center; }
+    .search-container { width: 100% !important; margin: 0 !important; }
+    .search-input { width: 100% !important; height: 42px !important; }
+    #batch-action-bar button { padding: 8px 10px !important; font-size: 11px !important; gap: 4px !important; }
+}
 
-    /* 2. 标题和按钮各占一行 */
-    .header-top-row {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-        align-items: center;
-    }
+/* 🌟 极速建档中心手机端 Z-index 压制 */
+#quick-category-modal { z-index: 10001 !important; }
+#quick-category-overlay { z-index: 10000 !important; }
 
-    /* 3. 搜索框横向撑满 */
-    .search-container {
-        width: 100% !important;
-        margin: 0 !important;
+/* ==========================================
+   ✨ 顶部极简图标按钮区 - 悬浮动效与移动端适配
+   ========================================== */
+
+/* 1. 电脑端高级悬浮动效：鼠标放上去微微上浮 + 柔和阴影 */
+.header-actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 2. 📱 手机端极限压缩：在小屏幕上自动微缩，绝不换行、绝不拥挤！ */
+@media (max-width: 600px) {
+    .header-actions { 
+        gap: 6px !important; /* 缩小按钮间距 */
+    }
+    .header-actions button { 
+        width: 34px !important;  /* 按钮整体微缩 */
+        height: 34px !important; 
+    }
+    .header-actions button svg {
+        width: 18px !important;  /* 内部图标跟随微缩 */
+        height: 18px !important;
     }
     
-    .search-input {
-        width: 100% !important;
+    /* 左侧“本次复习 XX 张”的胶囊在极小屏幕下稍微变紧凑 */
+    #study-limit {
+        width: 30px !important;
+        font-size: 0.9rem !important;
+    }
+}
+
+/* 修复底部悬浮操作舱文字被挤成竖排的问题 */
+#batch-action-bar {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important; /* 屏幕太窄时允许内部微微滑动，绝不折行 */
+}
+#batch-action-bar div, 
+#batch-action-bar button {
+    white-space: nowrap !important; /* 强制所有按钮文字不换行 */
+    flex-shrink: 0 !important;      /* 禁止按钮被挤压变形 */
+}
+
+/* 彻底消除手机端点击菜单时的系统高亮和文字误选 */
+.nav-item {
+    -webkit-tap-highlight-color: transparent !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+/* ==========================================
+   🚨 彻底斩断移动端 Hover 双击陷阱 (解决需点两下 Bug)
+   ========================================== */
+@media (max-width: 768px) {
+    /* 1. 强行让右侧的操作图标（+号）在手机端永远保持可见，不再等待 hover 触发 */
+    .folder-actions {
+        opacity: 1 !important; 
+        color: #cbd5e1 !important; /* 保持淡淡的颜色，不喧宾夺主 */
     }
 
-    /* 4. 批量操作栏按钮文字简化，防止重叠 */
-    .batch-actions-bar button {
-        padding: 8px 10px !important;
-        font-size: 12px !important;
+    /* 2. 杀掉整个菜单项的 hover 背景色变幻，彻底阻止浏览器拦截第一下点击 */
+    .nav-item:hover {
+        background-color: transparent !important; 
+    }
+    
+    /* 确保激活状态的底色依然坚挺 */
+    .nav-item.active {
+        background-color: #eff6ff !important;
     }
 }
