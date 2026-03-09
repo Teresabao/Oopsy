@@ -277,7 +277,22 @@ function selectSidebarItem(id, title, type, element) {
                 settingsBtn.classList.add('hidden');
             }
         }
-
+        // ==========================================
+        // 🌟 核心魔法：根据文件夹类型，动态隐藏“默写”按钮！(终极防弹版)
+        // ==========================================
+        // 我们不找 ID 了，直接通过 onclick 属性精准狙击！
+        const spellBtn = document.querySelector('button[onclick*="startSpellMode"]'); 
+        
+        if (spellBtn) {
+            if (type === 'notes') {
+                // 如果是笔记夹，直接让默写按钮人间蒸发！
+                spellBtn.style.display = 'none';
+            } else {
+                // 如果是单词本，恢复显示 (注意：这里用空字符串 '' 可以让它恢复默认的 CSS 布局，比 inline-flex 更安全)
+                spellBtn.style.display = ''; 
+            }
+        }
+        // ==========================================
         showMainView('manage-view'); 
         renderCards();
 
@@ -568,13 +583,170 @@ function renderCards(cardsToRender = null) {
     }).join('');
 }
 
+// ==========================================
+// 🧠 Oopsy 核心记忆引擎 (Spaced Repetition V2)
+// ==========================================
+const REVIEW_INTERVALS = [0.5, 1, 2, 4, 7, 15, 30]; // 艾宾浩斯间隔天数
+
+function processCardMemory(card, isCorrect, isSpellMode = false) {
+    if (typeof card.stage !== 'number') card.stage = 0;
+
+    if (isCorrect) {
+        // 🎯 核心优化：区分奖励机制！
+        if (isSpellMode) {
+            // 默写拼对：主动记忆信号极其强烈，直接跨级！连升 2 级！
+            card.stage = Math.min(card.stage + 2, REVIEW_INTERVALS.length - 1);
+        } else {
+            // 背诵认对：被动识别信号，稳扎稳打升 1 级。
+            card.stage = Math.min(card.stage + 1, REVIEW_INTERVALS.length - 1);
+        }
+    } else {
+        // 惩罚机制保持不变
+        if (isSpellMode) {
+            card.stage = Math.max(0, card.stage - 1); // 默写手滑：温柔降级退 1 级
+        } else {
+            card.stage = 0; // 背诵毫无印象：残酷清零打回原形
+        }
+    }
+
+    const daysToAdd = REVIEW_INTERVALS[card.stage];
+    const nextDate = new Date();
+    
+    if (card.stage === 0) {
+        nextDate.setDate(nextDate.getDate() + 1);
+        nextDate.setHours(4, 0, 0, 0); // 降级卡片，明天凌晨4点刷新
+    } else {
+        nextDate.setTime(nextDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000); // 正常推迟
+    }
+
+    card.nextReviewDate = nextDate.toISOString();
+    updateStreak(); // 更新打卡
+    return card;
+}
+
+function updateStreak() {
+    const now = new Date();
+    const todayStr = now.toDateString();
+    let lastActive = localStorage.getItem('oopsy_last_active');
+    let streak = parseInt(localStorage.getItem('oopsy_streak_days')) || 0;
+
+    if (lastActive === todayStr) return; // 今天已打卡
+
+    if (lastActive) {
+        const lastDate = new Date(lastActive);
+        const diffDays = Math.ceil(Math.abs(now - lastDate) / (1000 * 60 * 60 * 24)); 
+        if (diffDays === 1) streak += 1;
+        else if (diffDays > 1) streak = 1; // 断签清零
+    } else {
+        streak = 1;
+    }
+
+    localStorage.setItem('oopsy_last_active', todayStr);
+    localStorage.setItem('oopsy_streak_days', streak);
+}
+
+// ==========================================
+// 📊 首页数据引擎与智能推荐
+// ==========================================
 function renderDashboard() {
+    const now = new Date();
+    const totalCards = allCards.length;
+    const masteredCards = allCards.filter(c => c.stage >= 1).length;
+    const dueCards = allCards.filter(card => {
+        const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
+        return date <= now;
+    }).length;
+    let streakDays = localStorage.getItem('oopsy_streak_days') || 0;
+
     const elTotal = document.getElementById('dash-total-cards');
-    const elStage0 = document.getElementById('dash-stage0-cards');
-    const elStage1 = document.getElementById('dash-stage1-cards');
-    if (elTotal) elTotal.innerText = allCards.length;
-    if (elStage0) elStage0.innerText = allCards.filter(c => c.stage === 0 || !c.stage).length;
-    if (elStage1) elStage1.innerText = allCards.filter(c => c.stage >= 1).length;
+    const elMastered = document.getElementById('dash-mastered-cards');
+    const elDue = document.getElementById('dash-due-cards');
+    const elStreak = document.getElementById('dash-streak-days');
+
+    if (elTotal) elTotal.innerText = totalCards;
+    if (elMastered) elMastered.innerText = masteredCards;
+    if (elDue) elDue.innerText = dueCards;
+    if (elStreak) elStreak.innerText = streakDays;
+
+    renderUrgentTasks(now);
+}
+
+function renderUrgentTasks(now) {
+    const tasksContainer = document.getElementById('dash-urgent-tasks');
+    if (!tasksContainer) return;
+
+    const categoryDueCounts = {};
+    allCards.forEach(card => {
+        const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
+        if (date <= now) {
+            const catId = card.categoryId || (card.category ? (card.category._id || card.category) : 'uncategorized');
+            categoryDueCounts[catId] = (categoryDueCounts[catId] || 0) + 1;
+        }
+    });
+
+    const urgentFolders = Object.keys(categoryDueCounts).map(catId => ({
+        id: catId, dueCount: categoryDueCounts[catId]
+    })).sort((a, b) => b.dueCount - a.dueCount).slice(0, 4); 
+
+    if (urgentFolders.length === 0) {
+        tasksContainer.innerHTML = `<div style="grid-column: 1 / -1; color: #10b981; font-size: 1rem; padding: 30px; background: white; border-radius: 16px; border: 1px dashed #a7f3d0; text-align: center;"><strong>太棒了！今日任务全部清空！</strong><br><span style="color: #64748b; font-size: 0.9rem;">你的记忆曲线非常健康。</span></div>`;
+        return;
+    }
+
+    let html = '';
+    urgentFolders.forEach(task => {
+        let folderName = '未分类区'; let pathName = '公共存放池';
+        if (task.id !== 'uncategorized') {
+            const cat = allCategories.find(c => c._id === task.id);
+            if (cat) {
+                folderName = cat.name;
+                if (cat.parentId) {
+                    const parent = allCategories.find(p => p._id === cat.parentId);
+                    if (parent) pathName = `归属于: ${parent.name}`;
+                } else pathName = '顶级文件夹';
+            }
+        }
+        html += `
+            <div class="dash-task-card" onclick="startTaskFromDash('${task.id}', '${folderName}')">
+                <span class="task-badge">${task.dueCount} 项待复习</span>
+                <h4 class="task-title">${folderName}</h4>
+                <p class="task-path">${pathName}</p>
+                <div class="task-arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+            </div>`;
+    });
+    tasksContainer.innerHTML = html;
+}
+
+function startTaskFromDash(folderId, folderName) {
+    const targetNavId = folderId;
+    const targetElement = document.querySelector(`.nav-item[onclick*="${targetNavId}"]`);
+    selectSidebarItem(targetNavId, folderName, 'vocabulary', targetElement);
+    setTimeout(() => { startStudyMode(); }, 200);
+}
+
+function startGlobalReview() {
+    const now = new Date();
+    const dueCardsQueue = allCards.filter(card => {
+        const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
+        return date <= now;
+    });
+
+    if (dueCardsQueue.length === 0) return alert('🎉 太棒了！今天所有的卡片都已经复习完毕啦！');
+
+    const allCardsNav = document.querySelector(`.nav-item[onclick*="all"]`);
+    if (allCardsNav) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        allCardsNav.classList.add('active');
+        currentCategoryId = 'all';
+    }
+
+    studyCards = [...dueCardsQueue]; 
+    currentStudyIndex = 0;
+    const studyModal = document.getElementById('study-view');
+    if (studyModal) {
+        showMainView('study-view');
+        if (typeof renderStudyCard === 'function') renderStudyCard(); 
+    }
 }
 
 // --- 5. 弹窗与增删改查 ---
@@ -900,18 +1072,18 @@ function submitReview(isKnown) {
     if (!studyCards || studyCards.length === 0 || currentStudyIndex >= studyCards.length) return;
     const currentCard = studyCards[currentStudyIndex];
     
-    if (isKnown) {
-        currentCard.nextReviewDate = new Date(Date.now() + 86400000).toISOString();
-        currentCard.stage = (currentCard.stage || 0) + 1;
-    } else {
-        studyCards.push(currentCard);
+    // 🧠 核心替换：调用艾宾浩斯引擎计算时间 (false代表背诵模式)
+    processCardMemory(currentCard, isKnown, false);
+    
+    if (!isKnown) {
+        studyCards.push(currentCard); // 不认识的塞回队尾重背
     }
     
     try { 
         fetch(`/api/flashcards/${currentCard._id}/review`, { 
             method: 'PATCH', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ isKnown }) 
+            body: JSON.stringify({ isKnown, stage: currentCard.stage, nextReviewDate: currentCard.nextReviewDate }) 
         }); 
     } catch (e) { console.warn("后台同步稍后重试", e); }
     
@@ -1003,10 +1175,8 @@ function renderSpellCard() {
     }
 }
 
-// 🌟 2. 魔法按键：验证完直接“变身”
 async function checkSpelling() {
     const inputEl = document.getElementById('spell-input');
-    // 如果已经验证过了，再次回车直接进下一张！
     if (inputEl.disabled) return nextSpellCard(); 
     
     const inputStr = inputEl.value.trim().toLowerCase(); 
@@ -1020,34 +1190,39 @@ async function checkSpelling() {
     const card = spellCards[currentSpellIndex];
     const answerStr = card.answer.trim().toLowerCase();  
     const feedbackEl = document.getElementById('spell-feedback'); 
-    inputEl.disabled = true; // 锁定输入框
+    inputEl.disabled = true; 
     const isCorrect = (inputStr === answerStr);
 
-    // 渲染对错反馈文字
+    // 🧠 核心替换：调用引擎 (true代表这是默写模式)
+    processCardMemory(card, isCorrect, true);
+
     if (isCorrect) {
         feedbackEl.innerHTML = '<div style="display:flex;align-items:center;gap:6px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#48bb78" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>拼写正确！完全掌握！</strong></div>'; 
         feedbackEl.style.color = '#48bb78'; 
-        try { speakWord(card.answer, null); } catch(e){} // 加了保护，防止手机端语音组件崩溃导致卡死
-        card.nextReviewDate = new Date(Date.now() + 86400000).toISOString();
-        card.stage = (card.stage || 0) + 1;
+        try { speakWord(card.answer, null); } catch(e){} 
     } else {
         feedbackEl.innerHTML = `<div style="display:flex;align-items:flex-start;gap:6px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" stroke-width="2.5" style="flex-shrink:0;margin-top:2px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> <div><strong>拼写错误。卡片已降级。</strong><br><br>你的输入：<span style="color:red; text-decoration: line-through;">${inputStr}</span><br>正确答案：<span style="color:green;">${card.answer}</span></div></div>`;
         feedbackEl.style.color = '#e53e3e'; 
         spellCards.push(card); 
-        card.stage = Math.max(0, (card.stage || 0) - 1);
     }
 
-    // 👇 核心魔法：直接霸占原有的提交按钮，把它变成绿色的“下一张”！
     const submitBtn = document.querySelector('#spell-view .check-btn');
     if (submitBtn) {
         submitBtn.style.display = 'block';
         submitBtn.innerHTML = '继续下一张 (Enter) ➔';
-        submitBtn.style.background = '#10b981'; // 变绿
-        submitBtn.onclick = nextSpellCard; // 核心：把按钮的功能偷偷换成了“下一张”！
+        submitBtn.style.background = '#10b981'; 
+        submitBtn.onclick = nextSpellCard; 
     }
 
-    try { await fetch(`/api/flashcards/${card._id}/review`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isKnown: isCorrect }) }); } catch(e) {}
+    try { 
+        await fetch(`/api/flashcards/${card._id}/review`, { 
+            method: 'PATCH', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ isKnown: isCorrect, stage: card.stage, nextReviewDate: card.nextReviewDate }) 
+        }); 
+    } catch(e) {}
 }
+
 function prevSpellCard() { if (currentSpellIndex > 0) { currentSpellIndex--; renderSpellCard(); } }
 function nextSpellCard() { currentSpellIndex++; renderSpellCard(); }
 

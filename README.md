@@ -70,7 +70,7 @@ This project is licensed under the MIT License.
 3. `git push`
 
 git add .
-git commit -m "feat(Oopsy): 重构移动端丝滑抽屉与极简图标，彻底打通默写闭环"
+git commit -m "feat(Oopsy): 记忆曲线升级背诵默写瀑布流，即将调整首页右边界面显示"
 git push 
 
 ## 其它
