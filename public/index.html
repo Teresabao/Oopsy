@@ -123,62 +123,117 @@
 
             <div class="content-area">
 
-                <div id="dashboard-view" class="view hidden"
-                    style="padding: 20px 40px; height: 100%; overflow-y: auto;">
-                    <h2
-                        style="display: flex; align-items: center; gap: 12px; font-size: 2rem; color: #1a202c; margin-bottom: 30px;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2.5"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="20" x2="18" y2="10"></line>
-                            <line x1="12" y1="20" x2="12" y2="4"></line>
-                            <line x1="6" y1="20" x2="6" y2="14"></line>
-                        </svg>
-                        学习数据与打怪进度
-                    </h2>
+                <div id="dashboard-view" class="content-area hidden" style="background: #f8fafc; padding: 32px;">
 
-                    <div style="display: flex; gap: 20px; margin-bottom: 40px; flex-wrap: wrap;">
-                        <div
-                            style="flex: 1; min-width: 200px; background: white; padding: 30px 20px; border-radius: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; text-align: center;">
-                            <h3
-                                style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #718096; font-size: 1.1rem; margin-bottom: 15px; margin-top:0;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                                    <polyline points="2 17 12 22 22 17"></polyline>
-                                    <polyline points="2 12 12 17 22 12"></polyline>
+                    <div class="dash-header"
+                        style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <h2
+                                style="margin: 0; font-size: 1.8rem; color: #0f172a; letter-spacing: -0.5px; font-weight: 700;">
+                                欢迎回来</h2>
+                            <p style="margin: 6px 0 0 0; color: #64748b; font-size: 0.95rem;">基于艾宾浩斯记忆曲线，为你规划了今日任务。</p>
+                        </div>
+                        <div class="dash-quick-actions" style="display: flex; gap: 10px;">
+                            <button onclick="openQuickCategoryModal()" class="dash-pill-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
-                                你的总卡片数
-                            </h3>
-                            <div id="dash-total-cards" style="font-size: 3rem; font-weight: 800; color: #2b6cb0;">0
+                                极速建档
+                            </button>
+                            <button onclick="openBatchModal()" class="dash-pill-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                                批量导入
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="dash-metrics-grid">
+                        <div class="dash-stat-card">
+                            <div class="stat-icon" style="background: #fff7ed; color: #f97316;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path
+                                        d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">连续学习 (天)</span>
+                                <strong class="stat-value" id="dash-streak-days" style="color: #f97316;">0</strong>
                             </div>
                         </div>
-                        <div
-                            style="flex: 1; min-width: 200px; background: white; padding: 30px 20px; border-radius: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; text-align: center;">
-                            <h3
-                                style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #718096; font-size: 1.1rem; margin-bottom: 15px; margin-top:0;">
+
+                        <div class="dash-stat-card" style="cursor: pointer;" onclick="startGlobalReview()"
+                            title="点击开始全局复习">
+                            <div class="stat-icon" style="background: #fff1f2; color: #f43f5e;">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
                                 </svg>
-                                认知阶段 (需背诵)
-                            </h3>
-                            <div id="dash-stage0-cards" style="font-size: 3rem; font-weight: 800; color: #ed8936;">0
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">今日待复习</span>
+                                <strong class="stat-value" id="dash-due-cards" style="color: #f43f5e;">0</strong>
+                            </div>
+                            <div style="margin-left: auto; color: #f43f5e; opacity: 0.5;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
                             </div>
                         </div>
-                        <div
-                            style="flex: 1; min-width: 200px; background: white; padding: 30px 20px; border-radius: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; text-align: center;">
-                            <h3
-                                style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #718096; font-size: 1.1rem; margin-bottom: 15px; margin-top:0;">
+
+                        <div class="dash-stat-card">
+                            <div class="stat-icon" style="background: #ecfdf5; color: #10b981;">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 20h9"></path>
-                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
                                 </svg>
-                                黄金段位 (可默写)
-                            </h3>
-                            <div id="dash-stage1-cards" style="font-size: 3rem; font-weight: 800; color: #48bb78;">0
                             </div>
+                            <div class="stat-info">
+                                <span class="stat-label">熟练掌握</span>
+                                <strong class="stat-value" id="dash-mastered-cards">0</strong>
+                            </div>
+                        </div>
+
+                        <div class="dash-stat-card">
+                            <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">知识库总览</span>
+                                <strong class="stat-value" id="dash-total-cards">0</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 48px;">
+                        <h3
+                            style="margin: 0 0 20px 0; font-size: 1.1rem; color: #1e293b; display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            紧急复习任务
+                        </h3>
+
+                        <div id="dash-urgent-tasks" class="dash-tasks-grid">
+                            <div style="color: #94a3b8; font-size: 0.9rem; padding: 20px 0;">正在分析记忆曲线...</div>
                         </div>
                     </div>
                 </div>

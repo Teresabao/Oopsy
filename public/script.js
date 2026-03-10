@@ -27,13 +27,17 @@ styleFix.innerHTML = `
 `;
 document.head.appendChild(styleFix);
 
-let allCards = []; 
-let allCategories = []; 
-let currentCategoryId = 'all'; 
+let allCards = [];
+let allCategories = [];
+let currentCategoryId = 'all';
 let editingCardId = null;
-
+let touchStartX = 0;
+let touchEndX = 0;
+let touchStartY = 0;
+let touchEndY = 0;
 let collapsedFolders = new Set();
-let rootCollapsed = false; 
+let rootCollapsed = false;
+let isFreePracticeMode = false; // 🌟 记得在函数外部定义这个变量
 
 document.addEventListener('DOMContentLoaded', () => {
     loadCategories();
@@ -75,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- 1. 视图切换引擎 ---
 // --- 1. 视图切换引擎 (🌟 新增沉浸式学习状态管理) ---
 function showMainView(viewId) {
-    const views = ['manage-view', 'study-view', 'spell-view', 'dashboard-view']; 
+    const views = ['manage-view', 'study-view', 'spell-view', 'dashboard-view'];
     views.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -92,21 +96,21 @@ function showMainView(viewId) {
         // 场景 A：回到主页面（退出学习模式） -> 恢复所有功能按钮
         if (headerActions) headerActions.style.display = 'flex';
         // 恢复复习张数输入框
-        if (limitContainer && limitContainer.tagName !== 'BODY') limitContainer.style.display = ''; 
+        if (limitContainer && limitContainer.tagName !== 'BODY') limitContainer.style.display = '';
         loadFlashcards(); // 重新加载卡片数据
     } else {
         // 场景 B：进入背诵或默写模式 -> 强行进入沉浸状态，清场！
         if (headerActions) headerActions.style.display = 'none'; // 隐藏添加/背诵/默写等按钮
         if (limitContainer && limitContainer.tagName !== 'BODY') limitContainer.style.display = 'none'; // 隐藏复习张数框
     }
-    
+
     // 动态控制“未分类区”的清空按钮：只有在主页面的未分类区才显示
     const clearBtn = document.getElementById('btn-clear-uncategorized');
     if (clearBtn) {
         if (currentCategoryId === 'uncategorized' && viewId === 'manage-view') {
             clearBtn.style.display = 'inline-flex';
         } else {
-            clearBtn.style.display = 'none'; 
+            clearBtn.style.display = 'none';
         }
     }
 }
@@ -134,7 +138,7 @@ async function loadCategories() {
                 </li>
                 <div style="height: 1px; background: #e2e8f0; margin: 10px 0;"></div>
             `;
-            
+
             const rootArrow = rootCollapsed ? icons.arrowRight : icons.arrowDown;
             html += `
                 <li class="nav-item root-nav ${currentCategoryId === 'all' ? 'active' : ''}" style="display: flex; justify-content: space-between; align-items: center;">
@@ -165,7 +169,7 @@ async function loadCategories() {
                 const arrow = isCollapsed ? icons.arrowRight : icons.arrowDown;
                 const icon = p.type === 'notes' ? icons.doc : icons.folder;
                 const isActive = currentCategoryId === p._id ? 'active' : '';
-                
+
                 html += `
                     <li class="nav-item parent-nav ${isActive}" style="display: flex; justify-content: space-between; align-items: center;">
                         
@@ -181,7 +185,7 @@ async function loadCategories() {
                     </li>
                     <div id="children-of-${p._id}" style="display: ${isCollapsed ? 'none' : 'block'}; padding-left: 28px;">
                 `;
-                
+
                 children.filter(c => c.parentId === p._id).forEach(child => {
                     const cIcon = icons.doc;
                     const cActive = currentCategoryId === child._id ? 'active' : '';
@@ -190,26 +194,26 @@ async function loadCategories() {
                             ${cIcon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${child.name}</span>
                         </li>`;
                 });
-                html += `</div>`; 
+                html += `</div>`;
             });
-            html += `</div>`; 
-            
+            html += `</div>`;
+
             sidebarMenu.innerHTML = html;
         }
 
-        refreshSelectOptions(); 
+        refreshSelectOptions();
     } catch (error) { console.error('加载分类失败:', error); }
 }
 
 function refreshSelectOptions() {
     const selects = ['modal-category-select', 'batch-category-select', 'edit-category-select'];
-    
+
     const parents = allCategories.filter(c => !c.parentId);
     const children = allCategories.filter(c => c.parentId);
 
-    let optionsHtml = `<option value="">(无) 请选择具体子文件夹...</option>`; 
+    let optionsHtml = `<option value="">(无) 请选择具体子文件夹...</option>`;
     optionsHtml += `<option value="CREATE_NEW" style="color: #3b82f6; font-weight: bold;">快捷新建文件夹...</option>`;
-    
+
     parents.forEach(p => {
         const myChildren = children.filter(c => c.parentId === p._id);
         optionsHtml += `<optgroup label="── ${p.name} ──">`;
@@ -241,7 +245,7 @@ function toggleRoot(event) {
     event.stopPropagation();
     const container = document.getElementById('user-folders-container');
     const arrowIcon = event.currentTarget;
-    
+
     if (container.style.display === 'none') {
         container.style.display = 'block';
         rootCollapsed = false;
@@ -257,7 +261,7 @@ function toggleRoot(event) {
 function selectSidebarItem(id, title, type, element) {
     try {
         currentCategoryId = id;
-        
+
         const titleEl = document.getElementById('current-view-title');
         if (titleEl) titleEl.textContent = title;
 
@@ -281,19 +285,19 @@ function selectSidebarItem(id, title, type, element) {
         // 🌟 核心魔法：根据文件夹类型，动态隐藏“默写”按钮！(终极防弹版)
         // ==========================================
         // 我们不找 ID 了，直接通过 onclick 属性精准狙击！
-        const spellBtn = document.querySelector('button[onclick*="startSpellMode"]'); 
-        
+        const spellBtn = document.querySelector('button[onclick*="startSpellMode"]');
+
         if (spellBtn) {
             if (type === 'notes') {
                 // 如果是笔记夹，直接让默写按钮人间蒸发！
                 spellBtn.style.display = 'none';
             } else {
                 // 如果是单词本，恢复显示 (注意：这里用空字符串 '' 可以让它恢复默认的 CSS 布局，比 inline-flex 更安全)
-                spellBtn.style.display = ''; 
+                spellBtn.style.display = '';
             }
         }
         // ==========================================
-        showMainView('manage-view'); 
+        showMainView('manage-view');
         renderCards();
 
         // 📱 手机端：只有当它是打开状态时，才执行收起动作 (防止反向触发)
@@ -324,7 +328,7 @@ function handleParentClick(event, folderId, folderName, folderType, liElement) {
     // 2. 纯粹的开关逻辑：看见关着就开，开着就关。彻底抛弃 isCurrentlySelected！
     if (childrenContainer) {
         const isHidden = childrenContainer.style.display === 'none' || childrenContainer.style.display === '';
-        
+
         if (isHidden) {
             // 关着 -> 打开
             childrenContainer.style.display = 'block';
@@ -340,9 +344,9 @@ function handleParentClick(event, folderId, folderName, folderType, liElement) {
 
     // 3. 📱 手机端核心隔离：只负责折叠/展开，绝不高亮！绝不记录状态！到此为止！
     if (window.innerWidth <= 1024) {
-        return; 
-    } 
-    
+        return;
+    }
+
     // 4. 💻 电脑大屏：不仅展开，还要选中并加载右侧卡片
     selectSidebarItem(folderId, folderName, folderType, liElement);
 }
@@ -354,13 +358,13 @@ function selectDashboard(element) {
     if (element) element.classList.add('active');
     const settingsBtn = document.getElementById('category-settings-btn');
     if (settingsBtn) settingsBtn.classList.add('hidden');
-    
+
     showMainView('dashboard-view');
     renderDashboard();
-    
+
     if (window.innerWidth <= 768) {
         const sidebar = document.querySelector('.sidebar');
-        if(sidebar && sidebar.classList.contains('mobile-active')) toggleMobileSidebar();
+        if (sidebar && sidebar.classList.contains('mobile-active')) toggleMobileSidebar();
     }
 }
 
@@ -368,8 +372,8 @@ function selectDashboard(element) {
 function toggleMobileSidebar() {
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.getElementById('mobile-overlay');
-    if(!sidebar || !overlay) return;
-    
+    if (!sidebar || !overlay) return;
+
     sidebar.classList.toggle('mobile-active');
     if (sidebar.classList.contains('mobile-active')) {
         overlay.style.display = 'block';
@@ -379,15 +383,15 @@ function toggleMobileSidebar() {
 }
 
 function quickCreateSubCategory(event, parentId) {
-    if (event) event.stopPropagation(); 
+    if (event) event.stopPropagation();
     openCategoryModal();
-    
+
     setTimeout(() => {
         const parentSelect = document.getElementById('parent-category-select');
         if (parentSelect) parentSelect.value = parentId;
     }, 50);
-    
-    if (window.innerWidth <= 1024) { 
+
+    if (window.innerWidth <= 1024) {
         const sidebar = document.querySelector('.sidebar');
         const overlay = document.getElementById('mobile-overlay');
         if (sidebar) sidebar.classList.remove('mobile-active');
@@ -421,7 +425,7 @@ async function submitCategorySettings() {
         closeAllModals(); await loadCategories();
         document.getElementById('current-view-title').innerText = name;
         const navItems = document.querySelectorAll('.nav-item');
-        let activeEl = null; navItems.forEach(el => { if(el.classList.contains('active')) activeEl = el; });
+        let activeEl = null; navItems.forEach(el => { if (el.classList.contains('active')) activeEl = el; });
         selectSidebarItem(currentCategoryId, name, type, activeEl);
     } catch (error) { console.error(error); }
 }
@@ -433,7 +437,7 @@ async function deleteCurrentCategory() {
         closeAllModals();
         await loadCategories();
         await loadFlashcards();
-        
+
         const rootItem = document.querySelector('.root-nav');
         selectSidebarItem('all', '所有卡片', 'vocabulary', rootItem);
     } catch (error) { console.error(error); }
@@ -452,31 +456,36 @@ async function loadFlashcards() {
     try {
         const response = await fetch('/api/flashcards');
         allCards = await response.json();
-        
+
+        // 🌟 无论在哪个页面，先把数据看板的逻辑刷一遍，确保左侧边栏或首页数字准确
+        renderDashboard();
+
+        // 如果当前在列表页，再执行筛选和列表渲染
         if (document.getElementById('manage-view') && !document.getElementById('manage-view').classList.contains('hidden')) {
-            filterCards(); 
+            filterCards();
         }
-        if(document.getElementById('dashboard-view') && !document.getElementById('dashboard-view').classList.contains('hidden')) {
-            renderDashboard(); 
-        }
-    } catch (error) { console.error('加载卡片失败:', error); }
+        
+        console.log("✅ 全局数据同步完成，看板已点亮");
+    } catch (error) { 
+        console.error('加载卡片失败:', error); 
+    }
 }
 
 function filterCards() {
     const searchInput = document.getElementById('search-input');
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-    
+
     let filtered = allCards;
-    
+
     if (currentCategoryId === 'all' || currentCategoryId === 'dashboard') {
         filtered = allCards;
-    } 
+    }
     else if (currentCategoryId === 'uncategorized') {
         filtered = allCards.filter(card => {
             const catId = card.category ? (card.category._id || card.category) : card.categoryId;
             return !catId || catId === 'null' || catId === '';
         });
-    } 
+    }
     else {
         const targetCategoryIds = new Set([currentCategoryId]);
         allCategories.forEach(cat => {
@@ -492,12 +501,12 @@ function filterCards() {
     }
 
     if (searchTerm) {
-        filtered = filtered.filter(card => 
-            (card.question && card.question.toLowerCase().includes(searchTerm)) || 
+        filtered = filtered.filter(card =>
+            (card.question && card.question.toLowerCase().includes(searchTerm)) ||
             (card.answer && card.answer.toLowerCase().includes(searchTerm))
         );
     }
-    
+
     renderCards(filtered);
 }
 
@@ -524,19 +533,31 @@ function renderCards(cardsToRender = null) {
 
     list.innerHTML = cardsToRender.map(card => {
         const categoryName = card.category ? card.category.name : '未分类区';
+        // --- 🌟 核心改进逻辑开始 ---
+        // 找出这张卡片所属的文件夹对象
+        const cardCatId = card.category ? (card.category._id || card.category) : card.categoryId;
+        const currentCat = allCategories.find(c => c._id === cardCatId);
+        const isNoteType = currentCat ? currentCat.type === 'notes' : false;
+        let stageHtml = '';
+        if (isNoteType) {
+            // 场景 A：笔记夹 -> 隐藏进度，显示稳重的“已归档”
+            stageHtml = `<span style="${getBadgeStyle('#e0f2fe', '#0369a1')}">已归档</span>`;
+        } else {
+            // 场景 B：单词本 -> 维持原有的艾宾浩斯进度显示
+            stageHtml = card.stage >= 1
+                ? `<span style="${getBadgeStyle('#fef3c7', '#b45309')}">可默写</span>`
+                : `<span style="${getBadgeStyle('#f1f5f9', '#64748b')}">待进阶</span>`;
+        }
+        // --- 🌟 核心改进逻辑结束 ---
         const reviewDate = card.nextReviewDate ? new Date(card.nextReviewDate) : now;
         const isDue = reviewDate <= now;
-        
-        const stageHtml = card.stage >= 1 
-            ? `<span style="${getBadgeStyle('#fef3c7', '#b45309')}">可默写</span>` 
-            : `<span style="${getBadgeStyle('#f1f5f9', '#64748b')}">待进阶</span>`;
 
-        const statusHtml = isDue 
-            ? `<span style="${getBadgeStyle('#fff1f2', '#e11d48')}">待复习</span>` 
+        const statusHtml = isDue
+            ? `<span style="${getBadgeStyle('#fff1f2', '#e11d48')}">待复习</span>`
             : `<span style="${getBadgeStyle('#ecfdf5', '#059669')}">已同步</span>`;
 
         const isChecked = selectedCards.has(card._id);
-        const checkboxIcon = isChecked 
+        const checkboxIcon = isChecked
             ? `<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#3b82f6" stroke="#3b82f6" stroke-width="2"></circle><path d="M8 12l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`
             : `<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>`;
 
@@ -592,35 +613,38 @@ function processCardMemory(card, isCorrect, isSpellMode = false) {
     if (typeof card.stage !== 'number') card.stage = 0;
 
     if (isCorrect) {
-        // 🎯 核心优化：区分奖励机制！
+        // ✅ 对了：正常升级
         if (isSpellMode) {
-            // 默写拼对：主动记忆信号极其强烈，直接跨级！连升 2 级！
             card.stage = Math.min(card.stage + 2, REVIEW_INTERVALS.length - 1);
         } else {
-            // 背诵认对：被动识别信号，稳扎稳打升 1 级。
             card.stage = Math.min(card.stage + 1, REVIEW_INTERVALS.length - 1);
         }
     } else {
-        // 惩罚机制保持不变
+        // ❌ 错了：执行“保级惩罚”
         if (isSpellMode) {
-            card.stage = Math.max(0, card.stage - 1); // 默写手滑：温柔降级退 1 级
+            // 🌟 关键改动：最低保在 Stage 1，确保它依然拥有“默写资格”
+            card.stage = Math.max(1, card.stage - 1); 
         } else {
-            card.stage = 0; // 背诵毫无印象：残酷清零打回原形
+            // 背诵错了：如果是老兵(Stage>=1)就留级在1，如果是新人就回0
+            card.stage = card.stage >= 1 ? 1 : 0; 
         }
     }
 
-    const daysToAdd = REVIEW_INTERVALS[card.stage];
     const nextDate = new Date();
-    
-    if (card.stage === 0) {
+
+    // 🌟 核心逻辑重写：只要错了，不管是 Stage 1、2 还是 5，通通明天见！
+    if (!isCorrect) {
         nextDate.setDate(nextDate.getDate() + 1);
-        nextDate.setHours(4, 0, 0, 0); // 降级卡片，明天凌晨4点刷新
+        nextDate.setHours(4, 0, 0, 0); 
+        console.log(`错题锁定：[${card.question}] 将在明天凌晨4点重新出现`);
     } else {
-        nextDate.setTime(nextDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000); // 正常推迟
+        // 只有对了，才按照艾宾浩斯阶梯延后
+        const daysToAdd = REVIEW_INTERVALS[card.stage];
+        nextDate.setTime(nextDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
     }
 
     card.nextReviewDate = nextDate.toISOString();
-    updateStreak(); // 更新打卡
+    updateStreak(); 
     return card;
 }
 
@@ -634,7 +658,7 @@ function updateStreak() {
 
     if (lastActive) {
         const lastDate = new Date(lastActive);
-        const diffDays = Math.ceil(Math.abs(now - lastDate) / (1000 * 60 * 60 * 24)); 
+        const diffDays = Math.ceil(Math.abs(now - lastDate) / (1000 * 60 * 60 * 24));
         if (diffDays === 1) streak += 1;
         else if (diffDays > 1) streak = 1; // 断签清零
     } else {
@@ -686,7 +710,7 @@ function renderUrgentTasks(now) {
 
     const urgentFolders = Object.keys(categoryDueCounts).map(catId => ({
         id: catId, dueCount: categoryDueCounts[catId]
-    })).sort((a, b) => b.dueCount - a.dueCount).slice(0, 4); 
+    })).sort((a, b) => b.dueCount - a.dueCount).slice(0, 4);
 
     if (urgentFolders.length === 0) {
         tasksContainer.innerHTML = `<div style="grid-column: 1 / -1; color: #10b981; font-size: 1rem; padding: 30px; background: white; border-radius: 16px; border: 1px dashed #a7f3d0; text-align: center;"><strong>太棒了！今日任务全部清空！</strong><br><span style="color: #64748b; font-size: 0.9rem;">你的记忆曲线非常健康。</span></div>`;
@@ -740,24 +764,24 @@ function startGlobalReview() {
         currentCategoryId = 'all';
     }
 
-    studyCards = [...dueCardsQueue]; 
+    studyCards = [...dueCardsQueue];
     currentStudyIndex = 0;
     const studyModal = document.getElementById('study-view');
     if (studyModal) {
         showMainView('study-view');
-        if (typeof renderStudyCard === 'function') renderStudyCard(); 
+        if (typeof renderStudyCard === 'function') renderStudyCard();
     }
 }
 
 // --- 5. 弹窗与增删改查 ---
-function openAddCardModal() { 
+function openAddCardModal() {
     document.getElementById('modal-question').value = '';
     document.getElementById('modal-answer').value = '';
-    
+
     const selectEl = document.getElementById('modal-category-select');
     if (typeof injectQuickCategoryModal === 'function') injectQuickCategoryModal();
-    
-    selectEl.onchange = function() {
+
+    selectEl.onchange = function () {
         if (this.value === 'CREATE_NEW') {
             window.quickCreateSourceDropdown = 'modal-category-select';
             window.quickCreateSourceModal = 'add-card-modal';
@@ -767,27 +791,27 @@ function openAddCardModal() {
 
     if (currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
         const currentCat = allCategories.find(c => c._id === currentCategoryId);
-        const isParentFolder = currentCat && !currentCat.parentId; 
-        
+        const isParentFolder = currentCat && !currentCat.parentId;
+
         if (isParentFolder) {
-            selectEl.value = ""; 
+            selectEl.value = "";
         } else {
-            selectEl.value = currentCategoryId; 
+            selectEl.value = currentCategoryId;
         }
     } else {
-        selectEl.value = ""; 
+        selectEl.value = "";
     }
     openModal('add-card-modal');
 }
 
-function openBatchModal() { 
-    document.getElementById('batch-input').value = ''; 
+function openBatchModal() {
+    document.getElementById('batch-input').value = '';
     const selectEl = document.getElementById('batch-category-select');
-    
+
     if (currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
         const currentCat = allCategories.find(c => c._id === currentCategoryId);
         const isParentFolder = currentCat && !currentCat.parentId;
-        
+
         if (isParentFolder) {
             selectEl.value = "";
         } else {
@@ -807,9 +831,9 @@ async function createFlashcardFromModal() {
     const question = document.getElementById('modal-question').value;
     const answer = document.getElementById('modal-answer').value;
     const selectValue = document.getElementById('modal-category-select').value;
-    
+
     if (!question || !answer) return alert('请填写完整内容');
-    
+
     let categoryId = null;
     if (selectValue && selectValue !== "" && selectValue !== "uncategorized") {
         categoryId = selectValue;
@@ -818,7 +842,7 @@ async function createFlashcardFromModal() {
     const payload = { question: question.trim(), answer: answer.trim(), categoryId };
 
     try {
-        const response = await fetch('/api/flashcards', { 
+        const response = await fetch('/api/flashcards', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -836,7 +860,7 @@ async function createFlashcardFromModal() {
         }
 
         closeAllModals();
-        await loadFlashcards(); 
+        await loadFlashcards();
 
         let targetNavId = categoryId ? categoryId : 'uncategorized';
         const targetElement = document.querySelector(`.nav-item[onclick*="${targetNavId}"]`);
@@ -852,23 +876,23 @@ async function updateCard() {
     const question = document.getElementById('edit-question').value;
     const answer = document.getElementById('edit-answer').value;
     const categoryId = document.getElementById('edit-category-select').value || null;
-    
-    try { 
-        const response = await fetch(`/api/flashcards/${editingCardId}`, { 
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ question, answer, categoryId }) 
-        }); 
-        
+
+    try {
+        const response = await fetch(`/api/flashcards/${editingCardId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question, answer, categoryId })
+        });
+
         if (!response.ok) {
             alert("⚠️ 更新失败：数据格式异常。");
             return;
         }
-        
-        closeAllModals(); 
-        await loadFlashcards(); 
-    } catch (error) { 
-        console.error('更新失败:', error); 
+
+        closeAllModals();
+        await loadFlashcards();
+    } catch (error) {
+        console.error('更新失败:', error);
         alert("⚠️ 网络异常，更新失败！");
     }
 }
@@ -898,15 +922,15 @@ async function confirmBatchImport(event) {
     const text = textInput.value.trim();
     const lines = text.split('\n');
     const newCards = [];
-    
+
     let categoryId = null;
     if (categorySelect && categorySelect.value) {
-        categoryId = categorySelect.value; 
+        categoryId = categorySelect.value;
     } else if (currentCategoryId && currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized') {
         const currentCat = allCategories.find(c => c._id === currentCategoryId);
         const isParentFolder = currentCat && !currentCat.parentId;
         if (!isParentFolder) {
-            categoryId = currentCategoryId; 
+            categoryId = currentCategoryId;
         }
     }
 
@@ -916,11 +940,11 @@ async function confirmBatchImport(event) {
 
         let parts = [];
         if (line.startsWith('|') && line.endsWith('|')) {
-            parts = line.split('|').map(p => p.trim()).filter(p => p !== ''); 
+            parts = line.split('|').map(p => p.trim()).filter(p => p !== '');
         } else if (line.includes('|')) {
             parts = line.split('|').map(p => p.trim());
         } else {
-            parts = line.split(/\t+| {2,}| - |:/); 
+            parts = line.split(/\t+| {2,}| - |:/);
         }
 
         if (parts.length >= 2) {
@@ -935,7 +959,7 @@ async function confirmBatchImport(event) {
 
     if (submitBtn) {
         const spinnerSvg = `<svg style="animation: spin 1s linear infinite; margin-right: 6px; width: 16px; height: 16px; display: inline-block; vertical-align: -3px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle style="opacity: 0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-        
+
         if (!document.getElementById('spin-keyframes')) {
             const style = document.createElement('style');
             style.id = 'spin-keyframes';
@@ -944,14 +968,14 @@ async function confirmBatchImport(event) {
         }
 
         submitBtn.innerHTML = `${spinnerSvg} 正在导入...`;
-        submitBtn.disabled = true; 
+        submitBtn.disabled = true;
         submitBtn.style.cursor = "wait";
-        submitBtn.style.opacity = "0.8"; 
+        submitBtn.style.opacity = "0.8";
     }
 
     try {
         let successCount = 0;
-        const fetchPromises = newCards.map(card => 
+        const fetchPromises = newCards.map(card =>
             fetch('/api/flashcards', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -960,29 +984,29 @@ async function confirmBatchImport(event) {
         );
 
         const responses = await Promise.all(fetchPromises);
-        
+
         for (let i = 0; i < responses.length; i++) {
             if (responses[i].ok) {
                 successCount++;
             } else {
-                const errData = await responses[i].json().catch(()=>({}));
+                const errData = await responses[i].json().catch(() => ({}));
                 console.error("后端拒绝了这张卡:", newCards[i], "原因:", errData);
             }
         }
 
         setTimeout(() => {
             alert(`🎉 解析了 ${newCards.length} 张，实际成功存入数据库 ${successCount} 张！`);
-            
+
             if (successCount > 0) {
-                textInput.value = ''; 
-                if (typeof closeAllModals === 'function') closeAllModals(); 
+                textInput.value = '';
+                if (typeof closeAllModals === 'function') closeAllModals();
                 else {
                     const modal = textInput.closest('div[style*="position: fixed"]');
                     if (modal) modal.style.display = 'none';
                 }
-                
-                if (typeof loadFlashcards === 'function') loadFlashcards(); 
-                else if (typeof renderCards === 'function') renderCards(); 
+
+                if (typeof loadFlashcards === 'function') loadFlashcards();
+                else if (typeof renderCards === 'function') renderCards();
             }
         }, 100);
 
@@ -1006,7 +1030,7 @@ let studyCards = []; let currentStudyIndex = 0;
 let spellCards = []; let currentSpellIndex = 0;
 
 function speakWord(text, event) {
-    if (event) event.stopPropagation(); 
+    if (event) event.stopPropagation();
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     const isChinese = /[\u4e00-\u9fa5]/.test(text);
@@ -1019,7 +1043,7 @@ function startStudyMode() {
     const limitInput = document.getElementById('study-limit');
     const maxCards = limitInput ? parseInt(limitInput.value) || 20 : 20;
     const now = new Date();
-    
+
     const targetCategoryIds = new Set([currentCategoryId]);
     allCategories.forEach(cat => {
         if (cat.parentId === currentCategoryId) {
@@ -1030,7 +1054,7 @@ function startStudyMode() {
     let dueCards = allCards.filter(card => {
         const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
         const isDue = date <= now;
-        
+
         let isMatch = false;
         if (currentCategoryId === 'all') {
             isMatch = true;
@@ -1051,16 +1075,16 @@ function startStudyMode() {
 }
 
 function renderStudyCard() {
-    if (currentStudyIndex >= studyCards.length) { 
-        alert('恭喜你，完成了本次复习！'); 
+    if (currentStudyIndex >= studyCards.length) {
+        alert('恭喜你，完成了本次复习！');
         showMainView('manage-view');
-        return; 
+        return;
     }
     const card = studyCards[currentStudyIndex];
-    document.getElementById('study-question').innerText = card.question; 
+    document.getElementById('study-question').innerText = card.question;
     document.getElementById('study-answer').innerText = card.answer;
     const cardInner = document.getElementById('card-inner'); if (cardInner) cardInner.classList.remove('is-flipped');
-    
+
     const centerProgress = document.getElementById('study-progress-center');
     if (centerProgress) centerProgress.innerText = `${currentStudyIndex + 1} / ${studyCards.length}`;
     document.getElementById('progress-bar-fill').style.width = `${((currentStudyIndex + 1) / studyCards.length) * 100}%`;
@@ -1071,31 +1095,31 @@ function flipCard() { document.getElementById('card-inner').classList.toggle('is
 function submitReview(isKnown) {
     if (!studyCards || studyCards.length === 0 || currentStudyIndex >= studyCards.length) return;
     const currentCard = studyCards[currentStudyIndex];
-    
+
     // 🧠 核心替换：调用艾宾浩斯引擎计算时间 (false代表背诵模式)
     processCardMemory(currentCard, isKnown, false);
-    
+
     if (!isKnown) {
         studyCards.push(currentCard); // 不认识的塞回队尾重背
     }
-    
-    try { 
-        fetch(`/api/flashcards/${currentCard._id}/review`, { 
-            method: 'PATCH', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ isKnown, stage: currentCard.stage, nextReviewDate: currentCard.nextReviewDate }) 
-        }); 
+
+    try {
+        fetch(`/api/flashcards/${currentCard._id}/review`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isKnown, stage: currentCard.stage, nextReviewDate: currentCard.nextReviewDate })
+        });
     } catch (e) { console.warn("后台同步稍后重试", e); }
-    
+
     currentStudyIndex++;
-    
+
     if (currentStudyIndex >= studyCards.length) {
         setTimeout(() => {
             alert('🎉 恭喜！本次背诵任务圆满完成！');
-            showMainView('manage-view'); 
+            showMainView('manage-view');
         }, 150);
     } else {
-        renderStudyCard(); 
+        renderStudyCard();
     }
 }
 
@@ -1115,55 +1139,101 @@ function prevStudyCard() { if (currentStudyIndex > 0) { currentStudyIndex--; ren
 function markAsKnown() { submitReview(true); }
 function markAsReview() { submitReview(false); }
 
+
+
+
 function startSpellMode() {
     const limitInput = document.getElementById('study-limit');
     const maxCards = limitInput ? parseInt(limitInput.value) || 20 : 20;
     const now = new Date();
-    
+    isFreePracticeMode = false; // 重置模式
+
+    // 1. 获取目标文件夹 ID 集合 (包含子文件夹)
     const targetCategoryIds = new Set([currentCategoryId]);
     allCategories.forEach(cat => {
-        if (cat.parentId === currentCategoryId) {
-            targetCategoryIds.add(cat._id);
-        }
-    });
-    
-    let dueCards = allCards.filter(card => {
-        const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
-        const isDue = date <= now; 
-        const isReadyForSpell = card.stage >= 1; 
-        
-        let isMatch = false;
-        if (currentCategoryId === 'all') {
-            isMatch = true;
-        } else if (currentCategoryId === 'uncategorized') {
-            const catValue = card.category || card.categoryId;
-            isMatch = !catValue || catValue === 'uncategorized';
-        } else {
-            const cardCatId = card.category ? card.category._id : card.categoryId;
-            isMatch = targetCategoryIds.has(cardCatId);
-        }
-        return isReadyForSpell && isMatch && isDue; 
+        if (cat.parentId === currentCategoryId) targetCategoryIds.add(cat._id);
     });
 
-    if (dueCards.length === 0) return alert('提示：当前分类没有[可默写]的单词！\n\n原因可能是：\n1. 单词都已复习完\n2. 请先在[背诵模式]里背对解锁默写！');
-    dueCards.sort((a, b) => (b.interval || 0) - (a.interval || 0) || Math.random() - 0.5);
-    spellCards = dueCards.slice(0, maxCards); currentSpellIndex = 0;
-    showMainView('spell-view'); renderSpellCard();
+    // 2. 定义筛选函数（复用逻辑）
+    const getCards = (onlyDue) => {
+        return allCards.filter(card => {
+            const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
+            const isDue = date <= now;
+            const isReadyForSpell = (card.stage || 0) >= 1; // 🌟 必须背过一次才能默写
+
+            let isMatch = false;
+            if (currentCategoryId === 'all') {
+                isMatch = true;
+            } else if (currentCategoryId === 'uncategorized') {
+                const catValue = card.category || card.categoryId;
+                isMatch = !catValue || catValue === 'uncategorized';
+            } else {
+                const cardCatId = card.category ? (card.category._id || card.category) : card.categoryId;
+                isMatch = targetCategoryIds.has(cardCatId);
+            }
+
+            // 如果 onlyDue 为 true，则同时检查到期时间；否则只检查解锁状态
+            return isReadyForSpell && isMatch && (onlyDue ? isDue : true);
+        });
+    };
+
+    // 3. 尝试获取科学到期的卡片
+    let cards = getCards(true);
+
+    // 4. 如果没有到期的，询问是否开启自由练
+    if (cards.length === 0) {
+        const totalUnlocked = getCards(false).length;
+        if (totalUnlocked === 0) {
+            return alert('提示：当前分类没有[已解锁]的单词！\n\n请先在[背诵模式]里点击“认识”来解锁默写功能。');
+        }
+
+        const confirmForced = confirm(`当前没有科学待复习的单词。\n是否开启“自由练习”？(包含该分类下已解锁的 ${totalUnlocked} 个单词)\n\n注：自由练习模式不增加单词等级。`);
+        if (confirmForced) {
+            isFreePracticeMode = true;
+            cards = getCards(false);
+
+            // 🌟 核心改进：如果是自由模式，执行“彻底洗牌”
+            // 这种洗牌算法（Fisher-Yates）比 Math.random() 更科学，确保完全随机
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+        } else { return; }
+    }
+
+    // ... 前面 1-4 步保持不变 ...
+
+    // 5. 排序与启动逻辑
+    if (!isFreePracticeMode) {
+        // 💡 只有科学复习模式，才按间隔排序（先排复习间隔大的，即快忘的）
+        cards.sort((a, b) => (b.interval || 0) - (a.interval || 0) || Math.random() - 0.5);
+    } else {
+        // 💡 自由模式已经在第 4 步洗过牌了，这里千万不要再调用 sort()！
+        // 直接保持洗牌后的结果即可
+    }
+
+    // 统一截取数量并启动
+    spellCards = cards.slice(0, maxCards);
+    currentSpellIndex = 0;
+
+    showMainView('spell-view');
+    renderSpellCard();
+    console.log(`🚀 默写启动！模式：${isFreePracticeMode ? '自由练习' : '科学复习'}，数量：${spellCards.length}`);
 }
 
 // 🌟 1. 每次渲染新卡片，把按钮“洗脑”回提交状态
 function renderSpellCard() {
-    if (currentSpellIndex >= spellCards.length) { 
-        alert('恭喜你，完成了所有的拼写检验！'); 
+    if (currentSpellIndex >= spellCards.length) {
+        alert('恭喜你，完成了所有的拼写检验！');
         showMainView('manage-view');
-        return; 
+        return;
     }
     const card = spellCards[currentSpellIndex];
-    document.getElementById('spell-question').innerText = card.question || '（空问题）';
-    
-    const inputEl = document.getElementById('spell-input'); 
-    inputEl.value = ''; inputEl.disabled = false; inputEl.focus(); 
-    document.getElementById('spell-feedback').innerHTML = ''; 
+    document.getElementById('spell-question').innerText = card.answer || '（空问题）';
+
+    const inputEl = document.getElementById('spell-input');
+    inputEl.value = ''; inputEl.disabled = false; inputEl.focus();
+    document.getElementById('spell-feedback').innerHTML = '';
 
     // 强行把底部的按钮恢复成蓝色的“提交”
     const submitBtn = document.querySelector('#spell-view .check-btn');
@@ -1177,66 +1247,84 @@ function renderSpellCard() {
 
 async function checkSpelling() {
     const inputEl = document.getElementById('spell-input');
-    if (inputEl.disabled) return nextSpellCard(); 
-    
-    const inputStr = inputEl.value.trim().toLowerCase(); 
-    if (inputStr === '') { 
-        inputEl.style.borderColor = '#e53e3e'; 
-        inputEl.placeholder = '请先输入单词哦！'; 
-        setTimeout(() => { inputEl.style.borderColor = 'transparent'; inputEl.placeholder = '请在此输入答案...'; }, 1500); 
-        return; 
-    }
+    if (inputEl.disabled) return nextSpellCard();
 
     const card = spellCards[currentSpellIndex];
-    const answerStr = card.answer.trim().toLowerCase();  
-    const feedbackEl = document.getElementById('spell-feedback'); 
-    inputEl.disabled = true; 
+    if (!card) return; // 🌟 安全检查：防止卡片数据丢失
+
+    // 1. 双向净化逻辑
+    const cleanText = (text) => {
+        return (text || "")
+            .toLowerCase()
+            .replace(/[.,\/#!$%\^&\*;:{}=\_`~()]/g, "")
+            .replace(/\s+/g, ' ')
+            .trim();
+    };
+
+    const inputStr = cleanText(inputEl.value);
+    const answerStr = cleanText(card.question);
+
+    console.log(`比对详情: [${inputStr}] vs [${answerStr}]`); // 🌟 调试日志
+
+    const feedbackEl = document.getElementById('spell-feedback');
+    inputEl.disabled = true;
     const isCorrect = (inputStr === answerStr);
 
-    // 🧠 核心替换：调用引擎 (true代表这是默写模式)
-    processCardMemory(card, isCorrect, true);
+    // 2. 模式识别与引擎更新
+    // 🌟 使用 window. 确保变量不存在时也不会崩掉
+    if (window.isFreePracticeMode === false) {
+        console.log("执行科学复习逻辑...");
+        if (typeof processCardMemory === 'function') {
+            processCardMemory(card, isCorrect, true);
+        }
 
-    if (isCorrect) {
-        feedbackEl.innerHTML = '<div style="display:flex;align-items:center;gap:6px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#48bb78" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>拼写正确！完全掌握！</strong></div>'; 
-        feedbackEl.style.color = '#48bb78'; 
-        try { speakWord(card.answer, null); } catch(e){} 
+        try {
+            await fetch(`/api/flashcards/${card._id}/review`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    isKnown: isCorrect,
+                    stage: card.stage,
+                    nextReviewDate: card.nextReviewDate
+                })
+            });
+        } catch (e) { console.error("同步进度失败", e); }
     } else {
-        feedbackEl.innerHTML = `<div style="display:flex;align-items:flex-start;gap:6px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" stroke-width="2.5" style="flex-shrink:0;margin-top:2px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> <div><strong>拼写错误。卡片已降级。</strong><br><br>你的输入：<span style="color:red; text-decoration: line-through;">${inputStr}</span><br>正确答案：<span style="color:green;">${card.answer}</span></div></div>`;
-        feedbackEl.style.color = '#e53e3e'; 
-        spellCards.push(card); 
+        console.log("执行自由练习逻辑，不更新数据。");
     }
 
+    // 3. 渲染反馈 (确保这部分代码存在，否则界面没反应)
+    if (isCorrect) {
+        feedbackEl.innerHTML = '<strong style="color:#48bb78;">✅ 拼写正确！</strong>';
+        if (typeof speakWord === 'function') speakWord(card.question);
+    } else {
+        feedbackEl.innerHTML = `<div style="color:#e53e3e;">❌ 拼写错误。<br>正确答案：<strong>${card.question}</strong></div>`;
+        spellCards.push(card); // 错词重练
+    }
+
+    // 4. 激活“继续”按钮
     const submitBtn = document.querySelector('#spell-view .check-btn');
     if (submitBtn) {
-        submitBtn.style.display = 'block';
         submitBtn.innerHTML = '继续下一张 (Enter) ➔';
-        submitBtn.style.background = '#10b981'; 
-        submitBtn.onclick = nextSpellCard; 
+        submitBtn.style.background = '#10b981';
+        submitBtn.onclick = nextSpellCard;
     }
-
-    try { 
-        await fetch(`/api/flashcards/${card._id}/review`, { 
-            method: 'PATCH', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ isKnown: isCorrect, stage: card.stage, nextReviewDate: card.nextReviewDate }) 
-        }); 
-    } catch(e) {}
 }
 
 function prevSpellCard() { if (currentSpellIndex > 0) { currentSpellIndex--; renderSpellCard(); } }
 function nextSpellCard() { currentSpellIndex++; renderSpellCard(); }
 
-function handleSpellEnter(event) { 
-    if (event.key === 'Enter') { 
-        const inputEl = document.getElementById('spell-input'); 
+function handleSpellEnter(event) {
+    if (event.key === 'Enter') {
+        const inputEl = document.getElementById('spell-input');
         if (inputEl.disabled) nextSpellCard(); // 如果禁用了(已验证)，回车直接进下一张
-        else checkSpelling(); 
-    } 
+        else checkSpelling();
+    }
 }
 
 
 
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
     const activeTag = document.activeElement.tagName.toLowerCase();
     const isTyping = (activeTag === 'input' || activeTag === 'textarea');
     const isSpellInput = (document.activeElement.id === 'spell-input');
@@ -1244,7 +1332,7 @@ document.addEventListener('keydown', function(event) {
     const studyArea = document.getElementById('study-view'); const spellArea = document.getElementById('spell-view');
 
     if (studyArea && !studyArea.classList.contains('hidden')) {
-        switch(event.code) {
+        switch (event.code) {
             case 'Space': event.preventDefault(); flipCard(); break;
             case 'ArrowLeft': prevStudyCard(); break;
             case 'ArrowRight': nextStudyCard(); break;
@@ -1253,7 +1341,7 @@ document.addEventListener('keydown', function(event) {
         }
     }
     if (spellArea && !spellArea.classList.contains('hidden')) {
-        switch(event.code) {
+        switch (event.code) {
             case 'ArrowLeft': prevSpellCard(); break;
             case 'ArrowRight': nextSpellCard(); break;
             case 'Enter': case 'NumpadEnter': const inputEl = document.getElementById('spell-input'); if (inputEl && inputEl.disabled) { event.preventDefault(); nextSpellCard(); } break;
@@ -1271,10 +1359,10 @@ function getUncategorizedCards() {
 function showClearConfirmModal() {
     const targetCards = getUncategorizedCards();
     if (targetCards.length === 0) return alert("当前未分类区域为空，无需清空。");
-    
+
     const sampleWords = targetCards.slice(0, 3).map(c => c.question).join(', ');
     const moreText = targetCards.length > 3 ? '...' : '';
-    
+
     const confirmText = document.getElementById('clear-confirm-text');
     if (confirmText) {
         confirmText.innerHTML = `即将删除 <b>${targetCards.length}</b> 张未分类卡片<br><span style="font-size: 12px; color: #94a3b8;">(包含: ${sampleWords}${moreText})</span><br>一旦删除无法恢复。`;
@@ -1285,7 +1373,7 @@ function showClearConfirmModal() {
 }
 
 async function executeClearUncategorized() {
-    const targetCards = getUncategorizedCards(); 
+    const targetCards = getUncategorizedCards();
     const btn = document.getElementById('confirm-clear-btn');
     const originalText = btn.innerHTML;
 
@@ -1297,7 +1385,7 @@ async function executeClearUncategorized() {
     try {
         const deletePromises = targetCards.map(card => fetch(`/api/flashcards/${card._id}`, { method: 'DELETE' }));
         await Promise.all(deletePromises);
-        
+
         document.getElementById('clear-confirm-modal').style.display = 'none';
         if (typeof loadFlashcards === 'function') loadFlashcards();
     } catch (error) {
@@ -1318,10 +1406,10 @@ let selectedCards = new Set();
 function toggleManageMode() {
     isManageMode = !isManageMode;
     selectedCards.clear();
-    
+
     const manageBtn = document.getElementById('btn-toggle-manage');
     const selectAllBtn = document.getElementById('btn-select-all');
-    
+
     if (manageBtn) {
         // 进入管理模式变成红色的“退出”，否则变回 SVG 图标
         if (isManageMode) {
@@ -1382,9 +1470,9 @@ function toggleSelectAllCards() {
         const checkboxWrap = document.getElementById(`checkbox-wrap-${id}`);
         const cardItem = checkboxWrap.closest('.card-item');
         const isChecked = selectedCards.has(id);
-        
+
         if (checkboxWrap) {
-            checkboxWrap.innerHTML = isChecked 
+            checkboxWrap.innerHTML = isChecked
                 ? `<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#3b82f6" stroke="#3b82f6" stroke-width="2"></circle><path d="M8 12l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`
                 : `<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>`;
         }
@@ -1395,11 +1483,11 @@ function toggleSelectAllCards() {
 }
 
 function toggleCardSelection(cardId) {
-    if (!isManageMode) return; 
+    if (!isManageMode) return;
 
     if (selectedCards.has(cardId)) selectedCards.delete(cardId);
     else selectedCards.add(cardId);
-    
+
     const checkboxWrap = document.getElementById(`checkbox-wrap-${cardId}`);
     if (checkboxWrap) {
         if (selectedCards.has(cardId)) {
@@ -1433,7 +1521,7 @@ async function executeBatchDelete() {
     try {
         const deletePromises = Array.from(selectedCards).map(id => fetch(`/api/flashcards/${id}`, { method: 'DELETE' }));
         await Promise.all(deletePromises);
-        exitManageMode(); 
+        exitManageMode();
         if (typeof loadFlashcards === 'function') loadFlashcards();
     } catch (error) {
         console.error("批量删除失败:", error);
@@ -1445,12 +1533,12 @@ async function executeBatchDelete() {
 function promptBatchMove() {
     if (selectedCards.size === 0) return;
     document.getElementById('batch-move-text').innerText = `将已选的 ${selectedCards.size} 张卡片移动到：`;
-    
+
     const parents = allCategories.filter(c => !c.parentId);
     const children = allCategories.filter(c => c.parentId);
 
-    let optionsHtml = `<option value="uncategorized">未分类区</option>`; 
-    
+    let optionsHtml = `<option value="uncategorized">未分类区</option>`;
+
     parents.forEach(p => {
         const myChildren = children.filter(c => c.parentId === p._id);
         optionsHtml += `<optgroup label="── ${p.name} ──">`;
@@ -1463,23 +1551,23 @@ function promptBatchMove() {
         }
         optionsHtml += `</optgroup>`;
     });
-    
+
     const moveSelect = document.getElementById('batch-move-select');
     if (moveSelect) moveSelect.innerHTML = optionsHtml;
-    
+
     const modal = document.getElementById('batch-move-modal');
     if (modal) modal.style.display = 'flex';
 }
 
 async function executeBatchMove() {
     if (selectedCards.size === 0) return;
-    
+
     let targetCategoryId = document.getElementById('batch-move-select').value;
-    if (targetCategoryId === 'uncategorized') targetCategoryId = null; 
+    if (targetCategoryId === 'uncategorized') targetCategoryId = null;
 
     const btn = document.getElementById('confirm-move-btn');
     const originalText = btn.innerHTML;
-    
+
     if (btn) {
         btn.innerHTML = `移动中...`;
         btn.disabled = true;
@@ -1488,19 +1576,19 @@ async function executeBatchMove() {
     try {
         const movePromises = Array.from(selectedCards).map(id => {
             const card = allCards.find(c => c._id === id);
-            if (!card) return Promise.resolve(); 
+            if (!card) return Promise.resolve();
             return fetch(`/api/flashcards/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ question: card.question, answer: card.answer, categoryId: targetCategoryId })
             });
         });
-        
+
         await Promise.all(movePromises);
         document.getElementById('batch-move-modal').style.display = 'none';
-        exitManageMode(); 
+        exitManageMode();
         if (typeof loadFlashcards === 'function') loadFlashcards();
-        
+
     } catch (error) {
         console.error("批量移动失败:", error);
         alert("网络连接异常，部分卡片可能未能成功转移。");
@@ -1512,14 +1600,14 @@ async function executeBatchMove() {
     }
 }
 
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
         let isModalClosed = false;
 
         const overlay = document.getElementById('modal-overlay');
         const batchMoveModal = document.getElementById('batch-move-modal');
         const clearConfirmModal = document.getElementById('clear-confirm-modal');
-        
+
         if (overlay && overlay.style.display === 'block') {
             if (typeof closeAllModals === 'function') closeAllModals();
             isModalClosed = true;
@@ -1542,10 +1630,10 @@ document.addEventListener('keydown', function(event) {
 function setupInlineCategoryUI() {
     const selectEl = document.getElementById('modal-category-select');
     if (!selectEl || selectEl.dataset.inlineBound) return;
-    
+
     selectEl.dataset.inlineBound = 'true';
-    
-    selectEl.addEventListener('change', function() {
+
+    selectEl.addEventListener('change', function () {
         if (this.value === 'CREATE_NEW') {
             showInlineCategoryForm();
         }
@@ -1578,14 +1666,14 @@ function setupInlineCategoryUI() {
 function showInlineCategoryForm() {
     document.getElementById('modal-category-select').style.display = 'none';
     document.getElementById('inline-cat-form').style.display = 'block';
-    
+
     const parentSelect = document.getElementById('inline-cat-parent');
     parentSelect.innerHTML = '<option value="">📁 (无) 作为顶级文件夹</option>';
     allCategories.filter(c => !c.parentId).forEach(cat => {
         const isSelected = (currentCategoryId === cat._id) ? 'selected' : '';
         parentSelect.innerHTML += `<option value="${cat._id}" ${isSelected}>↳ 归属于: ${cat.name}</option>`;
     });
-    
+
     document.getElementById('inline-cat-name').value = '';
     setTimeout(() => document.getElementById('inline-cat-name').focus(), 50);
 }
@@ -1594,40 +1682,40 @@ function cancelInlineCategory() {
     document.getElementById('inline-cat-form').style.display = 'none';
     const selectEl = document.getElementById('modal-category-select');
     selectEl.style.display = 'block';
-    selectEl.value = ""; 
+    selectEl.value = "";
 }
 
 async function submitInlineCategory(event) {
     const name = document.getElementById('inline-cat-name').value.trim();
     const parentId = document.getElementById('inline-cat-parent').value;
-    
+
     if (!name) return alert('名称不能为空哦！');
-    
+
     const btn = event.target;
     const originalText = btn.innerText;
     btn.innerText = '创建中...';
     btn.disabled = true;
-    
+
     try {
         await fetch('/api/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, parentId: parentId || null, type: 'vocabulary' })
         });
-        
-        await loadCategories(); 
-        
+
+        await loadCategories();
+
         document.getElementById('inline-cat-form').style.display = 'none';
         const selectEl = document.getElementById('modal-category-select');
         selectEl.style.display = 'block';
-        
+
         setTimeout(() => {
             const createdCat = allCategories.find(c => c.name === name && (c.parentId || '') === parentId);
             if (createdCat) {
                 selectEl.value = createdCat._id;
             }
-        }, 150); 
-        
+        }, 150);
+
     } catch (error) {
         console.error("行内创建报错:", error);
         alert("创建失败，请检查网络。");
@@ -1639,7 +1727,7 @@ async function submitInlineCategory(event) {
 
 function injectQuickCategoryModal() {
     if (document.getElementById('quick-category-modal')) return;
-    
+
     const modalHtml = `
     <div id="quick-category-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:10000; background: transparent;" onclick="closeQuickCategoryModal()"></div>
     
@@ -1663,19 +1751,19 @@ function openQuickCategoryModal() {
     const sourceModalId = window.quickCreateSourceModal || 'add-card-modal';
     const baseModal = document.getElementById(sourceModalId);
     if (baseModal) {
-        baseModal.style.filter = 'brightness(0.6)'; 
+        baseModal.style.filter = 'brightness(0.6)';
         baseModal.style.pointerEvents = 'none';
     }
 
     const quickModal = document.getElementById('quick-category-modal');
     const quickOverlay = document.getElementById('quick-category-overlay');
-    
+
     quickModal.style.zIndex = '30000';
     quickOverlay.style.zIndex = '29999';
 
     const parentSelect = document.getElementById('quick-parent-select');
     parentSelect.innerHTML = `<option value="CREATE_NEW_PARENT" style="color:#3b82f6; font-weight:bold;">创建全新大类...</option><option disabled>──────────────</option>`;
-    
+
     allCategories.filter(c => !c.parentId).forEach(p => {
         parentSelect.innerHTML += `<option value="${p._id}">挂载到现有: ${p.name}</option>`;
     });
@@ -1683,9 +1771,9 @@ function openQuickCategoryModal() {
     quickOverlay.style.display = 'block';
     quickModal.style.display = 'block';
     toggleNewParentInput();
-    
+
     setTimeout(() => {
-        if(parentSelect.value === 'CREATE_NEW_PARENT') document.getElementById('quick-new-parent-name').focus();
+        if (parentSelect.value === 'CREATE_NEW_PARENT') document.getElementById('quick-new-parent-name').focus();
         else document.getElementById('quick-child-name').focus();
     }, 100);
 }
@@ -1712,7 +1800,7 @@ function closeQuickCategoryModal() {
     }
 
     const selectEl = document.getElementById('modal-category-select');
-    if (selectEl && selectEl.value === 'CREATE_NEW') selectEl.value = ""; 
+    if (selectEl && selectEl.value === 'CREATE_NEW') selectEl.value = "";
 }
 
 async function submitQuickCategory() {
@@ -1736,7 +1824,7 @@ async function submitQuickCategory() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: newParentName, parentId: null, type: 'vocabulary' })
             });
-            
+
             await loadCategories();
             const createdParent = allCategories.find(c => c.name === newParentName && !c.parentId);
             if (!createdParent) throw new Error("大类创建迷失在四次元空间了");
@@ -1771,7 +1859,7 @@ async function submitQuickCategory() {
 
 (function setupContextMenu() {
     function injectContextMenu() {
-        if(document.getElementById('custom-context-menu')) return;
+        if (document.getElementById('custom-context-menu')) return;
         const menuHTML = `
             <div id="custom-context-menu" style="display:none; position:absolute; z-index:9999; background:white; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); padding:6px; min-width:150px;">
                 <div id="ctx-edit-btn" style="padding:10px 12px; margin-bottom:4px; cursor:pointer; color:#3b82f6; font-size:0.9rem; border-radius:6px; display:flex; align-items:center; gap:8px; font-weight:500;">重命名</div>
@@ -1783,25 +1871,25 @@ async function submitQuickCategory() {
     }
 
     let contextMenuTargetId = null;
-    let contextMenuTargetName = ''; 
+    let contextMenuTargetName = '';
 
     window.addEventListener('DOMContentLoaded', () => {
         injectContextMenu();
         const menu = document.getElementById('custom-context-menu');
         const editBtn = document.getElementById('ctx-edit-btn');
         const deleteBtn = document.getElementById('ctx-delete-btn');
-        
+
         const sidebar = document.getElementById('sidebar-menu');
         if (sidebar) sidebar.style.touchAction = 'manipulation';
 
-        document.addEventListener('contextmenu', function(e) {
+        document.addEventListener('contextmenu', function (e) {
             const targetElement = e.target.closest('[onclick]');
             if (targetElement) {
                 const onclickStr = targetElement.getAttribute('onclick') || '';
                 const targetCat = allCategories.find(c => onclickStr.includes(c._id));
 
                 if (targetCat) {
-                    e.preventDefault(); 
+                    e.preventDefault();
                     contextMenuTargetId = targetCat._id;
                     contextMenuTargetName = targetCat.name;
                     menu.style.display = 'block';
@@ -1813,13 +1901,13 @@ async function submitQuickCategory() {
             menu.style.display = 'none';
         });
 
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             if (e.target.closest('#custom-context-menu')) return;
             menu.style.display = 'none';
         });
 
-        editBtn.addEventListener('click', async function() {
-            menu.style.display = 'none'; 
+        editBtn.addEventListener('click', async function () {
+            menu.style.display = 'none';
             if (!contextMenuTargetId) return;
 
             const newName = prompt(`请输入【${contextMenuTargetName}】的新名称：`, contextMenuTargetName);
@@ -1832,7 +1920,7 @@ async function submitQuickCategory() {
                     });
                     if (!response.ok) throw new Error('重命名接口报错');
 
-                    await loadCategories(); 
+                    await loadCategories();
                     if (currentCategoryId === contextMenuTargetId) {
                         const titleEl = document.getElementById('category-title');
                         if (titleEl) titleEl.innerText = newName.trim();
@@ -1844,8 +1932,8 @@ async function submitQuickCategory() {
             }
         });
 
-        deleteBtn.addEventListener('click', async function() {
-            menu.style.display = 'none'; 
+        deleteBtn.addEventListener('click', async function () {
+            menu.style.display = 'none';
             if (!contextMenuTargetId) return;
 
             if (confirm(`警告：确定要删除【${contextMenuTargetName}】吗？\n文件夹删除后，里面的卡片会自动进入“未分类区”。`)) {
@@ -1853,10 +1941,10 @@ async function submitQuickCategory() {
                     const response = await fetch(`/api/categories/${contextMenuTargetId}`, { method: 'DELETE' });
                     if (!response.ok) throw new Error('删除接口报错');
 
-                    await loadCategories(); 
+                    await loadCategories();
                     if (currentCategoryId === contextMenuTargetId) {
                         const allCardsEl = document.querySelector(`.nav-item[onclick*="all"]`);
-                        if(allCardsEl) allCardsEl.click();
+                        if (allCardsEl) allCardsEl.click();
                         else loadFlashcards();
                     } else {
                         loadFlashcards();
@@ -1879,14 +1967,14 @@ function batchExportCards() {
     const cardsToExport = allCards.filter(card => selectedCards.has(card._id));
     if (cardsToExport.length === 0) return;
 
-    let csvContent = "\uFEFF"; 
+    let csvContent = "\uFEFF";
     csvContent += "正面 (问题),反面 (答案)\n";
 
     const escapeCSV = (str) => {
         if (!str) return '""';
-        let safeStr = String(str).replace(/"/g, '""'); 
+        let safeStr = String(str).replace(/"/g, '""');
         if (safeStr.search(/("|,|\n)/g) >= 0) {
-            safeStr = `"${safeStr}"`; 
+            safeStr = `"${safeStr}"`;
         }
         return safeStr;
     };
@@ -1907,35 +1995,33 @@ function batchExportCards() {
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = fileName;
     document.body.appendChild(link);
     link.click();
-    
+
     document.body.removeChild(link);
-    URL.revokeObjectURL(url); 
+    URL.revokeObjectURL(url);
 }
 
 // ==========================================
 // ✨ 触控手势引擎 (滑动出抽屉) 
 // ==========================================
-let touchStartX = 0;
-let touchEndX = 0;
-let touchStartY = 0;
-let touchEndY = 0;
+
+
 
 document.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
     touchStartY = e.changedTouches[0].screenY;
-}, {passive: true});
+}, { passive: true });
 
 document.addEventListener('touchend', e => {
     touchEndX = e.changedTouches[0].screenX;
     touchEndY = e.changedTouches[0].screenY;
     handleMobileSwipe();
-}, {passive: true});
+}, { passive: true });
 
 function handleMobileSwipe() {
     if (window.innerWidth > 768) return; // 电脑端不启用手势
@@ -1962,4 +2048,65 @@ function handleMobileSwipe() {
     if (swipeDistanceX < -50 && isSidebarOpen) {
         toggleMobileSidebar();
     }
+}
+
+// ==========================================
+// ✨ 整合版交互引擎 (Esc回退 + 智能手势)
+// ==========================================
+
+// 🎹 全局键盘快捷键监听 (拆除白屏炸弹)
+window.addEventListener('keydown', async (e) => {
+    if (e.key === 'Escape' || e.keyCode === 27) {
+        // 获取当前不是隐藏状态的视图
+        const currentView = document.querySelector('.view:not(.hidden)');
+
+        // 如果当前不在主页，就执行回退
+        if (currentView && currentView.id !== 'manage-view' && currentView.id !== 'dashboard-view') {
+            console.log("检测到 Esc，正在精准回退至列表...");
+            
+            showMainView('manage-view'); // 🌟 修正：使用正确的 ID
+
+            // 🌟 修正：调用正确的渲染函数 renderCards
+            if (typeof renderCards === 'function') {
+                setTimeout(() => {
+                    renderCards(); 
+                    console.log("列表数据已强制重刷");
+                }, 50); 
+            }
+
+            if (typeof renderDashboard === 'function') renderDashboard();
+        }
+    }
+});
+
+// 📱 统一手势处理器 (合并呼出侧栏与滑动回退)
+function handleMobileSwipe() {
+    if (window.innerWidth > 1024) return; 
+
+    const diffX = touchEndX - touchStartX;
+    const diffY = Math.abs(touchEndY - touchStartY);
+
+    // 如果上下滑动幅度过大，判定为翻页，不执行回退
+    if (diffY > Math.abs(diffX)) return;
+
+    const sidebar = document.querySelector('.sidebar');
+    const isSidebarOpen = sidebar && sidebar.classList.contains('mobile-active');
+
+    // 情况 A：呼出/隐藏侧边栏 (靠近左边缘)
+    if (touchStartX < 50) {
+        if (diffX > 60 && !isSidebarOpen) toggleMobileSidebar();
+    }
+    
+    // 情况 B：回退页面 (在屏幕中间右划)
+    if (diffX > 100 && touchStartX >= 50 && !isSidebarOpen) {
+        const currentView = document.querySelector('.view:not(.hidden)');
+        // 排除输入框聚焦状态
+        if (currentView && currentView.id !== 'manage-view' && document.activeElement.tagName !== 'INPUT') {
+            showMainView('manage-view');
+            if (typeof renderCards === 'function') renderCards();
+        }
+    }
+
+    // 情况 C：向左划隐藏侧栏
+    if (diffX < -60 && isSidebarOpen) toggleMobileSidebar();
 }
