@@ -70,7 +70,7 @@ This project is licensed under the MIT License.
 3. `git push`
 
 git add .
-git commit -m "feat(Oopsy): 准备新增卡片自由模式"
+git commit -m "feat(Oopsy): 准备先自己手机体验内测"
 git push 
 
 ## 其它

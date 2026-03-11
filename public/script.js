@@ -39,11 +39,33 @@ let collapsedFolders = new Set();
 let rootCollapsed = false;
 let isFreePracticeMode = false; // 🌟 记得在函数外部定义这个变量
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadCategories();
-    loadFlashcards();
 
-    // 强行接管“添加”按钮
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. ⚡ 开启骨架屏护盾
+    window.isDataLoading = true;
+    showMainView('dashboard-view');
+    const titleEl = document.getElementById('current-view-title');
+    if (titleEl) titleEl.innerText = 'Tagi ～';
+    
+    // 此时渲染的是骨架屏，绝不跳动
+    if (typeof renderDashboard === 'function') renderDashboard(); 
+
+    // 2. 异步静默拉取数据
+    Promise.all([loadCategories(), loadFlashcards()]).then(() => {
+        window.isDataLoading = false; // 关闭护盾
+        const dashboardNavItem = document.querySelector('.nav-item[onclick*="selectDashboard"]');
+        if (dashboardNavItem) {
+            selectDashboard(dashboardNavItem);
+        } else {
+            renderDashboard(); // 数据满载回归
+        }
+    }).catch(err => {
+        console.error("加载数据失败:", err);
+        window.isDataLoading = false;
+        renderDashboard(); 
+    });
+
+    // 3. 基础事件绑定
     const addBtn = document.getElementById('btn-add-card');
     if (addBtn) {
         addBtn.onclick = (e) => {
@@ -52,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // 🛡️ 确保手机端遮罩层存在并绑定点击收起事件
     let overlay = document.getElementById('mobile-overlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -67,7 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay.style.backdropFilter = 'blur(2px)';
         document.body.appendChild(overlay);
     }
-    // 点击遮罩层，自动收起侧边栏
     overlay.onclick = () => {
         const sidebar = document.querySelector('.sidebar');
         if (sidebar && sidebar.classList.contains('mobile-active')) {
@@ -78,6 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- 1. 视图切换引擎 ---
 // --- 1. 视图切换引擎 (🌟 新增沉浸式学习状态管理) ---
+// --- 1. 视图切换引擎 (🌟 修复异步覆盖 Bug 版) ---
+// --- 1. 视图切换引擎 (🚀 上线级：完美平衡版) ---
+// --- 1. 视图切换引擎 (🚀 上线级：完美平衡 + 笔记类型智能过滤版) ---
 function showMainView(viewId) {
     const views = ['manage-view', 'study-view', 'spell-view', 'dashboard-view'];
     views.forEach(id => {
@@ -87,24 +110,68 @@ function showMainView(viewId) {
     const target = document.getElementById(viewId);
     if (target) target.classList.remove('hidden');
 
-    // ==== 🌟 沉浸式引擎：控制顶部多余按钮的显隐 ====
+    // ==== 🌟 精准控制顶部按钮 ====
     const headerActions = document.querySelector('.header-actions');
     const limitInput = document.getElementById('study-limit');
-    const limitContainer = limitInput ? limitInput.parentElement : null; // 抓取包裹复习张数的容器
+    const limitContainer = limitInput ? limitInput.parentElement : null; 
+    const addBtn = document.getElementById('btn-add-card');
+    const manageBtn = document.getElementById('btn-toggle-manage');
+    const studyBtn = document.querySelector('button[onclick="startStudyMode()"]');
+    const spellBtn = document.querySelector('button[onclick="startSpellMode()"]');
 
-    if (viewId === 'manage-view' || viewId === 'dashboard-view') {
-        // 场景 A：回到主页面（退出学习模式） -> 恢复所有功能按钮
-        if (headerActions) headerActions.style.display = 'flex';
-        // 恢复复习张数输入框
-        if (limitContainer && limitContainer.tagName !== 'BODY') limitContainer.style.display = '';
-        loadFlashcards(); // 重新加载卡片数据
-    } else {
-        // 场景 B：进入背诵或默写模式 -> 强行进入沉浸状态，清场！
-        if (headerActions) headerActions.style.display = 'none'; // 隐藏添加/背诵/默写等按钮
-        if (limitContainer && limitContainer.tagName !== 'BODY') limitContainer.style.display = 'none'; // 隐藏复习张数框
+    // 👇 新增护盾：查一下当前文件夹（或它的父级）是不是“笔记类型(notes)”
+    let isNoteFolder = false;
+    if (typeof currentCategoryId !== 'undefined' && currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
+        const currentCat = allCategories.find(c => c._id === currentCategoryId);
+        if (currentCat) {
+            // 如果自己是笔记，或者它爸爸是笔记，都算笔记！
+            if (currentCat.type === 'notes') {
+                isNoteFolder = true;
+            } else if (currentCat.parentId) {
+                const parentCat = allCategories.find(p => p._id === currentCat.parentId);
+                if (parentCat && parentCat.type === 'notes') {
+                    isNoteFolder = true;
+                }
+            }
+        }
     }
 
-    // 动态控制“未分类区”的清空按钮：只有在主页面的未分类区才显示
+    if (viewId === 'manage-view') {
+        // 📁 【常规列表页】：全副武装！恢复所有按钮
+        window.isFreePracticeMode = false;
+        if (headerActions) headerActions.style.display = 'flex';
+        if (limitContainer && limitContainer.tagName !== 'BODY') limitContainer.style.display = 'flex';
+        if (addBtn) addBtn.style.display = 'inline-flex';
+        if (manageBtn) manageBtn.style.display = 'inline-flex';
+        if (studyBtn) studyBtn.style.display = 'inline-flex';
+        
+        // 🛡️ 核心修复：如果是笔记类型，默写按钮死活不亮！
+        if (spellBtn) {
+            spellBtn.style.display = isNoteFolder ? 'none' : 'inline-flex';
+        }
+        
+        if (typeof filterCards === 'function') filterCards(); 
+        
+    } else if (viewId === 'dashboard-view') {
+        // 📊 【学习数据看板】：保留复习数量和+号，隐藏具体列表操作
+        window.isFreePracticeMode = false;
+        if (headerActions) headerActions.style.display = 'flex'; 
+        
+        if (limitContainer && limitContainer.tagName !== 'BODY') limitContainer.style.display = 'flex';
+        if (addBtn) addBtn.style.display = 'inline-flex';
+        
+        if (manageBtn) manageBtn.style.display = 'none';
+        if (studyBtn) studyBtn.style.display = 'none';
+        if (spellBtn) spellBtn.style.display = 'none';
+        
+        if (typeof renderDashboard === 'function') renderDashboard(); 
+        
+    } else {
+        // 🎯 【沉浸背诵/默写】：全屏清场！
+        if (headerActions) headerActions.style.display = 'none'; 
+    }
+
+    // 动态控制“未分类区”的专属清空按钮
     const clearBtn = document.getElementById('btn-clear-uncategorized');
     if (clearBtn) {
         if (currentCategoryId === 'uncategorized' && viewId === 'manage-view') {
@@ -258,9 +325,15 @@ function toggleRoot(event) {
 }
 
 // ✨ 侧边栏点击逻辑 (安全收起版)
+// ✨ 侧边栏点击逻辑 (安全收起版 + 修复跨文件夹幽灵删除)
 function selectSidebarItem(id, title, type, element) {
     try {
         currentCategoryId = id;
+
+        // 🚨 修复 2：只要切换了文件夹，强行退出管理模式，清空勾选池！(防止误删其他文件夹的卡片)
+        if (typeof exitManageMode === 'function' && isManageMode) {
+            exitManageMode();
+        }
 
         const titleEl = document.getElementById('current-view-title');
         if (titleEl) titleEl.textContent = title;
@@ -281,24 +354,19 @@ function selectSidebarItem(id, title, type, element) {
                 settingsBtn.classList.add('hidden');
             }
         }
-        // ==========================================
-        // 🌟 核心魔法：根据文件夹类型，动态隐藏“默写”按钮！(终极防弹版)
-        // ==========================================
-        // 我们不找 ID 了，直接通过 onclick 属性精准狙击！
+        
+        // 🌟 动态隐藏默写按钮
         const spellBtn = document.querySelector('button[onclick*="startSpellMode"]');
-
         if (spellBtn) {
             if (type === 'notes') {
-                // 如果是笔记夹，直接让默写按钮人间蒸发！
                 spellBtn.style.display = 'none';
             } else {
-                // 如果是单词本，恢复显示 (注意：这里用空字符串 '' 可以让它恢复默认的 CSS 布局，比 inline-flex 更安全)
                 spellBtn.style.display = '';
             }
         }
-        // ==========================================
+        
+        // 触发界面切换，内部会自动调用 filterCards 刷新列表
         showMainView('manage-view');
-        renderCards();
 
         // 📱 手机端：只有当它是打开状态时，才执行收起动作 (防止反向触发)
         if (window.innerWidth <= 768) {
@@ -307,7 +375,7 @@ function selectSidebarItem(id, title, type, element) {
                 toggleMobileSidebar();
             }
         }
-    } catch (error) {
+    } catch (error) { // 👈 就是这个 catch，刚才被弄丢了！现在它回来了！
         console.error("侧边栏点击报错拦截:", error);
     }
 }
@@ -353,7 +421,7 @@ function handleParentClick(event, folderId, folderName, folderType, liElement) {
 
 
 function selectDashboard(element) {
-    document.getElementById('current-view-title').innerText = '数据看板';
+    document.getElementById('current-view-title').innerText = 'Tagi ～';
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     if (element) element.classList.add('active');
     const settingsBtn = document.getElementById('category-settings-btn');
@@ -464,10 +532,10 @@ async function loadFlashcards() {
         if (document.getElementById('manage-view') && !document.getElementById('manage-view').classList.contains('hidden')) {
             filterCards();
         }
-        
+
         console.log("✅ 全局数据同步完成，看板已点亮");
-    } catch (error) { 
-        console.error('加载卡片失败:', error); 
+    } catch (error) {
+        console.error('加载卡片失败:', error);
     }
 }
 
@@ -511,6 +579,17 @@ function filterCards() {
 }
 
 function renderCards(cardsToRender = null) {
+    // ==========================================
+    // 🛡️ 终极防空护盾：只要进了这个函数，如果是异常状态就拨乱反正
+    // ==========================================
+    if (currentCategoryId === 'dashboard' || !currentCategoryId) {
+        currentCategoryId = 'all';
+        // 点亮左侧的“所有卡片”
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        const allCardsNav = document.querySelector(`.nav-item[onclick*="all"]`);
+        if (allCardsNav) allCardsNav.classList.add('active');
+    }
+
     if (!cardsToRender) {
         filterCards();
         return;
@@ -533,22 +612,18 @@ function renderCards(cardsToRender = null) {
 
     list.innerHTML = cardsToRender.map(card => {
         const categoryName = card.category ? card.category.name : '未分类区';
-        // --- 🌟 核心改进逻辑开始 ---
-        // 找出这张卡片所属的文件夹对象
         const cardCatId = card.category ? (card.category._id || card.category) : card.categoryId;
         const currentCat = allCategories.find(c => c._id === cardCatId);
         const isNoteType = currentCat ? currentCat.type === 'notes' : false;
         let stageHtml = '';
         if (isNoteType) {
-            // 场景 A：笔记夹 -> 隐藏进度，显示稳重的“已归档”
             stageHtml = `<span style="${getBadgeStyle('#e0f2fe', '#0369a1')}">已归档</span>`;
         } else {
-            // 场景 B：单词本 -> 维持原有的艾宾浩斯进度显示
             stageHtml = card.stage >= 1
                 ? `<span style="${getBadgeStyle('#fef3c7', '#b45309')}">可默写</span>`
                 : `<span style="${getBadgeStyle('#f1f5f9', '#64748b')}">待进阶</span>`;
         }
-        // --- 🌟 核心改进逻辑结束 ---
+        
         const reviewDate = card.nextReviewDate ? new Date(card.nextReviewDate) : now;
         const isDue = reviewDate <= now;
 
@@ -611,6 +686,8 @@ const REVIEW_INTERVALS = [0.5, 1, 2, 4, 7, 15, 30]; // 艾宾浩斯间隔天数
 
 function processCardMemory(card, isCorrect, isSpellMode = false) {
     if (typeof card.stage !== 'number') card.stage = 0;
+    // 🌟 初始化错误分（如果没有的话）
+    if (typeof card.failCount !== 'number') card.failCount = 0;
 
     if (isCorrect) {
         // ✅ 对了：正常升级
@@ -623,10 +700,12 @@ function processCardMemory(card, isCorrect, isSpellMode = false) {
         // ❌ 错了：执行“保级惩罚”
         if (isSpellMode) {
             // 🌟 关键改动：最低保在 Stage 1，确保它依然拥有“默写资格”
-            card.stage = Math.max(1, card.stage - 1); 
+            card.stage = Math.max(1, card.stage - 1);
+            card.failCount += 0.5; // 🌟 默写错：只加 0.5 分
         } else {
             // 背诵错了：如果是老兵(Stage>=1)就留级在1，如果是新人就回0
-            card.stage = card.stage >= 1 ? 1 : 0; 
+            card.stage = card.stage >= 1 ? 1 : 0;
+            card.failCount += 1;   // 🌟 背诵错：加 1 分
         }
     }
 
@@ -635,7 +714,7 @@ function processCardMemory(card, isCorrect, isSpellMode = false) {
     // 🌟 核心逻辑重写：只要错了，不管是 Stage 1、2 还是 5，通通明天见！
     if (!isCorrect) {
         nextDate.setDate(nextDate.getDate() + 1);
-        nextDate.setHours(4, 0, 0, 0); 
+        nextDate.setHours(4, 0, 0, 0);
         console.log(`错题锁定：[${card.question}] 将在明天凌晨4点重新出现`);
     } else {
         // 只有对了，才按照艾宾浩斯阶梯延后
@@ -644,7 +723,7 @@ function processCardMemory(card, isCorrect, isSpellMode = false) {
     }
 
     card.nextReviewDate = nextDate.toISOString();
-    updateStreak(); 
+    updateStreak();
     return card;
 }
 
@@ -674,24 +753,127 @@ function updateStreak() {
 // ==========================================
 function renderDashboard() {
     const now = new Date();
+
+    // 1. 处理动态问候语 (根据时间)
+    const hour = now.getHours();
+    let greeting = "你好，大拿";
+    if (hour < 12) greeting = "早上好，大拿";
+    else if (hour < 18) greeting = "下午好，大拿";
+    else greeting = "晚上好，大拿";
+
+    const greetingTitle = document.querySelector('#dashboard-view h2');
+    if (greetingTitle) greetingTitle.innerText = greeting;
+
+    // ==========================================
+    // 🛡️ 核心修复：安全骨架屏（杜绝 null 报错！）
+    // ==========================================
+    if (window.isDataLoading) {
+        const elTotal = document.getElementById('dash-total-cards');
+        if (elTotal) elTotal.innerText = '-';
+
+        const elMastered = document.getElementById('dash-mastered-cards');
+        if (elMastered) elMastered.innerText = '-';
+
+        const elStreak = document.getElementById('dash-streak-days');
+        if (elStreak) elStreak.innerText = '-';
+
+        const elHard = document.getElementById('hard-cards-count');
+        if (elHard) elHard.innerText = '-';
+
+        const missionText = document.getElementById('dash-mission-text');
+        if (missionText) missionText.innerText = "正在从记忆宇宙同步数据...";
+
+        const pillText = document.getElementById('study-progress-pill');
+        if (pillText) pillText.innerText = `计算中...`;
+
+        const previewBox = document.getElementById('dash-task-previews');
+        if (previewBox) previewBox.style.display = "none"; 
+
+        const mainBtn = document.querySelector('.continue-btn');
+        if (mainBtn) {
+            mainBtn.style.background = "#eef2ff";
+            mainBtn.style.color = "#a5b4fc";
+            mainBtn.style.boxShadow = "none";
+            mainBtn.innerText = "数据同步中...";
+            mainBtn.style.pointerEvents = "none";
+        }
+
+        const urgentBox = document.getElementById('dash-urgent-tasks');
+        if (urgentBox) {
+            urgentBox.style.display = 'block';
+            urgentBox.innerHTML = `<div style="text-align:center; padding: 40px 20px; color: #94a3b8; font-size: 0.9rem;">⏳ 正在分析你的记忆曲线...</div>`;
+        }
+        return; // 🛑 骨架屏渲染完毕，直接打断，绝不去算 0
+    }
+    // ==========================================
+
+    // 👇 真实数据渲染逻辑
     const totalCards = allCards.length;
-    const masteredCards = allCards.filter(c => c.stage >= 1).length;
-    const dueCards = allCards.filter(card => {
+    const masteredCards = allCards.filter(c => (c.stage || 0) >= 3).length;
+    const dueCardsList = allCards.filter(card => {
         const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
         return date <= now;
-    }).length;
+    });
+    const dueCount = dueCardsList.length;
     let streakDays = localStorage.getItem('oopsy_streak_days') || 0;
-
+    
     const elTotal = document.getElementById('dash-total-cards');
     const elMastered = document.getElementById('dash-mastered-cards');
-    const elDue = document.getElementById('dash-due-cards');
     const elStreak = document.getElementById('dash-streak-days');
+    const elHard = document.getElementById('hard-cards-count');
+    const hardCardsCount = allCards.filter(c => !c.stage || c.stage === 0).length;
 
     if (elTotal) elTotal.innerText = totalCards;
     if (elMastered) elMastered.innerText = masteredCards;
-    if (elDue) elDue.innerText = dueCards;
     if (elStreak) elStreak.innerText = streakDays;
+    if (elHard) elHard.innerText = hardCardsCount; 
 
+    const missionText = document.getElementById('dash-mission-text');
+    if (missionText) {
+        missionText.innerText = dueCount > 0 ? `今天有 ${dueCount} 张卡片等着你复习~` : "今日任务已全部清空，休息一下吧！";
+    }
+
+    const pillText = document.getElementById('study-progress-pill');
+    if (pillText) pillText.innerText = `待复习 ${dueCount}`;
+
+    const previewBox = document.getElementById('dash-task-previews');
+    const mainBtn = document.querySelector('.continue-btn');
+
+    if (previewBox) {
+        if (dueCount > 0) {
+            previewBox.style.display = "block"; 
+            previewBox.innerHTML = dueCardsList.slice(0, 3).map(c => `
+                <div style="padding: 16px; background: white; border-radius: 12px; border: 1px solid #eef2ff; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.02);">
+                    <div>
+                        <div style="color: #4f46e5; font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; background: #eef2ff; display: inline-block; padding: 2px 8px; border-radius: 4px;">
+                            ${c.category?.name || '未分类'}
+                        </div>
+                        <div style="font-weight: 600; color: #1e293b; font-size: 1rem;">
+                            ${c.question}
+                        </div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 500;"> 复习 > </div>
+                </div>
+            `).join('');
+            
+            if (mainBtn) {
+                mainBtn.style.opacity = "1";
+                mainBtn.style.pointerEvents = "auto";
+                mainBtn.style.background = "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)";
+                mainBtn.innerText = "继续科学复习 →";
+            }
+        } else {
+            previewBox.style.display = "none"; 
+            if (mainBtn) {
+                mainBtn.style.background = "#eef2ff"; 
+                mainBtn.style.color = "#a5b4fc";      
+                mainBtn.style.boxShadow = "none";
+                mainBtn.innerText = "今日任务已达标";
+                mainBtn.style.pointerEvents = "none"; 
+            }
+        }
+    }
+    
     renderUrgentTasks(now);
 }
 
@@ -713,7 +895,13 @@ function renderUrgentTasks(now) {
     })).sort((a, b) => b.dueCount - a.dueCount).slice(0, 4);
 
     if (urgentFolders.length === 0) {
-        tasksContainer.innerHTML = `<div style="grid-column: 1 / -1; color: #10b981; font-size: 1rem; padding: 30px; background: white; border-radius: 16px; border: 1px dashed #a7f3d0; text-align: center;"><strong>太棒了！今日任务全部清空！</strong><br><span style="color: #64748b; font-size: 0.9rem;">你的记忆曲线非常健康。</span></div>`;
+        tasksContainer.innerHTML = `
+            <div style="grid-column: 1 / -1; color: #4f46e5; font-size: 1rem; padding: 40px 20px; background: #fcfdff; border-radius: 20px; border: 2px dashed #e0e7ff; text-align: center; transition: all 0.3s ease;">
+                <div style="font-size: 2rem; margin-bottom: 12px;">👻</div>
+                <strong style="display: block; margin-bottom: 4px;">太棒了！今日任务全部清空</strong>
+                <span style="color: #94a3b8; font-size: 0.85rem;">你的记忆曲线非常健康，休息一下吧。</span>
+            </div>
+        `;
         return;
     }
 
@@ -807,6 +995,16 @@ function openAddCardModal() {
 function openBatchModal() {
     document.getElementById('batch-input').value = '';
     const selectEl = document.getElementById('batch-category-select');
+
+    // 👇 🌟 核心修复：给批量导入的下拉框装上极速建档的“监听神经”
+    if (typeof injectQuickCategoryModal === 'function') injectQuickCategoryModal();
+    selectEl.onchange = function() {
+        if (this.value === 'CREATE_NEW') {
+            window.quickCreateSourceDropdown = 'batch-category-select'; // 告诉系统：是从批量导入下拉框来的
+            window.quickCreateSourceModal = 'batch-modal';              // 告诉系统：背后的父弹窗是批量导入
+            openQuickCategoryModal();
+        }
+    };
 
     if (currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
         const currentCat = allCategories.find(c => c._id === currentCategoryId);
@@ -973,42 +1171,41 @@ async function confirmBatchImport(event) {
         submitBtn.style.opacity = "0.8";
     }
 
-    try {
+   try {
         let successCount = 0;
-        const fetchPromises = newCards.map(card =>
-            fetch('/api/flashcards', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(card)
-            })
-        );
+        const chunkSize = 20; // 每次并发发送 20 张卡片
 
-        const responses = await Promise.all(fetchPromises);
-
-        for (let i = 0; i < responses.length; i++) {
-            if (responses[i].ok) {
-                successCount++;
-            } else {
-                const errData = await responses[i].json().catch(() => ({}));
-                console.error("后端拒绝了这张卡:", newCards[i], "原因:", errData);
+        for (let i = 0; i < newCards.length; i += chunkSize) {
+            const chunk = newCards.slice(i, i + chunkSize);
+            
+            const promises = chunk.map(card => 
+                fetch('/api/flashcards', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(card)
+                })
+                .then(res => res.ok ? 1 : 0)
+                .catch(() => 0)
+            );
+            
+            const results = await Promise.all(promises);
+            successCount += results.reduce((sum, current) => sum + current, 0);
+            
+            // 批次间稍微休息，给服务器喘息空间
+            if (i + chunkSize < newCards.length) {
+                await new Promise(r => setTimeout(r, 50));
             }
         }
 
         setTimeout(() => {
-            alert(`🎉 解析了 ${newCards.length} 张，实际成功存入数据库 ${successCount} 张！`);
-
+            alert(`🎉 解析了 ${newCards.length} 张，成功存入 ${successCount} 张！`);
             if (successCount > 0) {
                 textInput.value = '';
-                if (typeof closeAllModals === 'function') closeAllModals();
-                else {
-                    const modal = textInput.closest('div[style*="position: fixed"]');
-                    if (modal) modal.style.display = 'none';
-                }
-
-                if (typeof loadFlashcards === 'function') loadFlashcards();
-                else if (typeof renderCards === 'function') renderCards();
+                closeAllModals();
+                loadFlashcards();
             }
         }, 100);
+
 
     } catch (error) {
         console.error("批量导入网络报错:", error);
@@ -1044,6 +1241,7 @@ function startStudyMode() {
     const maxCards = limitInput ? parseInt(limitInput.value) || 20 : 20;
     const now = new Date();
 
+    // 1. 构建分类筛选池
     const targetCategoryIds = new Set([currentCategoryId]);
     allCategories.forEach(cat => {
         if (cat.parentId === currentCategoryId) {
@@ -1051,27 +1249,43 @@ function startStudyMode() {
         }
     });
 
+    // 2. 筛选待复习卡片 (科学模式)
     let dueCards = allCards.filter(card => {
         const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
         const isDue = date <= now;
 
         let isMatch = false;
-        if (currentCategoryId === 'all') {
+        if (currentCategoryId === 'all' || currentCategoryId === 'dashboard') {
             isMatch = true;
         } else if (currentCategoryId === 'uncategorized') {
             const catValue = card.category || card.categoryId;
             isMatch = !catValue || catValue === 'uncategorized';
         } else {
-            const cardCatId = card.category ? card.category._id : card.categoryId;
+            const cardCatId = card.category ? (card.category._id || card.category) : card.categoryId;
             isMatch = targetCategoryIds.has(cardCatId);
         }
         return isDue && isMatch;
     });
 
-    if (dueCards.length === 0) return alert('太棒了！当前分类下没有需要复习的卡片！');
+    // --- 🌟 核心改进：分流逻辑 ---
+    if (dueCards.length === 0) {
+        // 如果没有到期卡片，引导至自由浏览
+        const goFree = confirm('当前没有需要复习的卡片。是否开启【自由模式】浏览该分类下的所有卡片？\n(提示：自由模式不会记录学习进度)');
+
+        if (goFree) {
+            startFreeStudy(); // 调用自由模式函数
+        }
+        return;
+    }
+
+    // 3. 科学复习模式进入
+    window.isFreePracticeMode = false; // 确保关闭自由模式标识
     dueCards.sort((a, b) => (b.interval || 0) - (a.interval || 0) || Math.random() - 0.5);
-    studyCards = dueCards.slice(0, maxCards); currentStudyIndex = 0;
-    showMainView('study-view'); renderStudyCard();
+    studyCards = dueCards.slice(0, maxCards);
+    currentStudyIndex = 0;
+
+    showMainView('study-view');
+    renderStudyCard();
 }
 
 function renderStudyCard() {
@@ -1088,6 +1302,16 @@ function renderStudyCard() {
     const centerProgress = document.getElementById('study-progress-center');
     if (centerProgress) centerProgress.innerText = `${currentStudyIndex + 1} / ${studyCards.length}`;
     document.getElementById('progress-bar-fill').style.width = `${((currentStudyIndex + 1) / studyCards.length) * 100}%`;
+    const studyHeader = document.querySelector('#study-view .study-header-title');
+    if (studyHeader) {
+        if (window.isFreePracticeMode) {
+            studyHeader.innerHTML = '自由模式 <span style="font-size:0.8rem; color:#94a3b8; font-weight:normal;">(不记录进度)</span>';
+            studyHeader.style.color = '#64748b'; // 灰色表示不计分
+        } else {
+            studyHeader.innerHTML = '科学复习';
+            studyHeader.style.color = '#3b82f6'; // 蓝色表示正式任务
+        }
+    }
 }
 
 function flipCard() { document.getElementById('card-inner').classList.toggle('is-flipped'); }
@@ -1096,27 +1320,47 @@ function submitReview(isKnown) {
     if (!studyCards || studyCards.length === 0 || currentStudyIndex >= studyCards.length) return;
     const currentCard = studyCards[currentStudyIndex];
 
-    // 🧠 核心替换：调用艾宾浩斯引擎计算时间 (false代表背诵模式)
-    processCardMemory(currentCard, isKnown, false);
+    // --- 🌟 关键拦截：如果是自由模式 (isFreePracticeMode) ---
+    if (window.isFreePracticeMode) {
+        console.log("👻 自由模式：不更新进度，不发请求");
+        // 自由模式下，我们通常不希望“不认识”的卡片无限循环
+        // 如果你希望自由模式下也要塞回队尾，就把下面这行取消注释
+        // if (!isKnown) studyCards.push(currentCard); 
+    } else {
+        // --- 🧪 科学复习模式：正常执行艾宾浩斯引擎 ---
+        processCardMemory(currentCard, isKnown, false);
 
-    if (!isKnown) {
-        studyCards.push(currentCard); // 不认识的塞回队尾重背
+        if (!isKnown) {
+            studyCards.push(currentCard); // 不认识的塞回队尾重背
+        }
+
+        try {
+            fetch(`/api/flashcards/${currentCard._id}/review`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    isKnown,
+                    stage: currentCard.stage,
+                    nextReviewDate: currentCard.nextReviewDate
+                })
+            });
+        } catch (e) { console.warn("后台同步稍后重试", e); }
     }
 
-    try {
-        fetch(`/api/flashcards/${currentCard._id}/review`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ isKnown, stage: currentCard.stage, nextReviewDate: currentCard.nextReviewDate })
-        });
-    } catch (e) { console.warn("后台同步稍后重试", e); }
-
+    // --- 无论什么模式，都要切下一张 ---
     currentStudyIndex++;
 
     if (currentStudyIndex >= studyCards.length) {
         setTimeout(() => {
-            alert('🎉 恭喜！本次背诵任务圆满完成！');
-            showMainView('manage-view');
+            const msg = window.isFreePracticeMode ? '👻 自由预习圆满完成！' : '🎉 恭喜！本次背诵任务圆满完成！';
+            alert(msg);
+
+            // 结束后重置开关，防止影响下次科学复习
+            window.isFreePracticeMode = false;
+
+            // 如果是从首页进的，建议跳回 dashboard-view
+            showMainView('dashboard-view');
+            renderDashboard(); // 刷新一下首页数字
         }, 150);
     } else {
         renderStudyCard();
@@ -1154,12 +1398,31 @@ function startSpellMode() {
         if (cat.parentId === currentCategoryId) targetCategoryIds.add(cat._id);
     });
 
+    // 👇 新增隔离墙：构建【免默写】黑名单 (揪出类型为 'notes' 的文件夹及其子文件夹)
+    const immuneCategoryIds = new Set();
+    allCategories.forEach(cat => {
+        if (cat.type === 'notes') {
+            immuneCategoryIds.add(cat._id);
+            // 连坐机制：父级是笔记，子文件夹自动免考
+            allCategories.filter(child => child.parentId === cat._id).forEach(child => {
+                immuneCategoryIds.add(child._id);
+            });
+        }
+    });
+
     // 2. 定义筛选函数（复用逻辑）
     const getCards = (onlyDue) => {
         return allCards.filter(card => {
             const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
             const isDue = date <= now;
             const isReadyForSpell = (card.stage || 0) >= 1; // 🌟 必须背过一次才能默写
+
+            const cardCatId = card.category ? (card.category._id || card.category) : card.categoryId;
+
+            // 🛡️ 核心隔离墙生效：如果这张卡属于 notes 文件夹，直接一脚踢出默写队伍！
+            if (immuneCategoryIds.has(cardCatId)) {
+                return false; 
+            }
 
             let isMatch = false;
             if (currentCategoryId === 'all') {
@@ -1168,7 +1431,6 @@ function startSpellMode() {
                 const catValue = card.category || card.categoryId;
                 isMatch = !catValue || catValue === 'uncategorized';
             } else {
-                const cardCatId = card.category ? (card.category._id || card.category) : card.categoryId;
                 isMatch = targetCategoryIds.has(cardCatId);
             }
 
@@ -1184,7 +1446,8 @@ function startSpellMode() {
     if (cards.length === 0) {
         const totalUnlocked = getCards(false).length;
         if (totalUnlocked === 0) {
-            return alert('提示：当前分类没有[已解锁]的单词！\n\n请先在[背诵模式]里点击“认识”来解锁默写功能。');
+            // 提示语里顺便提醒一下，免得以后忘了为什么有些词没出来
+            return alert('提示：当前分类没有[已解锁]的单词！\n\n1. 请先在[背诵模式]里点击“认识”来解锁默写功能。\n2. 注意：被设为“笔记/资料”类型的文件夹会自动免疫默写。');
         }
 
         const confirmForced = confirm(`当前没有科学待复习的单词。\n是否开启“自由练习”？(包含该分类下已解锁的 ${totalUnlocked} 个单词)\n\n注：自由练习模式不增加单词等级。`);
@@ -1200,8 +1463,6 @@ function startSpellMode() {
             }
         } else { return; }
     }
-
-    // ... 前面 1-4 步保持不变 ...
 
     // 5. 排序与启动逻辑
     if (!isFreePracticeMode) {
@@ -1224,10 +1485,13 @@ function startSpellMode() {
 // 🌟 1. 每次渲染新卡片，把按钮“洗脑”回提交状态
 function renderSpellCard() {
     if (currentSpellIndex >= spellCards.length) {
-        alert('恭喜你，完成了所有的拼写检验！');
-        showMainView('manage-view');
+        alert('🎉 恭喜你，完成了所有的拼写检验！');
+        // 🌟 修复：默写结束后回到数据看板，让用户看到进度清空的爽感
+        showMainView('dashboard-view'); 
         return;
     }
+    
+    // ... 下面的代码保持你原来的不变 ...
     const card = spellCards[currentSpellIndex];
     document.getElementById('spell-question').innerText = card.answer || '（空问题）';
 
@@ -1256,7 +1520,11 @@ async function checkSpelling() {
     const cleanText = (text) => {
         return (text || "")
             .toLowerCase()
-            .replace(/[.,\/#!$%\^&\*;:{}=\_`~()]/g, "")
+            // 🌟 第一层净化：把连字符(-)和下划线(_)统统变成空格。这样 user-friendly 和 user friendly 就能画等号！
+            .replace(/[-_]/g, " ")
+            // 🌟 第二层净化：无情抹除所有其他花里胡哨的标点符号（顺便把单双引号、中文符号也防住了）
+            .replace(/[.,\/#!$%\^&\*;:{}=`~()'"“”‘’]/g, "")
+            // 🌟 第三层净化：把可能出现的多个连续空格压缩成一个，并去掉首尾多余空格
             .replace(/\s+/g, ' ')
             .trim();
     };
@@ -1747,40 +2015,14 @@ function injectQuickCategoryModal() {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
-function openQuickCategoryModal() {
-    const sourceModalId = window.quickCreateSourceModal || 'add-card-modal';
-    const baseModal = document.getElementById(sourceModalId);
-    if (baseModal) {
-        baseModal.style.filter = 'brightness(0.6)';
-        baseModal.style.pointerEvents = 'none';
-    }
-
-    const quickModal = document.getElementById('quick-category-modal');
-    const quickOverlay = document.getElementById('quick-category-overlay');
-
-    quickModal.style.zIndex = '30000';
-    quickOverlay.style.zIndex = '29999';
-
-    const parentSelect = document.getElementById('quick-parent-select');
-    parentSelect.innerHTML = `<option value="CREATE_NEW_PARENT" style="color:#3b82f6; font-weight:bold;">创建全新大类...</option><option disabled>──────────────</option>`;
-
-    allCategories.filter(c => !c.parentId).forEach(p => {
-        parentSelect.innerHTML += `<option value="${p._id}">挂载到现有: ${p.name}</option>`;
-    });
-
-    quickOverlay.style.display = 'block';
-    quickModal.style.display = 'block';
-    toggleNewParentInput();
-
-    setTimeout(() => {
-        if (parentSelect.value === 'CREATE_NEW_PARENT') document.getElementById('quick-new-parent-name').focus();
-        else document.getElementById('quick-child-name').focus();
-    }, 100);
-}
-
+// 🌟 1. 安全升级：切换输入框显隐时，增加 null 检查
 function toggleNewParentInput() {
     const select = document.getElementById('quick-parent-select');
     const input = document.getElementById('quick-new-parent-name');
+    
+    // 🛡️ 安全锁：如果页面上还没生成这两个元素，直接返回，绝不报错
+    if (!select || !input) return; 
+
     if (select.value === 'CREATE_NEW_PARENT') {
         input.style.display = 'block';
     } else {
@@ -1789,17 +2031,67 @@ function toggleNewParentInput() {
     }
 }
 
+// 🌟 2. 核心修复：打开弹窗前，强行保证 HTML 已经注入！
+function openQuickCategoryModal() {
+    // 👇 极其关键的一步：不管你是从哪里点进来的，先检查 HTML 画没画好，没画好就当场画！
+    if (typeof injectQuickCategoryModal === 'function') {
+        injectQuickCategoryModal();
+    }
+
+    const sourceModalId = window.quickCreateSourceModal || 'add-card-modal';
+    const baseModal = document.getElementById(sourceModalId);
+    
+    if (baseModal && baseModal.style.display !== 'none' && baseModal.style.display !== '') {
+        baseModal.style.filter = 'brightness(0.6)';
+        baseModal.style.pointerEvents = 'none';
+    }
+
+    const quickModal = document.getElementById('quick-category-modal');
+    const quickOverlay = document.getElementById('quick-category-overlay');
+
+    if(quickModal) quickModal.style.zIndex = '30000';
+    if(quickOverlay) quickOverlay.style.zIndex = '29999';
+
+    const parentSelect = document.getElementById('quick-parent-select');
+    if(parentSelect) {
+        parentSelect.innerHTML = `<option value="CREATE_NEW_PARENT" style="color:#3b82f6; font-weight:bold;">创建全新大类...</option><option disabled>──────────────</option>`;
+        allCategories.filter(c => !c.parentId).forEach(p => {
+            parentSelect.innerHTML += `<option value="${p._id}">挂载到现有: ${p.name}</option>`;
+        });
+    }
+
+    if(quickOverlay) quickOverlay.style.display = 'block';
+    if(quickModal) quickModal.style.display = 'block';
+    
+    // 因为前面加了自动注入，现在这里调用绝对安全
+    toggleNewParentInput();
+
+    setTimeout(() => {
+        if (parentSelect && parentSelect.value === 'CREATE_NEW_PARENT') {
+            const newParentInput = document.getElementById('quick-new-parent-name');
+            if(newParentInput) newParentInput.focus();
+        } else {
+            const childInput = document.getElementById('quick-child-name');
+            if(childInput) childInput.focus();
+        }
+    }, 100);
+}
+
 function closeQuickCategoryModal() {
     document.getElementById('quick-category-overlay').style.display = 'none';
     document.getElementById('quick-category-modal').style.display = 'none';
 
-    const addCardModal = document.getElementById('add-card-modal');
-    if (addCardModal) {
-        addCardModal.style.filter = 'none';
-        addCardModal.style.pointerEvents = 'auto';
+    // 🌟 动态获取是谁召唤了极速建档，就恢复谁的亮度
+    const sourceModalId = window.quickCreateSourceModal || 'add-card-modal';
+    const baseModal = document.getElementById(sourceModalId);
+    if (baseModal) {
+        baseModal.style.filter = 'none';
+        baseModal.style.pointerEvents = 'auto';
     }
 
-    const selectEl = document.getElementById('modal-category-select');
+    // 🌟 动态获取来源下拉框，如果取消了建档，把下拉框重置为空
+    const sourceDropdownId = window.quickCreateSourceDropdown || 'modal-category-select';
+    const selectEl = document.getElementById(sourceDropdownId);
     if (selectEl && selectEl.value === 'CREATE_NEW') selectEl.value = "";
 }
 
@@ -1840,10 +2132,14 @@ async function submitQuickCategory() {
         await loadCategories();
         closeQuickCategoryModal();
 
+        // 在 submitQuickCategory 函数的最后面，把 setTimeout 替换成这样：
         setTimeout(() => {
-            const selectEl = document.getElementById('modal-category-select');
+            // 🌟 动态获取来源下拉框，把新创建的分类自动选上！
+            const sourceDropdownId = window.quickCreateSourceDropdown || 'modal-category-select';
+            const selectEl = document.getElementById(sourceDropdownId);
+            
             const createdChild = allCategories.find(c => c.name === childName && c.parentId === finalParentId);
-            if (createdChild) {
+            if (createdChild && selectEl) {
                 selectEl.value = createdChild._id;
             }
         }, 150);
@@ -2055,23 +2351,25 @@ function handleMobileSwipe() {
 // ==========================================
 
 // 🎹 全局键盘快捷键监听 (拆除白屏炸弹)
+// 🎹 全局键盘快捷键监听 (拆除白屏炸弹)
 window.addEventListener('keydown', async (e) => {
     if (e.key === 'Escape' || e.keyCode === 27) {
-        // 获取当前不是隐藏状态的视图
-        const currentView = document.querySelector('.view:not(.hidden)');
+        
+        // 🚨 修复 1：只要按 Esc 退出，强制关闭自由模式，防止状态污染后续的学习！
+        window.isFreePracticeMode = false; 
 
-        // 如果当前不在主页，就执行回退
+        const currentView = document.querySelector('.view:not(.hidden)');
         if (currentView && currentView.id !== 'manage-view' && currentView.id !== 'dashboard-view') {
             console.log("检测到 Esc，正在精准回退至列表...");
-            
+            // ... (保留你原有的后续代码)
             showMainView('manage-view'); // 🌟 修正：使用正确的 ID
 
             // 🌟 修正：调用正确的渲染函数 renderCards
             if (typeof renderCards === 'function') {
                 setTimeout(() => {
-                    renderCards(); 
+                    renderCards();
                     console.log("列表数据已强制重刷");
-                }, 50); 
+                }, 50);
             }
 
             if (typeof renderDashboard === 'function') renderDashboard();
@@ -2081,7 +2379,7 @@ window.addEventListener('keydown', async (e) => {
 
 // 📱 统一手势处理器 (合并呼出侧栏与滑动回退)
 function handleMobileSwipe() {
-    if (window.innerWidth > 1024) return; 
+    if (window.innerWidth > 1024) return;
 
     const diffX = touchEndX - touchStartX;
     const diffY = Math.abs(touchEndY - touchStartY);
@@ -2096,17 +2394,219 @@ function handleMobileSwipe() {
     if (touchStartX < 50) {
         if (diffX > 60 && !isSidebarOpen) toggleMobileSidebar();
     }
-    
+
     // 情况 B：回退页面 (在屏幕中间右划)
     if (diffX > 100 && touchStartX >= 50 && !isSidebarOpen) {
         const currentView = document.querySelector('.view:not(.hidden)');
-        // 排除输入框聚焦状态
         if (currentView && currentView.id !== 'manage-view' && document.activeElement.tagName !== 'INPUT') {
+            
+            // 🚨 修复：手机滑动回退也要关闭自由模式
+            window.isFreePracticeMode = false; 
+
             showMainView('manage-view');
             if (typeof renderCards === 'function') renderCards();
+            if (typeof renderDashboard === 'function') renderDashboard();
         }
     }
 
     // 情况 C：向左划隐藏侧栏
     if (diffX < -60 && isSidebarOpen) toggleMobileSidebar();
+}
+
+
+
+function startFreeStudy() {
+    // 1. 开启“不留痕”开关
+    isFreePracticeMode = true;
+
+    // 2. 获取当前分类下的所有卡片（地毯式：不看时间，不看等级）
+    let cards = [];
+    if (currentCategoryId === 'all' || currentCategoryId === 'dashboard' || !currentCategoryId) {
+        cards = [...allCards]; // 全量
+    } else {
+        // 获取当前选中的文件夹及其子文件夹的 ID
+        const targetCategoryIds = new Set([currentCategoryId]);
+        allCategories.forEach(cat => {
+            if (cat.parentId === currentCategoryId) targetCategoryIds.add(cat._id);
+        });
+        cards = allCards.filter(c => {
+            const cardCatId = c.category?._id || c.category || c.categoryId;
+            return targetCategoryIds.has(cardCatId);
+        });
+    }
+
+    if (cards.length === 0) {
+        alert("当前分类下没有卡片可以预习哦。");
+        return;
+    }
+
+    // 3. 随机洗牌 (满足你的随机性需求)
+    cards.sort(() => Math.random() - 0.5);
+
+    // 4. 进入背诵界面
+    studyCards = cards;
+    currentStudyIndex = 0;
+
+    // 切换视图
+    showMainView('study-view');
+    renderStudyCard();
+
+    console.log("👻 已开启自由背诵模式：全量加载，随机乱序，不记录进度。");
+}
+
+// ==========================================
+// 🚀 首页数据看板按钮“神经中枢”跳转引擎
+// ==========================================
+
+// ==========================================
+// 🚀 首页数据看板按钮“神经中枢” (带智能返回路径引擎版)
+// ==========================================
+
+// --- 0. 自动生成“智能返回看板”按钮 ---
+window.addEventListener('DOMContentLoaded', () => {
+    const manageView = document.getElementById('manage-view');
+    const toolbar = manageView ? manageView.querySelector('.toolbar') : null;
+    
+    if (toolbar && !document.getElementById('btn-back-to-dash')) {
+        const backBtn = document.createElement('button');
+        backBtn.id = 'btn-back-to-dash';
+        backBtn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            返回数据看板
+        `;
+        // 莫兰迪靛蓝色，视觉层级最高，但依然优雅
+        backBtn.style.cssText = "display: none; align-items: center; gap: 6px; margin-bottom: 20px; padding: 10px 18px; border-radius: 12px; border:none; cursor:pointer; font-weight: bold; background: #eef2ff; color: #4f46e5; transition: 0.2s; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15); font-size: 0.95rem;";
+        
+        backBtn.onmouseover = () => backBtn.style.background = '#e0e7ff';
+        backBtn.onmouseout = () => backBtn.style.background = '#eef2ff';
+
+        // 点击返回看板，并深藏功与名
+        backBtn.onclick = () => {
+            backBtn.style.display = 'none'; 
+            if (typeof selectDashboard === 'function') selectDashboard();
+        };
+
+        // 插入到搜索栏的正上方
+        manageView.insertBefore(backBtn, toolbar);
+    }
+});
+
+// --- 1. 强行暴露：跳转到“困难卡片” ---
+window.goToHardCards = function() {
+    currentCategoryId = 'virtual-hard'; 
+    document.getElementById('current-view-title').innerText = '困难卡片 (待进阶)';
+    
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    showMainView('manage-view');
+    
+    const hardCards = allCards.filter(c => !c.stage || c.stage === 0);
+    renderCards(hardCards);
+
+    // 🌟 核心：呼出返回按钮
+    const backBtn = document.getElementById('btn-back-to-dash');
+    if (backBtn) backBtn.style.display = 'inline-flex';
+};
+
+// --- 2. 强行暴露：跳转到“熟练掌握” ---
+window.goToMasteredCards = function() {
+    currentCategoryId = 'virtual-mastered';
+    document.getElementById('current-view-title').innerText = '熟练掌握 (可默写)';
+    
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    showMainView('manage-view');
+    
+    const masteredCards = allCards.filter(c => c.stage >= 1);
+    renderCards(masteredCards);
+
+    // 🌟 核心：呼出返回按钮
+    const backBtn = document.getElementById('btn-back-to-dash');
+    if (backBtn) backBtn.style.display = 'inline-flex';
+};
+
+// --- 3. 强行暴露：跳转到“知识库总览” ---
+window.goToAllCards = function() {
+    currentCategoryId = 'all';
+    document.getElementById('current-view-title').innerText = '所有卡片';
+    
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    showMainView('manage-view');
+    renderCards(allCards);
+
+    // 🌟 核心：呼出返回按钮
+    const backBtn = document.getElementById('btn-back-to-dash');
+    if (backBtn) backBtn.style.display = 'inline-flex';
+};
+
+// --- 4. 彻底解决极速建档按钮的接管问题 ---
+window.addEventListener('DOMContentLoaded', () => {
+    const quickCreateBtns = document.querySelectorAll('.dash-pill-btn[onclick*="openQuickCategoryModal"]');
+    quickCreateBtns.forEach(btn => {
+        btn.onclick = (e) => {
+            e.preventDefault();
+            window.quickCreateSourceModal = 'dashboard-view'; 
+            if(typeof openQuickCategoryModal === 'function') openQuickCategoryModal();
+        }
+    });
+});
+
+// --- 5. 智能打扫战场：只要点了左侧边栏，立刻清理返回按钮 ---
+if (typeof window.originalSelectSidebarItem === 'undefined' && typeof selectSidebarItem === 'function') {
+    window.originalSelectSidebarItem = selectSidebarItem; // 备份原函数
+    window.selectSidebarItem = function(id, title, type, element) {
+        // 发现用户进行了常规侧边栏点击，立刻把临时返回按钮藏起来
+        const backBtn = document.getElementById('btn-back-to-dash');
+        if(backBtn) backBtn.style.display = 'none'; 
+        
+        // 正常执行切换
+        window.originalSelectSidebarItem(id, title, type, element);
+    };
+}
+
+
+// --- 弹窗控制引擎 (确保这几行都在) ---
+function openAddCardModal() { 
+    document.getElementById('modal-question').value = '';
+    document.getElementById('modal-answer').value = '';
+    
+    const selectEl = document.getElementById('modal-category-select');
+    if (typeof injectQuickCategoryModal === 'function') injectQuickCategoryModal();
+    
+    selectEl.onchange = function() {
+        if (this.value === 'CREATE_NEW') {
+            window.quickCreateSourceDropdown = 'modal-category-select';
+            window.quickCreateSourceModal = 'add-card-modal';
+            openQuickCategoryModal(); // 关联极速建档
+        }
+    };
+
+    if (currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
+        const currentCat = allCategories.find(c => c._id === currentCategoryId);
+        const isParentFolder = currentCat && !currentCat.parentId; 
+        
+        if (isParentFolder) {
+            selectEl.value = ""; 
+        } else {
+            selectEl.value = currentCategoryId; 
+        }
+    } else {
+        selectEl.value = ""; 
+    }
+    openModal('add-card-modal');
+}
+
+// 统一的开/关弹窗底层逻辑
+function closeAllModals() { 
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) overlay.style.display = 'none'; 
+    document.querySelectorAll('.pro-modal').forEach(m => m.style.display = 'none'); 
+}
+
+function openModal(id) { 
+    const overlay = document.getElementById('modal-overlay');
+    const modal = document.getElementById(id);
+    if (overlay) overlay.style.display = 'block'; 
+    if (modal) modal.style.display = 'block'; 
 }

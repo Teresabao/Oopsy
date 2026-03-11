@@ -2,51 +2,34 @@
    🏛️ Flashcard Pro - 核心样式库 (终极重构版)
    ========================================== */
 body {
-    margin: 0;
-    padding: 0;
-    background-color: #f4f7f9;
+    margin: 0; padding: 0; background-color: #f4f7f9;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    height: 100vh;
-    overflow: hidden; 
+    height: 100vh; overflow: hidden; 
 }
 
 /* --- 1. 左右分栏布局 --- */
 .app-layout { display: flex; height: 100vh; width: 100vw; }
-
-.sidebar {
-    width: 260px;
-    background: #ffffff;
-    border-right: 1px solid #e2e8f0;
-    display: flex; flex-direction: column;
-    padding: 0; z-index: 2000;
-}
+.sidebar { width: 260px; background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; padding: 0; z-index: 2000; }
 .sidebar-logo { font-size: 1.5rem; font-weight: 800; color: #2b6cb0; padding: 0 24px 20px; border-bottom: 1px solid #edf2f7; margin-bottom: 10px; }
 .nav-menu { list-style: none; padding: 0 12px; margin: 0; flex: 1; overflow-y: auto; }
 
 /* --- 2. 右侧主操作区 --- */
-.main-content { flex: 1; display: flex; flex-direction: column; background: #f4f7f9; height: 100vh; position: relative; } /* 添加 relative 以便定位遮罩 */
+.main-content { flex: 1; display: flex; flex-direction: column; background: #f4f7f9; height: 100vh; position: relative; }
 .main-header { background: #ffffff; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
 .main-header h2 { margin: 0; font-size: 1.5rem; color: #1a202c; }
 .header-actions { display: flex; gap: 12px; }
 .header-actions button { padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
+.header-actions button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); }
 .content-area { flex: 1; padding: 30px 40px; overflow-y: auto; }
 
 /* --- 3. 卡片瀑布流 --- */
 .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-.card-item {
-    background: white; padding: 20px; border-radius: 16px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-    border: 1px solid #edf2f7; transition: transform 0.2s;
-}
+.card-item { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #edf2f7; transition: transform 0.2s; }
 .card-item:hover { transform: translateY(-3px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
 
 /* --- 4. 弹窗与控制 --- */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 999; }
-.pro-modal {
-    display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: white; padding: 30px; border-radius: 20px;
-    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); width: 90%; max-width: 450px; z-index: 1000;
-}
+.pro-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); width: 90%; max-width: 450px; z-index: 1000; }
 .pro-modal h3 { margin-top: 0; margin-bottom: 20px; color: #2d3748; }
 .pro-modal .form-control { width: 100%; box-sizing: border-box; margin-bottom: 15px; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
 .hidden { display: none !important; }
@@ -56,226 +39,269 @@ body {
 .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
 .card-inner.is-flipped { transform: rotateY(180deg); }
 .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 20px; box-sizing: border-box; border: 1px solid #edf2f7; }
-.card-back { transform: rotateY(180deg); border: 2px solid #48bb78; }
+.card-back { transform: rotateY(180deg); border: 2px solid #4f46e5; }
 .card-front h3, .card-back h3 { font-size: 2rem; color: #2d3748; margin: 0; }
 .flip-hint { color: #a0aec0; font-size: 0.9rem; margin-top: 20px; }
 .study-controls { display: flex; justify-content: center; gap: 15px; margin-top: 30px; }
 .spell-card { background: white; padding: 50px 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); text-align: center; max-width: 480px; margin: 0 auto; border: 1px solid #edf2f7; }
 #spell-question { font-size: 2.2rem; font-weight: 700; color: #1a202c; margin-bottom: 24px; }
-#spell-input { width: 100%; box-sizing: border-box; padding: 18px 20px; font-size: 1.3rem; color: #2d3748; background: #edf2f7; border: 2px solid transparent; border-radius: 16px; text-align: center; transition: all 0.3s ease; margin-bottom: 24px; }
-#spell-input:focus { background: #ffffff; border-color: #3b82f6; outline: none; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); } /* 统一使用莫兰迪蓝 */
+
+/* 1. 输入框 */
+#spell-input { box-sizing: border-box !important; width: 100% !important; padding: 12px 16px !important; margin-bottom: 12px !important; border-radius: 12px !important; font-size: 1rem !important; background: #f8fafc !important; border: 1px solid #e2e8f0 !important; color: #1e293b !important; outline: none !important; transition: all 0.2s ease; }
+#spell-input:focus { background: #ffffff !important; border-color: #cbd5e1 !important; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.04) !important; }
+#spell-input::placeholder { color: #cbd5e1; font-size: 1rem; }
 #spell-input:disabled { background: #f7fafc; color: #a0aec0; }
-.check-btn { border: none; border-radius: 16px; padding: 16px 24px; font-weight: 600; cursor: pointer; background: #3b82f6; color: white; font-size: 1.2rem; width: 100%; transition: 0.2s; }
+
+/* 2. 按钮 */
+.check-btn { width: 100% !important; padding: 14px 24px !important; border-radius: 12px !important; font-weight: 600 !important; background: #f1f4ff !important; color: #4f46e5 !important; border: 1.5px solid #e0e7ff !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important; cursor: pointer !important; transition: all 0.3s ease !important; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.04) !important; }
+.check-btn:hover { background: #eff2ff !important; border-color: #c7d2fe !important; transform: translateY(-1px); }
 .speak-btn { background: #f7fafc; border: none; border-radius: 50%; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-left: 10px; cursor: pointer;}
 .feedback-text { margin-top: 20px; font-size: 1.2rem; line-height: 1.6; }
 
-/* --- 6. 高级导航栏 UI (V2.0) --- */
-.nav-item { padding: 10px 14px; margin-bottom: 6px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #475569; font-weight: 500; transition: all 0.2s ease; font-size: 0.95rem; }
+/* --- 6. 高级导航栏 UI --- */
+.nav-item { padding: 10px 14px; margin-bottom: 6px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #475569; font-weight: 500; transition: all 0.2s ease; font-size: 0.95rem; -webkit-tap-highlight-color: transparent !important; user-select: none !important; }
 .nav-item.is-child { margin-left: 20px; border-left: 2px solid #e2e8f0; border-radius: 0 8px 8px 0; }
 .nav-item:hover { background-color: #f1f5f9; color: #0f172a; }
-.nav-item.active { background-color: #eff6ff !important; color: #3b82f6 !important; border-left: 3px solid #3b82f6; border-radius: 0 8px 8px 0; font-weight: 600; } /* 统一使用莫兰迪蓝 */
+.nav-item.active { background-color: #eef2ff !important; color: #4f46e5 !important; border-left: 3px solid #4f46e5; border-radius: 0 8px 8px 0; font-weight: 600; box-shadow: inset 4px 0 8px rgba(79, 70, 229, 0.05); }
 .nav-icon { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
-
-/* 箭头与文件夹动画 */
 .toggle-arrow { cursor: pointer; padding: 4px; border-radius: 4px; color: #94a3b8; transition: transform 0.2s ease-in-out; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
 .toggle-arrow:hover { background-color: #e2e8f0; color: #475569; }
-.arrow-rotated { transform: rotate(90deg) !important; } /* 向下旋转 */
+.arrow-rotated { transform: rotate(90deg) !important; }
 .folder-children { display: block; transition: all 0.2s ease-out; }
 .folder-hidden { display: none !important; }
-
 .folder-actions { opacity: 0; transition: opacity 0.2s ease; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #94a3b8; }
 .nav-item:hover .folder-actions { opacity: 1; }
 .folder-actions:hover { background-color: #e2e8f0; color: #3b82f6; }
 
-
-/* ==========================================
-   📱 7. 移动端终极覆盖响应式补丁 (纯净抽屉版)
-   ========================================== */
-@media (max-width: 768px) {
-    /* 1. 强制显示汉堡按钮 */
-    #mobile-menu-btn { display: block !important; }
-
-    /* 2. 完美的抽屉式侧边栏 */
-    .sidebar {
-        position: fixed !important;
-        top: 0 !important;
-        left: -100% !important; /* 默认完全隐藏 */
-        height: 100vh !important; 
-        width: 280px !important;
-        z-index: 2000 !important; 
-        background-color: white !important;
-        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; /* 丝滑滑出 */
-        box-shadow: 4px 0 15px rgba(0,0,0,0.1) !important;
-    }
-
-    /* 3. 抽屉呼出状态 */
-    .sidebar.mobile-active {
-        left: 0 !important;
-    }
-    
-    /* 确保手机端遮罩层层级正确 */
-    #mobile-overlay {
-        z-index: 1999 !important; 
-    }
-
-    /* 4. 修复主内容区标题和顶部按钮排版 */
-    .main-header {
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 15px !important;
-        padding: 15px !important;
-    }
-    
-    .header-actions {
-        width: 100% !important;
-        justify-content: space-between !important;
-        flex-wrap: wrap !important;
-        gap: 8px !important;
-    }
-    
-    .header-actions button {
-        flex: 1 !important; 
-        padding: 10px 8px !important; 
-        font-size: 0.85rem !important;
-        justify-content: center !important;
-    }
-    
-    /* 5. 卡片与内容区调整 */
-    .content-area { padding: 15px !important; }
-    .cards-grid {
-        grid-template-columns: 1fr !important; /* 强制单列，防止拥挤 */
-        gap: 15px !important;
-    }
-}
-
-/* ✨ 手机端极小屏幕 UI 彻底重排 (针对 iPhone SE 等) */
-@media (max-width: 600px) {
-    .header-content { flex-direction: column !important; padding: 12px !important; gap: 10px; }
-    .header-top-row { display: flex; justify-content: space-between; width: 100%; align-items: center; }
-    .search-container { width: 100% !important; margin: 0 !important; }
-    .search-input { width: 100% !important; height: 42px !important; }
-    #batch-action-bar button { padding: 8px 10px !important; font-size: 11px !important; gap: 4px !important; }
-}
-
-/* 🌟 极速建档中心手机端 Z-index 压制 */
-#quick-category-modal { z-index: 10001 !important; }
-#quick-category-overlay { z-index: 10000 !important; }
-
-/* ==========================================
-   ✨ 顶部极简图标按钮区 - 悬浮动效与移动端适配
-   ========================================== */
-
-/* 1. 电脑端高级悬浮动效：鼠标放上去微微上浮 + 柔和阴影 */
-.header-actions button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-}
-
-/* 2. 📱 手机端极限压缩：在小屏幕上自动微缩，绝不换行、绝不拥挤！ */
-@media (max-width: 600px) {
-    .header-actions { 
-        gap: 6px !important; /* 缩小按钮间距 */
-    }
-    .header-actions button { 
-        width: 34px !important;  /* 按钮整体微缩 */
-        height: 34px !important; 
-    }
-    .header-actions button svg {
-        width: 18px !important;  /* 内部图标跟随微缩 */
-        height: 18px !important;
-    }
-    
-    /* 左侧“本次复习 XX 张”的胶囊在极小屏幕下稍微变紧凑 */
-    #study-limit {
-        width: 30px !important;
-        font-size: 0.9rem !important;
-    }
-}
-
-/* 修复底部悬浮操作舱文字被挤成竖排的问题 */
-#batch-action-bar {
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important; /* 屏幕太窄时允许内部微微滑动，绝不折行 */
-}
-#batch-action-bar div, 
-#batch-action-bar button {
-    white-space: nowrap !important; /* 强制所有按钮文字不换行 */
-    flex-shrink: 0 !important;      /* 禁止按钮被挤压变形 */
-}
-
-/* 彻底消除手机端点击菜单时的系统高亮和文字误选 */
-.nav-item {
-    -webkit-tap-highlight-color: transparent !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-}
-
-/* ==========================================
-   🚨 彻底斩断移动端 Hover 双击陷阱 (解决需点两下 Bug)
-   ========================================== */
-@media (max-width: 768px) {
-    /* 1. 强行让右侧的操作图标（+号）在手机端永远保持可见，不再等待 hover 触发 */
-    .folder-actions {
-        opacity: 1 !important; 
-        color: #cbd5e1 !important; /* 保持淡淡的颜色，不喧宾夺主 */
-    }
-
-    /* 2. 杀掉整个菜单项的 hover 背景色变幻，彻底阻止浏览器拦截第一下点击 */
-    .nav-item:hover {
-        background-color: transparent !important; 
-    }
-    
-    /* 确保激活状态的底色依然坚挺 */
-    .nav-item.active {
-        background-color: #eff6ff !important;
-    }
-}
-
-/* --- Dashboard 高级极简样式 --- */
-.dash-pill-btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 10px 18px; border-radius: 30px; border: 1px solid #e2e8f0;
-    background: white; color: #475569; font-size: 0.9rem; font-weight: 600;
-    cursor: pointer; transition: 0.2s;
-}
-.dash-pill-btn:hover { background: #f8fafc; color: #0f172a; transform: translateY(-1px); }
-
-.dash-metrics-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;
-}
-.dash-stat-card {
-    background: white; border: 1px solid #e2e8f0; border-radius: 20px;
-    padding: 24px; display: flex; align-items: center; gap: 16px;
-    transition: 0.3s ease;
-}
+/* --- 面板统计数据 --- */
+.dash-pill-btn, .action-btn-fab { background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; padding: 8px 16px; border-radius: 12px; font-weight: 600; transition: all 0.2s; }
+.dash-pill-btn:hover { background: #e0e7ff; border-color: #c7d2fe; }
+.dash-metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.dash-stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 24px; display: flex; align-items: center; gap: 16px; transition: 0.3s ease; }
 .dash-stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.05); }
-
 .stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .stat-info { display: flex; flex-direction: column; gap: 2px; }
 .stat-label { font-size: 0.85rem; color: #64748b; font-weight: 500; }
 .stat-value { font-size: 1.7rem; color: #0f172a; font-weight: 700; line-height: 1; }
 
-.dash-tasks-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
-}
-.dash-task-card {
-    background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px;
-    cursor: pointer; transition: 0.2s; position: relative;
-}
+/* --- 任务面板 --- */
+.dash-tasks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.dash-task-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; cursor: pointer; transition: 0.2s; position: relative; }
 .dash-task-card:hover { border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.08); }
-
 .task-badge { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; background: #fff1f2; color: #f43f5e; margin-bottom: 12px; }
 .task-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; }
 .task-path { font-size: 0.8rem; color: #94a3b8; margin: 0; }
 .task-arrow { position: absolute; right: 20px; bottom: 20px; color: #3b82f6; opacity: 0; transition: 0.2s; }
 .dash-task-card:hover .task-arrow { opacity: 1; }
+.main-task-hero { background: white; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); position: relative; overflow: hidden; }
+.main-task-hero:hover { transform: translateY(-4px); border-color: #3b82f6; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02); }
+.continue-btn { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important; color: white !important; border: none; padding: 12px 32px; border-radius: 14px; font-weight: 600; font-size: 1rem; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2), 0 4px 6px -2px rgba(79, 70, 229, 0.1); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 8px; }
+.continue-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.3); filter: brightness(1.1); }
+#dash-task-previews > div { transition: all 0.2s; border: 1px solid #f1f5f9; }
+.main-task-hero:hover #dash-task-previews > div { background: white; border-color: #e2e8f0; }
 
-/* 📱 手机端横向滚动特效 */
+#batch-action-bar { flex-wrap: nowrap !important; overflow-x: auto !important; }
+#batch-action-bar div, #batch-action-bar button { white-space: nowrap !important; flex-shrink: 0 !important; }
+
+
+/* ==========================================
+   📱 7. 移动端全局唯一响应式补丁 (修复拥挤与错位)
+   ========================================== */
 @media (max-width: 768px) {
-    .dash-tasks-grid {
-        display: flex; flex-wrap: nowrap; overflow-x: auto;
-        padding-bottom: 15px; margin: 0 -15px; padding-left: 15px;
-        scroll-snap-type: x mandatory;
+    /* 侧边栏抽屉化 */
+    #mobile-menu-btn { display: block !important; }
+    .sidebar { position: fixed !important; top: 0 !important; left: -100% !important; height: 100vh !important; width: 280px !important; z-index: 2000 !important; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; box-shadow: 4px 0 15px rgba(0,0,0,0.1) !important; }
+    .sidebar.mobile-active { left: 0 !important; }
+    #mobile-overlay { z-index: 1999 !important; }
+
+    /* 顶部导航紧凑排版 - 强制单行 */
+    .main-header { padding: 12px 16px !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
+    .main-header h2 { font-size: 1.1rem !important; white-space: nowrap !important; margin: 0 !important; }
+    .header-actions { gap: 6px !important; width: auto !important; flex-wrap: nowrap !important; justify-content: flex-end !important; }
+    .header-actions button { padding: 8px !important; font-size: 0.85rem !important; flex: none !important; }
+    #study-progress-pill { padding: 4px 8px !important; font-size: 0.75rem !important; }
+
+    /* 仪表盘统计：稳定 2 列 */
+    .dash-metrics-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+    .dash-stat-card { padding: 16px !important; flex-direction: column !important; align-items: flex-start !important; }
+    .stat-value { font-size: 1.4rem !important; }
+
+    /* 学习区边距缩小 */
+    .content-area { padding: 15px !important; }
+    .main-task-hero { padding: 20px !important; border-radius: 16px !important; }
+    #spell-question { font-size: 1.5rem !important; }
+    #dash-task-previews { grid-template-columns: 1fr !important; }
+    #dash-task-previews > div { padding: 12px !important; margin-bottom: 8px !important; }
+    
+    /* 解决卡片并排问题 */
+    .cards-grid { grid-template-columns: 1fr !important; gap: 15px !important; }
+    .dash-tasks-grid { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important; padding-bottom: 15px !important; margin: 0 -15px !important; padding-left: 15px !important; scroll-snap-type: x mandatory !important; }
+    .dash-task-card { min-width: 250px !important; scroll-snap-align: start !important; flex-shrink: 0 !important; }
+    
+    /* Hover 状态修复 */
+    .nav-item:hover { background-color: transparent !important; }
+    .nav-item.active { background-color: #eff6ff !important; }
+    .folder-actions { opacity: 1 !important; color: #cbd5e1 !important; }
+}
+
+/* 极限窄屏优化 (iPhone SE 等) */
+@media (max-width: 400px) {
+    .main-header h2 { display: none !important; } /* 太窄就隐藏标题 */
+    .header-actions button { width: 34px !important; height: 34px !important; padding: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; }
+    .header-actions button svg { width: 18px !important; height: 18px !important; }
+    .search-input { height: 42px !important; }
+}
+
+/* ==========================================
+   🚨 手机端防撑爆急救补丁 (放最末尾)
+   ========================================== */
+@media (max-width: 768px) {
+    /* 1. 强制锁死宽度，彻底禁止页面左右摇晃/滑动 */
+    html, body, .app-layout, .main-content {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
     }
-    .dash-task-card { min-width: 250px; scroll-snap-align: start; flex-shrink: 0; }
+
+    /* 2. 解除 Header 的紧箍咒，允许排版折行 */
+    .main-header {
+        flex-wrap: wrap !important; /* 核心：太挤就自动换行 */
+        height: auto !important;
+        padding: 15px !important;
+        gap: 12px !important;
+    }
+
+    /* 3. 让右侧那排按钮独占一行，整齐地排在标题下方 */
+    .header-actions {
+        width: 100% !important; /* 强制按钮组占满一整行 */
+        justify-content: flex-start !important; /* 靠左对齐，像工具栏一样 */
+        flex-wrap: wrap !important; /* 按钮多的话也能安全换行 */
+        gap: 8px !important;
+    }
+
+    /* 4. 稍微压缩一下按钮的体积 */
+    .header-actions button {
+        padding: 8px 12px !important;
+        font-size: 0.85rem !important;
+        margin: 0 !important;
+    }
+    
+    /* 5. 修复主内容区可能溢出的边距 */
+    .content-area {
+        max-width: 100vw !important;
+        box-sizing: border-box !important;
+        padding: 15px !important;
+    }
+}
+
+/* ==========================================
+   🚨 手机端 UI 极限瘦身与对齐补丁
+   ========================================== */
+@media (max-width: 768px) {
+    /* --- 1. 修复按钮图标与文字错位 --- */
+    .dash-pill-btn, .action-btn-fab {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;         /* 强制图标和文字的间距 */
+        padding: 6px 12px !important; /* 稍微压扁一点按钮 */
+        font-size: 0.85rem !important;
+        line-height: 1 !important;   /* 强制单行高度，防止上下乱跳 */
+    }
+    .dash-pill-btn svg, .action-btn-fab svg {
+        width: 16px !important;
+        height: 16px !important;
+        display: block !important;
+    }
+
+    /* --- 2. 核心 4 宫格“极限瘦身” --- */
+    .dash-metrics-grid {
+        gap: 10px !important; /* 缩小 4 个方块之间的缝隙 */
+        margin-bottom: 15px !important; /* 减小和下方“今日任务”的距离 */
+    }
+    
+    .dash-stat-card {
+        padding: 10px 12px !important; /* 【核心瘦身】大幅砍掉内部留白 */
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        gap: 4px !important; /* 极度压缩图标、标题、数字之间的空隙 */
+        min-height: auto !important; /* 取消一切强制高度 */
+    }
+
+    .stat-icon {
+        width: 28px !important;  /* 缩小图标背景块 */
+        height: 28px !important;
+    }
+    .stat-icon svg {
+        width: 16px !important;  /* 缩小图标本身 */
+        height: 16px !important;
+    }
+
+    .stat-label {
+        font-size: 0.75rem !important; /* 缩小标题 */
+        line-height: 1.2 !important;
+        margin: 2px 0 !important;
+    }
+
+    .stat-value {
+        font-size: 1.3rem !important; /* 缩小底部的数字 */
+        line-height: 1 !important;
+        font-weight: 800 !important;
+    }
+}
+
+/* ==========================================
+   🚨 终极对齐锁死补丁（解决高低不平）
+   ========================================== */
+@media (max-width: 768px) {
+    /* 1. 强制 4 宫格等高对齐 */
+    .dash-metrics-grid {
+        align-items: stretch !important; /* 强制同一行的方块必须一样高 */
+    }
+    
+    .dash-stat-card {
+        height: 100% !important; /* 强制拉伸，填满自身所在的高度 */
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important; /* 内部元素均匀分布，防止挤成一团 */
+        position: relative !important; /* 为内部的小箭头定位做准备 */
+    }
+
+    /* 如果那个红色小箭头是一个单独的元素，防止它影响排版高度 */
+    .dash-stat-card .card-arrow, 
+    .dash-stat-card > svg:last-child,
+    .dash-stat-card i {
+        position: absolute !important;
+        right: 12px !important;
+        bottom: 12px !important;
+    }
+
+    /* 2. 强制顶部“极速建档/批量导入”按钮完全一样大 */
+    .dash-pill-btn, .action-btn-fab {
+        height: 34px !important; /* 强行锁死物理高度 */
+        box-sizing: border-box !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        vertical-align: middle !important; /* 强制基线对齐 */
+        margin: 0 !important; /* 砍掉外边距干扰 */
+    }
+}
+
+/* 修复超长单词撑爆卡片边界的问题 */
+.card-front h3, 
+.card-back h3, 
+#spell-question, 
+.card-item strong {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+    max-width: 100%; /* 确保绝对不超出父元素 */
+}
+
+/* 让 CSS 统一管理，以后改颜色只改这一个地方 */
+button[onclick*="openBatchModal"]:hover {
+    background: #e0e7ff !important;
 }
