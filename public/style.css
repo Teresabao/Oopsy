@@ -305,3 +305,15 @@ body {
 button[onclick*="openBatchModal"]:hover {
     background: #e0e7ff !important;
 }
+
+
+/* 
+1. 全局隐藏：不管在哪，先把这个烦人的 header 藏起来
+#.main-header {
+    display: none !important;
+} */
+
+
+
+
+

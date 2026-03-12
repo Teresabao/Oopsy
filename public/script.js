@@ -3,31 +3,141 @@
 // ==========================================
 
 // 🛡️ [终极防线]：通过 JS 强行注入移动端抽屉样式，彻底解决侧边栏挤压卡片的问题！
+// 🛡️ [终极防线]：通过 JS 强行注入苹果原生级底部导航栏与上拉菜单！
+// ==========================================
+// 🔌 Flashcard Pro V2.0 终极UI修复版 (极简丝滑+手势引擎)
+// ==========================================
+
+// 🛡️ 1. 注入绝对不会错位的 CSS (修复 Z-index 穿透和大按钮排版)
+
+// 🛡️ [终极防线]：修复层级穿透、恢复顶部加号，并加入手机端专属分类页样式
 const styleFix = document.createElement('style');
 styleFix.innerHTML = `
     @media (max-width: 768px) {
-        .sidebar {
-            position: fixed !important;
-            top: 0;
-            left: -100% !important; /* 默认隐藏在屏幕左侧之外 */
-            width: 280px !important;
-            height: 100vh !important;
-            z-index: 1000 !important;
-            transition: left 0.3s ease-in-out !important;
-            background: white !important;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.1) !important;
+        .sidebar { display: none !important; }
+        #mobile-menu-btn { display: none !important; }
+        .main-content { padding-bottom: 85px !important; }
+        
+        .mobile-bottom-nav {
+            display: flex; justify-content: space-around; align-items: center;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
+            background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05); 
+            z-index: 900; 
+            padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid #f1f5f9;
         }
-        .sidebar.mobile-active {
-            left: 0 !important; /* 呼出时滑入屏幕 */
+        .nav-tab {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #94a3b8; font-size: 0.7rem; font-weight: 600; gap: 4px; flex: 1; cursor: pointer; transition: 0.2s;
         }
-        #mobile-overlay {
-            z-index: 999 !important; /* 确保遮罩层在侧边栏下面，在卡片上面 */
+        .nav-tab.active { color: #4f46e5; }
+        .nav-tab svg { width: 22px; height: 22px; stroke: currentColor; transition: 0.2s; }
+        .nav-tab.active svg { transform: translateY(-2px); }
+
+        /* 🌟 手机端分类页专属 UI (大卡片 + 分离触控区) */
+        #folders-view { padding: 12px 16px 30px 16px !important; background: #f8fafc; min-height: 100vh; }
+        .mobile-folder-card {
+            background: white; border-radius: 16px; margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; overflow: hidden;
         }
+        .mobile-folder-header { display: flex; align-items: center; height: 60px; }
+        /* 左侧 80%：点击直接进文件夹 */
+        .mobile-folder-content {
+            flex: 1; display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 100%; cursor: pointer;
+        }
+        /* 右侧 20%：折叠控制区 */
+        .mobile-folder-toggle {
+            width: 56px; height: 100%; display: flex; align-items: center; justify-content: center;
+            border-left: 1px solid #f8fafc; color: #94a3b8; cursor: pointer;
+        }
+        .mobile-child-list { background: #f8fafc; border-top: 1px solid #f1f5f9; padding: 4px 0; }
+        .mobile-child-item {
+            padding: 14px 16px 14px 44px; display: flex; align-items: center; gap: 10px;
+            color: #475569; font-size: 0.95rem; border-bottom: 1px solid #f1f5f9; cursor: pointer;
+        }
+        .mobile-child-item:last-child { border-bottom: none; }
+    }
+    
+    #modal-overlay { z-index: 9998 !important; }
+    .pro-modal { z-index: 9999 !important; }
+    #quick-category-overlay { z-index: 10000 !important; }
+    #quick-category-modal { z-index: 10001 !important; }
+    
+    @media (min-width: 769px) {
+        .mobile-bottom-nav { display: none !important; }
+        #folders-view { display: none !important; } 
+        .sidebar { display: flex !important; flex-direction: column !important; }
     }
 `;
 document.head.appendChild(styleFix);
 
+
+// 🛡️ 2. 同步极速注入 HTML 容器 (解决空数据、无响应的元凶)
+// 这样做保证了等一下 loadCategories 时，folders-view 已经准备好接客了！
+(function initMobileUISync() {
+    if (!document.getElementById('mobile-bottom-nav')) {
+        const bottomNavHTML = `
+            <nav id="mobile-bottom-nav" class="mobile-bottom-nav">
+                <div class="nav-tab active" id="tab-dashboard" onclick="handleBottomNav('dashboard')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span>主页</span>
+                </div>
+
+                <div class="nav-tab" id="tab-explore" onclick="handleBottomNav('explore')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <span>发现</span>
+                </div>
+
+                <div class="nav-tab" id="tab-folders" onclick="handleBottomNav('folders')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    <span>词库</span>
+                </div>
+
+                <div class="nav-tab" id="tab-profile" onclick="handleBottomNav('profile')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <span>我的</span>
+                </div>
+            </nav>
+        `;
+        document.body.insertAdjacentHTML('beforeend', bottomNavHTML);
+    }
+
+    if (!document.getElementById('folders-view')) {
+        const foldersViewHTML = `
+            <div id="folders-view" class="view hidden" style="padding: 16px; box-sizing: border-box; animation: fadeIn 0.3s ease;">
+                <div style="background: white; border-radius: 20px; padding: 10px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
+                    <ul class="nav-menu" id="mobile-folders-menu" style="margin:0;"></ul>
+                </div>
+            </div>
+        `;
+        const contentArea = document.querySelector('.content-area');
+        if (contentArea) contentArea.insertAdjacentHTML('beforeend', foldersViewHTML);
+    }
+
+})();
+
+// 🛡️ 3. 注册底栏中枢路由
+window.handleBottomNav = function(target) {
+    if (window.innerWidth > 768) return;
+
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    const tab = document.getElementById('tab-' + target);
+    if (tab) tab.classList.add('active');
+
+    if (target === 'dashboard') {
+        const dashBtn = document.querySelector('.nav-item[onclick*="selectDashboard"]');
+        if (dashBtn) selectDashboard(dashBtn);
+    } else if (target === 'all') {
+        if (typeof goToAllCards === 'function') goToAllCards();
+    } else if (target === 'folders') {
+        document.getElementById('current-view-title').innerText = '知识库分类';
+        showMainView('folders-view'); 
+    }
+};
+
+// --- 下面接你原来的 let allCards = []; 等等代码 ---
 let allCards = [];
+
 let allCategories = [];
 let currentCategoryId = 'all';
 let editingCardId = null;
@@ -102,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- 1. 视图切换引擎 (🚀 上线级：完美平衡版) ---
 // --- 1. 视图切换引擎 (🚀 上线级：完美平衡 + 笔记类型智能过滤版) ---
 function showMainView(viewId) {
-    const views = ['manage-view', 'study-view', 'spell-view', 'dashboard-view'];
+    const views = ['manage-view', 'study-view', 'spell-view', 'dashboard-view', 'folders-view'];
     views.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -110,188 +220,230 @@ function showMainView(viewId) {
     const target = document.getElementById(viewId);
     if (target) target.classList.remove('hidden');
 
-    // ==== 🌟 精准控制顶部按钮 ====
+    // ==== 🛡️ 核心修复：全局 Header 栏目控制 ====
+    const globalHeader = document.querySelector('.main-header');
+    const viewTitle = document.getElementById('current-view-title');
     const headerActions = document.querySelector('.header-actions');
-    const limitInput = document.getElementById('study-limit');
-    const limitContainer = limitInput ? limitInput.parentElement : null; 
-    const addBtn = document.getElementById('btn-add-card');
-    const manageBtn = document.getElementById('btn-toggle-manage');
-    const studyBtn = document.querySelector('button[onclick="startStudyMode()"]');
-    const spellBtn = document.querySelector('button[onclick="startSpellMode()"]');
+    
+    if (viewId === 'dashboard-view') {
+        // 1. 【彻底抹除】主页顶部的白条
+        if (globalHeader) globalHeader.style.setProperty('display', 'none', 'important');
+        
+        // 2. 隐藏标题和动作区
+        if (viewTitle) viewTitle.style.display = 'none';
+        if (headerActions) headerActions.style.display = 'none';
 
-    // 👇 新增护盾：查一下当前文件夹（或它的父级）是不是“笔记类型(notes)”
-    let isNoteFolder = false;
-    if (typeof currentCategoryId !== 'undefined' && currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
-        const currentCat = allCategories.find(c => c._id === currentCategoryId);
-        if (currentCat) {
-            // 如果自己是笔记，或者它爸爸是笔记，都算笔记！
-            if (currentCat.type === 'notes') {
-                isNoteFolder = true;
-            } else if (currentCat.parentId) {
-                const parentCat = allCategories.find(p => p._id === currentCat.parentId);
-                if (parentCat && parentCat.type === 'notes') {
-                    isNoteFolder = true;
-                }
-            }
-        }
-    }
-
-    if (viewId === 'manage-view') {
-        // 📁 【常规列表页】：全副武装！恢复所有按钮
+        // 3. 执行主页渲染
         window.isFreePracticeMode = false;
-        if (headerActions) headerActions.style.display = 'flex';
-        if (limitContainer && limitContainer.tagName !== 'BODY') limitContainer.style.display = 'flex';
-        if (addBtn) addBtn.style.display = 'inline-flex';
-        if (manageBtn) manageBtn.style.display = 'inline-flex';
-        if (studyBtn) studyBtn.style.display = 'inline-flex';
-        
-        // 🛡️ 核心修复：如果是笔记类型，默写按钮死活不亮！
-        if (spellBtn) {
-            spellBtn.style.display = isNoteFolder ? 'none' : 'inline-flex';
-        }
-        
-        if (typeof filterCards === 'function') filterCards(); 
-        
-    } else if (viewId === 'dashboard-view') {
-        // 📊 【学习数据看板】：保留复习数量和+号，隐藏具体列表操作
-        window.isFreePracticeMode = false;
-        if (headerActions) headerActions.style.display = 'flex'; 
-        
-        if (limitContainer && limitContainer.tagName !== 'BODY') limitContainer.style.display = 'flex';
-        if (addBtn) addBtn.style.display = 'inline-flex';
-        
-        if (manageBtn) manageBtn.style.display = 'none';
-        if (studyBtn) studyBtn.style.display = 'none';
-        if (spellBtn) spellBtn.style.display = 'none';
-        
         if (typeof renderDashboard === 'function') renderDashboard(); 
         
+    } else if (viewId === 'folders-view') {
+        // 📁 【手机端分类页】：隐藏顶部繁杂按钮，但保留白条显示标题
+        if (globalHeader) globalHeader.style.display = 'flex';
+        if (headerActions) headerActions.style.display = 'none';
+        if (viewTitle) viewTitle.style.display = 'block';
+
+    } else if (viewId === 'manage-view') {
+        // 📁 【常规列表页】：全副武装！恢复所有显示
+        if (globalHeader) globalHeader.style.display = 'flex';
+        if (headerActions) headerActions.style.display = 'flex';
+        if (viewTitle) viewTitle.style.display = 'block';
+        
+        // 原有的按钮显示逻辑...
+        const addBtn = document.getElementById('btn-add-card');
+        const manageBtn = document.getElementById('btn-toggle-manage');
+        if (addBtn) addBtn.style.display = 'inline-flex';
+        if (manageBtn) manageBtn.style.display = 'inline-flex';
+        
+        if (typeof filterCards === 'function') filterCards(); 
+
     } else {
         // 🎯 【沉浸背诵/默写】：全屏清场！
-        if (headerActions) headerActions.style.display = 'none'; 
+        if (globalHeader) globalHeader.style.display = 'none'; 
     }
 
     // 动态控制“未分类区”的专属清空按钮
     const clearBtn = document.getElementById('btn-clear-uncategorized');
     if (clearBtn) {
-        if (currentCategoryId === 'uncategorized' && viewId === 'manage-view') {
-            clearBtn.style.display = 'inline-flex';
-        } else {
-            clearBtn.style.display = 'none';
-        }
+        clearBtn.style.display = (currentCategoryId === 'uncategorized' && viewId === 'manage-view') ? 'inline-flex' : 'none';
     }
 }
 
 // --- 2. 侧边栏与文件夹管理 ---
+// --- 2. 侧边栏与文件夹管理 ---
+// --- 2. 侧边栏与文件夹管理 (双路渲染引擎) ---
 async function loadCategories() {
     try {
         const response = await fetch('/api/categories');
         allCategories = await response.json();
 
-        const sidebarMenu = document.getElementById('sidebar-menu');
-        if (sidebarMenu) {
-            const icons = {
-                dashboard: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`,
-                all: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
-                folder: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
-                doc: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
-                arrowRight: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
-                arrowDown: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>`
-            };
+        let desktopHtml = ''; 
+        let mobileHtml = '';
 
-            let html = `
-                <li class="nav-item ${currentCategoryId === 'dashboard' ? 'active' : ''}" onclick="selectDashboard(this)">
-                    ${icons.dashboard} <span>学习数据</span>
-                </li>
-                <div style="height: 1px; background: #e2e8f0; margin: 10px 0;"></div>
-            `;
+        const icons = {
+            dashboard: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`,
+            all: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+            folder: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+            doc: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+            arrowRight: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
+            arrowDown: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>`
+        };
 
-            const rootArrow = rootCollapsed ? icons.arrowRight : icons.arrowDown;
-            html += `
-                <li class="nav-item root-nav ${currentCategoryId === 'all' ? 'active' : ''}" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;" onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', this.parentElement)">
-                        <div class="toggle-arrow" onclick="toggleRoot(event)">${rootArrow}</div>
-                        ${icons.all} <span>所有卡片</span>
+        // ==== 1. 组装电脑端左侧菜单 ====
+        desktopHtml = `
+            <li class="nav-item ${currentCategoryId === 'dashboard' ? 'active' : ''}" onclick="selectDashboard(this)">
+                ${icons.dashboard} <span>学习数据</span>
+            </li>
+            <div style="height: 1px; background: #e2e8f0; margin: 10px 0;"></div>
+        `;
+        const rootArrow = rootCollapsed ? icons.arrowRight : icons.arrowDown;
+        desktopHtml += `
+            <li class="nav-item root-nav ${currentCategoryId === 'all' ? 'active' : ''}" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1;" onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', this.parentElement)">
+                    <div class="toggle-arrow" onclick="toggleRoot(event)">${rootArrow}</div>
+                    ${icons.all} <span>所有卡片</span>
+                </div>
+                <div class="folder-actions" onclick="quickCreateSubCategory(event, '')" title="新建顶级文件夹">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
+            </li>
+            <div id="user-folders-container" style="display: ${rootCollapsed ? 'none' : 'block'}; padding-left: 14px;">
+        `;
+        desktopHtml += `
+            <li class="nav-item ${currentCategoryId === 'uncategorized' ? 'active' : ''}" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;" onclick="selectSidebarItem('uncategorized', '未分类区', 'vocabulary', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 20px;"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                <span style="color: #475569;">未分类区</span>
+            </li>
+        `;
+
+        // ==== 2. 组装手机端大卡片 UI ====
+        mobileHtml = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; margin-top: 10px;">
+                <h3 style="margin:0; font-size:1.4rem; color:#1e293b; font-weight:800;">知识库</h3>
+                <button onclick="openCategoryModal()" style="background:#eef2ff; color:#4f46e5; border:none; padding:8px 14px; border-radius:12px; font-weight:700; font-size:0.9rem; display:flex; align-items:center; gap:6px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>新建
+                </button>
+            </div>
+            
+            <div class="mobile-folder-card" onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', null)">
+                <div class="mobile-folder-header">
+                    <div class="mobile-folder-content">${icons.all} <strong style="color:#1e293b; font-size:1.05rem;">所有卡片</strong></div>
+                </div>
+            </div>
+            <div class="mobile-folder-card" onclick="selectSidebarItem('uncategorized', '未分类区', 'vocabulary', null)">
+                <div class="mobile-folder-header">
+                    <div class="mobile-folder-content">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        <strong style="color:#475569; font-size:1.05rem;">未分类区</strong>
                     </div>
-                    
-                    <div class="folder-actions" onclick="quickCreateSubCategory(event, '')" title="新建顶级文件夹">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
+            </div>
+        `;
+
+        const parents = allCategories.filter(c => !c.parentId);
+        const children = allCategories.filter(c => c.parentId);
+
+        parents.forEach(p => {
+            const hasChildren = children.some(c => c.parentId === p._id);
+            const isCollapsed = collapsedFolders.has(p._id);
+            const arrow = isCollapsed ? icons.arrowRight : icons.arrowDown;
+            const icon = p.type === 'notes' ? icons.doc : icons.folder;
+            const isActive = currentCategoryId === p._id ? 'active' : '';
+
+            // 电脑端拼接
+            desktopHtml += `
+                <li class="nav-item parent-nav ${isActive}" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;" onclick="handleParentClick(event, '${p._id}', '${p.name}', '${p.type}', this.parentElement)">
+                        <div class="toggle-arrow" style="visibility: ${hasChildren ? 'visible' : 'hidden'}">${arrow}</div>
+                        ${icon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${p.name}</span>
+                    </div>
+                    <div class="folder-actions" onclick="quickCreateSubCategory(event, '${p._id}')" title="在此文件夹下新建" style="cursor: pointer; padding: 4px; color: #cbd5e1; transition: 0.2s;" onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#cbd5e1'">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     </div>
                 </li>
-                <div id="user-folders-container" style="display: ${rootCollapsed ? 'none' : 'block'}; padding-left: 14px;">
-            `;
-            html += `
-                <li class="nav-item ${currentCategoryId === 'uncategorized' ? 'active' : ''}" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;" onclick="selectSidebarItem('uncategorized', '未分类区', 'vocabulary', this)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 20px;"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                    <span style="color: #475569;">未分类区</span>
-                </li>
+                <div id="children-of-${p._id}" style="display: ${isCollapsed ? 'none' : 'block'}; padding-left: 28px;">
             `;
 
-            const parents = allCategories.filter(c => !c.parentId);
-            const children = allCategories.filter(c => c.parentId);
-
-            parents.forEach(p => {
-                const hasChildren = children.some(c => c.parentId === p._id);
-                const isCollapsed = collapsedFolders.has(p._id);
-                const arrow = isCollapsed ? icons.arrowRight : icons.arrowDown;
-                const icon = p.type === 'notes' ? icons.doc : icons.folder;
-                const isActive = currentCategoryId === p._id ? 'active' : '';
-
-                html += `
-                    <li class="nav-item parent-nav ${isActive}" style="display: flex; justify-content: space-between; align-items: center;">
-                        
-                        <div style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;" onclick="handleParentClick(event, '${p._id}', '${p.name}', '${p.type}', this.parentElement)">
-                            <div class="toggle-arrow" style="visibility: ${hasChildren ? 'visible' : 'hidden'}">${arrow}</div>
-                            ${icon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${p.name}</span>
+            // 手机端拼接 (分离触控区)
+            mobileHtml += `
+                <div class="mobile-folder-card">
+                    <div class="mobile-folder-header">
+                        <div class="mobile-folder-content" onclick="selectSidebarItem('${p._id}', '${p.name}', '${p.type}', null)">
+                            ${icon} <strong style="color:#1e293b; font-size:1.05rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</strong>
                         </div>
-                        
-                        <div class="folder-actions" onclick="quickCreateSubCategory(event, '${p._id}')" title="在此文件夹下新建" style="cursor: pointer; padding: 4px; color: #cbd5e1; transition: 0.2s;" onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#cbd5e1'">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <div class="mobile-folder-toggle" onclick="toggleMobileFolder(event, '${p._id}')" style="visibility: ${hasChildren ? 'visible' : 'hidden'}">
+                            <svg id="m-arrow-${p._id}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition: transform 0.3s; transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
+                    </div>
+                    <div id="m-children-${p._id}" class="mobile-child-list" style="display: ${isCollapsed ? 'none' : 'block'};">
+            `;
 
-                    </li>
-                    <div id="children-of-${p._id}" style="display: ${isCollapsed ? 'none' : 'block'}; padding-left: 28px;">
-                `;
-
-                children.filter(c => c.parentId === p._id).forEach(child => {
-                    const cIcon = icons.doc;
-                    const cActive = currentCategoryId === child._id ? 'active' : '';
-                    html += `
-                        <li class="nav-item is-child ${cActive}" onclick="selectSidebarItem('${child._id}', '${child.name}', '${child.type}', this)">
-                            ${cIcon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${child.name}</span>
-                        </li>`;
-                });
-                html += `</div>`;
+            children.filter(c => c.parentId === p._id).forEach(child => {
+                const cIcon = icons.doc;
+                const cActive = currentCategoryId === child._id ? 'active' : '';
+                
+                desktopHtml += `<li class="nav-item is-child ${cActive}" onclick="selectSidebarItem('${child._id}', '${child.name}', '${child.type}', this)">${cIcon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${child.name}</span></li>`;
+                
+                mobileHtml += `<div class="mobile-child-item" onclick="selectSidebarItem('${child._id}', '${child.name}', '${child.type}', null)">${cIcon} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${child.name}</span></div>`;
             });
-            html += `</div>`;
+            
+            desktopHtml += `</div>`;
+            mobileHtml += `</div></div>`;
+        });
+        desktopHtml += `</div>`;
 
-            sidebarMenu.innerHTML = html;
-        }
+        // 渲染到 DOM
+        const sidebarMenu = document.getElementById('sidebar-menu');
+        if (sidebarMenu) sidebarMenu.innerHTML = desktopHtml;
+
+        const foldersView = document.getElementById('folders-view');
+        if (foldersView) foldersView.innerHTML = mobileHtml; // 直接强行覆盖整个内容
 
         refreshSelectOptions();
+        
     } catch (error) { console.error('加载分类失败:', error); }
 }
 
+// 📱 手机端专属的手风琴折叠函数 (完全独立，不影响电脑端)
+window.toggleMobileFolder = function(event, folderId) {
+    event.stopPropagation(); // 阻止进入文件夹的点击事件
+    const childrenContainer = document.getElementById(`m-children-${folderId}`);
+    const arrow = document.getElementById(`m-arrow-${folderId}`);
+    
+    if (childrenContainer) {
+        if (childrenContainer.style.display === 'none') {
+            childrenContainer.style.display = 'block';
+            if (arrow) arrow.style.transform = 'rotate(0deg)';
+            collapsedFolders.delete(folderId); // 顺便记录状态，两端同步
+        } else {
+            childrenContainer.style.display = 'none';
+            if (arrow) arrow.style.transform = 'rotate(-90deg)';
+            collapsedFolders.add(folderId);
+        }
+    }
+};
+
+// --- 下拉框隔离引擎 ---
 function refreshSelectOptions() {
     const selects = ['modal-category-select', 'batch-category-select', 'edit-category-select'];
-
     const parents = allCategories.filter(c => !c.parentId);
     const children = allCategories.filter(c => c.parentId);
 
-    let optionsHtml = `<option value="">(无) 请选择具体子文件夹...</option>`;
-    optionsHtml += `<option value="CREATE_NEW" style="color: #3b82f6; font-weight: bold;">快捷新建文件夹...</option>`;
+    let optionsHtml = `<option value="">(无) 放入未分类区...</option>`;
+    optionsHtml += `<option disabled>──────────────</option>`;
 
     parents.forEach(p => {
+        // 🌟 方案三核心：大类文件夹变灰且 disabled，绝不让用户选中！
+        optionsHtml += `<option value="" disabled style="font-weight: bold; color: #94a3b8; background: #f8fafc;">📁 [大类] ${p.name} (不可直放卡片)</option>`;
+        
         const myChildren = children.filter(c => c.parentId === p._id);
-        optionsHtml += `<optgroup label="── ${p.name} ──">`;
         if (myChildren.length > 0) {
             myChildren.forEach(c => {
-                optionsHtml += `<option value="${c._id}">  ${c.name}</option>`;
+                optionsHtml += `<option value="${c._id}" style="color: #1e293b; font-weight:500;">&nbsp;&nbsp;&nbsp;&nbsp;↳ 📦 [卡包] ${c.name}</option>`;
             });
         } else {
-            optionsHtml += `<option value="" disabled>  (空目录，请先建子文件夹)</option>`;
+            optionsHtml += `<option value="" disabled style="color: #cbd5e1;">&nbsp;&nbsp;&nbsp;&nbsp;↳ (空，请先在外部建卡包)</option>`;
         }
-        optionsHtml += `</optgroup>`;
     });
 
     selects.forEach(id => {
@@ -299,11 +451,12 @@ function refreshSelectOptions() {
         if (el) el.innerHTML = optionsHtml;
     });
 
+    // 处理建大类的下拉框
     const parentSelect = document.getElementById('parent-category-select');
     if (parentSelect) {
-        parentSelect.innerHTML = '<option value="">(无) 作为顶级文件夹</option>';
+        parentSelect.innerHTML = '<option value="">(无) 作为顶级大类</option>';
         parents.forEach(cat => {
-            parentSelect.innerHTML += `<option value="${cat._id}">归属于 -> ${cat.name}</option>`;
+            parentSelect.innerHTML += `<option value="${cat._id}">归属于 -> 📁 ${cat.name}</option>`;
         });
     }
 }
@@ -368,14 +521,13 @@ function selectSidebarItem(id, title, type, element) {
         // 触发界面切换，内部会自动调用 filterCards 刷新列表
         showMainView('manage-view');
 
-        // 📱 手机端：只有当它是打开状态时，才执行收起动作 (防止反向触发)
+        // 👇 替换原有的手机端逻辑：不需要收遮罩了，直接点亮底部“词库”按钮
         if (window.innerWidth <= 768) {
-            const sidebar = document.querySelector('.sidebar');
-            if (sidebar && sidebar.classList.contains('mobile-active')) {
-                toggleMobileSidebar();
-            }
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            const tabAll = document.getElementById('tab-all');
+            if (tabAll) tabAll.classList.add('active');
         }
-    } catch (error) { // 👈 就是这个 catch，刚才被弄丢了！现在它回来了！
+    } catch (error) { 
         console.error("侧边栏点击报错拦截:", error);
     }
 }
@@ -517,7 +669,18 @@ async function confirmCategory() {
     const parentId = document.getElementById('parent-category-select') ? document.getElementById('parent-category-select').value : null;
     const type = document.getElementById('category-type-select') ? document.getElementById('category-type-select').value : 'vocabulary';
     if (!name) return alert('请输入名称');
-    try { await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, parentId: parentId || null, type }) }); closeAllModals(); loadCategories(); } catch (error) { console.error(error); }
+    try { 
+        await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, parentId: parentId || null, type }) }); 
+        closeAllModals(); 
+        await loadCategories(); 
+        
+        // 🌟 自动导达新文件夹！
+        const createdCat = allCategories.find(c => c.name === name && (c.parentId || null) === (parentId || null));
+        if (createdCat) {
+            selectSidebarItem(createdCat._id, createdCat.name, createdCat.type, null);
+            if (window.innerWidth <= 768) window.handleBottomNav('all'); // 手机端切回词库看数据
+        }
+    } catch (error) { console.error(error); }
 }
 
 async function loadFlashcards() {
@@ -598,6 +761,8 @@ function renderCards(cardsToRender = null) {
     const list = document.getElementById('flashcards-list');
     if (!list) return;
 
+    
+
     if (cardsToRender.length === 0) {
         list.innerHTML = `<div style="text-align:center; padding: 60px 20px; color: #94a3b8; font-size: 0.95rem; grid-column: 1 / -1;">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" style="margin-bottom:12px; display:block; margin-left:auto; margin-right:auto;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
@@ -605,6 +770,8 @@ function renderCards(cardsToRender = null) {
         </div>`;
         return;
     }
+
+
 
     const now = new Date();
     const getBadgeStyle = (bg, color) => `display:inline-flex; align-items:center; gap:4px; padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; background:${bg}; color:${color};`;
@@ -752,6 +919,13 @@ function updateStreak() {
 // 📊 首页数据引擎与智能推荐
 // ==========================================
 function renderDashboard() {
+    // 🛡️ 新增：进入主页时，把全局头部那个多余的标题藏起来
+    const viewTitle = document.getElementById('current-view-title');
+    if (viewTitle) viewTitle.style.display = 'none'; 
+
+    // 🛡️ 新增：顺便把那个“复习 20 张”的小方块也藏了，主页不需要它
+    const studyLimitWrap = document.querySelector('.header-actions div');
+    if (studyLimitWrap) studyLimitWrap.style.display = 'none';
     const now = new Date();
 
     // 1. 处理动态问候语 (根据时间)
@@ -875,6 +1049,22 @@ function renderDashboard() {
     }
     
     renderUrgentTasks(now);
+
+    // 在 renderDashboard 函数内部的最下面
+    renderUrgentTasks(now); 
+
+    // 🛡️ 强制补丁：等任务渲染完后，瞬间把里面的 header 删掉
+    setTimeout(() => {
+        const urgentBox = document.getElementById('dash-urgent-tasks');
+        if (urgentBox) {
+            // 找到主页任务列表里的那个 header 并直接从 DOM 中移除
+            const header = urgentBox.querySelector('.main-header');
+            if (header) {
+                header.remove(); 
+                console.log("已强力移除主页冗余 Header");
+            }
+        }
+    }, 50); // 延迟 50 毫秒确保渲染已完成
 }
 
 function renderUrgentTasks(now) {
@@ -961,40 +1151,99 @@ function startGlobalReview() {
     }
 }
 
-// --- 5. 弹窗与增删改查 ---
-function openAddCardModal() {
+// --- 弹窗控制与拦截引擎 ---
+function openAddCardModal() { 
+    if (typeof refreshSelectOptions === 'function') refreshSelectOptions();
+
     document.getElementById('modal-question').value = '';
     document.getElementById('modal-answer').value = '';
-
     const selectEl = document.getElementById('modal-category-select');
-    if (typeof injectQuickCategoryModal === 'function') injectQuickCategoryModal();
 
-    selectEl.onchange = function () {
-        if (this.value === 'CREATE_NEW') {
-            window.quickCreateSourceDropdown = 'modal-category-select';
-            window.quickCreateSourceModal = 'add-card-modal';
-            openQuickCategoryModal();
-        }
-    };
-
+    // 🌟 方案三核心：智能拦截！判断当前在什么层级
+    let isParentFolder = false;
+    let currentCat = null;
     if (currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
-        const currentCat = allCategories.find(c => c._id === currentCategoryId);
-        const isParentFolder = currentCat && !currentCat.parentId;
-
-        if (isParentFolder) {
-            selectEl.value = "";
-        } else {
-            selectEl.value = currentCategoryId;
+        currentCat = allCategories.find(c => c._id === currentCategoryId);
+        if (currentCat && !currentCat.parentId) {
+            isParentFolder = true; // 用户停留在“大类”中
         }
-    } else {
-        selectEl.value = "";
     }
+
+    if (isParentFolder) {
+        // 🚨 触发温柔拦截，不打开添加卡片弹窗，去建卡包！
+        promptSmartDeckCreation(currentCat);
+        return; 
+    }
+
+    // 如果用户本来就在卡包里，或者在总览里，正常打开加卡片弹窗
+    if (currentCat && currentCat.parentId) {
+        selectEl.value = currentCategoryId; // 默认选中当前卡包
+    } else {
+        selectEl.value = ""; // 默认丢进未分类
+    }
+    
     openModal('add-card-modal');
 }
 
+// --- 卡片保存引擎 (物理消灭毒瘤) ---
+async function createFlashcardFromModal() {
+    const question = document.getElementById('modal-question').value;
+    const answer = document.getElementById('modal-answer').value;
+    const selectValue = document.getElementById('modal-category-select').value;
+
+    if (!question || !answer) return alert('请填写完整内容');
+
+    let categoryId = null;
+    // 🚨 终极清洗：只要不是有效的 ID，一律视为 null (放入未分类)
+    if (selectValue && selectValue !== "" && selectValue !== "uncategorized" && selectValue !== "CREATE_NEW") {
+        categoryId = selectValue;
+    }
+
+    const payload = { question: question.trim(), answer: answer.trim(), categoryId };
+
+    try {
+        const response = await fetch('/api/flashcards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) return alert(`保存失败：状态码 ${response.status}`);
+        
+        closeAllModals();
+        await loadFlashcards();
+        
+        // 自动回到刚才的卡包
+        let targetNavId = categoryId ? categoryId : 'uncategorized';
+        selectSidebarItem(targetNavId, categoryId ? "知识库" : "未分类区", 'vocabulary', null);
+
+    } catch (error) { console.error("🔥 网络崩溃:", error); }
+}
+
 function openBatchModal() {
+    
     document.getElementById('batch-input').value = '';
     const selectEl = document.getElementById('batch-category-select');
+
+    // 2. 🌟 核心修复：在这里插入大类拦截逻辑
+    let isParentFolder = false;
+    let currentCat = null;
+
+    if (currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
+        currentCat = allCategories.find(c => c._id === currentCategoryId);
+        // 如果当前文件夹没有父级 ID，说明它是个“大类”
+        if (currentCat && !currentCat.parentId) {
+            isParentFolder = true;
+        }
+    }
+
+    if (isParentFolder) {
+        // 🚨 触发拦截：不允许在父文件夹直接批量导入，先去建个卡包！
+        // 这里的 promptSmartDeckCreation 会引导用户建包，建完后会自动跳到添加界面
+        alert(`提示：【${currentCat.name}】是大类文件夹，请先创建一个子卡包再进行批量导入。`);
+        promptSmartDeckCreation(currentCat); 
+        return; 
+    }
 
     // 👇 🌟 核心修复：给批量导入的下拉框装上极速建档的“监听神经”
     if (typeof injectQuickCategoryModal === 'function') injectQuickCategoryModal();
@@ -1025,50 +1274,7 @@ function openCategoryModal() { document.getElementById('new-category-input').val
 function closeAllModals() { document.getElementById('modal-overlay').style.display = 'none'; document.querySelectorAll('.pro-modal').forEach(m => m.style.display = 'none'); }
 function openModal(id) { document.getElementById('modal-overlay').style.display = 'block'; document.getElementById(id).style.display = 'block'; }
 
-async function createFlashcardFromModal() {
-    const question = document.getElementById('modal-question').value;
-    const answer = document.getElementById('modal-answer').value;
-    const selectValue = document.getElementById('modal-category-select').value;
 
-    if (!question || !answer) return alert('请填写完整内容');
-
-    let categoryId = null;
-    if (selectValue && selectValue !== "" && selectValue !== "uncategorized") {
-        categoryId = selectValue;
-    }
-
-    const payload = { question: question.trim(), answer: answer.trim(), categoryId };
-
-    try {
-        const response = await fetch('/api/flashcards', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error("❌ 后端真实报错:", response.status, errText);
-            if (response.status === 404) {
-                alert(`⚠️ 破案了！接口是通的，但后端因为找不到分类而拒绝保存。\n请按 F12 看看控制台的红字，把详细报错发给我！`);
-            } else {
-                alert(`保存失败：状态码 ${response.status}`);
-            }
-            return;
-        }
-
-        closeAllModals();
-        await loadFlashcards();
-
-        let targetNavId = categoryId ? categoryId : 'uncategorized';
-        const targetElement = document.querySelector(`.nav-item[onclick*="${targetNavId}"]`);
-        selectSidebarItem(targetNavId, categoryId ? "文件夹" : "未分类区", 'vocabulary', targetElement);
-
-    } catch (error) {
-        console.error("🔥 网络崩溃:", error);
-        alert("网络连接异常。");
-    }
-}
 
 async function updateCard() {
     const question = document.getElementById('edit-question').value;
@@ -1316,36 +1522,61 @@ function renderStudyCard() {
 
 function flipCard() { document.getElementById('card-inner').classList.toggle('is-flipped'); }
 
-function submitReview(isKnown) {
-    if (!studyCards || studyCards.length === 0 || currentStudyIndex >= studyCards.length) return;
-    const currentCard = studyCards[currentStudyIndex];
+// ==========================================
+// 🚨 加了 Debug 弹窗的 submitReview 函数
+// ==========================================
+async function submitReview(isKnown) { // 注意这里加了 async
+    if (!studyCards || studyCards.length === 0 || currentStudyIndex >= studyCards.length) return;
+    const currentCard = studyCards[currentStudyIndex];
 
-    // --- 🌟 关键拦截：如果是自由模式 (isFreePracticeMode) ---
-    if (window.isFreePracticeMode) {
-        console.log("👻 自由模式：不更新进度，不发请求");
-        // 自由模式下，我们通常不希望“不认识”的卡片无限循环
-        // 如果你希望自由模式下也要塞回队尾，就把下面这行取消注释
-        // if (!isKnown) studyCards.push(currentCard); 
-    } else {
-        // --- 🧪 科学复习模式：正常执行艾宾浩斯引擎 ---
-        processCardMemory(currentCard, isKnown, false);
+    if (window.isFreePracticeMode) {
+        console.log("👻 自由模式：不更新进度，不发请求");
+    } else {
+        processCardMemory(currentCard, isKnown, false);
 
-        if (!isKnown) {
-            studyCards.push(currentCard); // 不认识的塞回队尾重背
+        if (!isKnown) {
+            studyCards.push(currentCard); 
+        }
+
+        try {
+            const payload = {
+                isKnown,
+                stage: currentCard.stage,
+                nextReviewDate: currentCard.nextReviewDate
+            };
+            
+            // // 🐛 第一处弹窗：准备发送的数据
+            // alert(`准备发送到后端:\n卡片ID: ${currentCard._id}\n数据: ${JSON.stringify(payload)}`);
+
+            const response = await fetch(`/api/flashcards/${currentCard._id}/review`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            // // 🐛 第二处弹窗：后端的响应状态
+            // alert(`后端返回状态码: ${response.status}\n是否成功(ok): ${response.ok}`);
+
+        } catch (e) { 
+            // 🐛 第三处弹窗：极其关键！捕捉手机端的静默崩溃！
+            // alert(`手机端网络请求彻底崩溃啦！\n报错信息: ${e.message}\n错误详情: ${e.toString()}`);
+            // console.warn("后台同步稍后重试", e); 
         }
+    }
 
-        try {
-            fetch(`/api/flashcards/${currentCard._id}/review`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    isKnown,
-                    stage: currentCard.stage,
-                    nextReviewDate: currentCard.nextReviewDate
-                })
-            });
-        } catch (e) { console.warn("后台同步稍后重试", e); }
-    }
+    currentStudyIndex++;
+
+    if (currentStudyIndex >= studyCards.length) {
+        setTimeout(() => {
+            const msg = window.isFreePracticeMode ? '👻 自由预习圆满完成！' : '🎉 恭喜！本次背诵任务圆满完成！';
+            alert(msg);
+            window.isFreePracticeMode = false;
+            showMainView('dashboard-view');
+            renderDashboard(); 
+        }, 150);
+    } else {
+        renderStudyCard();
+    }
 
     // --- 无论什么模式，都要切下一张 ---
     currentStudyIndex++;
@@ -1679,21 +1910,34 @@ function toggleManageMode() {
     const selectAllBtn = document.getElementById('btn-select-all');
 
     if (manageBtn) {
-        // 进入管理模式变成红色的“退出”，否则变回 SVG 图标
         if (isManageMode) {
-            manageBtn.innerHTML = `<span style="font-size: 0.9rem; font-weight: bold;">退出</span>`;
+            // --- 🌈 风格同步：把方块按钮变成文字按钮 ---
+            manageBtn.innerHTML = `<span style="font-size: 14px; font-weight: 600;">退出</span>`;
             manageBtn.style.color = "#ef4444";
-            manageBtn.style.background = "#fee2e2";
+            manageBtn.style.background = "transparent"; // 去掉背景颜色
+            manageBtn.style.border = "none";            // 去掉边框
+            manageBtn.style.width = "auto";             // 宽度自适应，不再是 38px
+            manageBtn.style.minWidth = "unset";         // 彻底释放宽度限制
+            manageBtn.style.padding = "0 4px";          // 左右留点微距，对齐全选
+            manageBtn.style.boxShadow = "none";         // 去掉投影
         } else {
+            // --- 🔙 回归原始：恢复成精致的图标方块 ---
             manageBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>`;
             manageBtn.style.color = "#64748b";
-            manageBtn.style.background = "transparent";
+            manageBtn.style.background = "rgb(248, 250, 252)"; // 恢复原来的背景色
+            manageBtn.style.border = "1px solid rgb(226, 232, 240)"; // 恢复边框
+            manageBtn.style.width = "38px";             // 恢复正方形宽度
+            manageBtn.style.padding = "0";              // 恢复无内边距
         }
     }
+
     if (selectAllBtn) {
         selectAllBtn.style.display = isManageMode ? "inline-flex" : "none";
-        selectAllBtn.innerHTML = `<span style="font-size: 0.9rem; font-weight: bold;">全选</span>`;
+        // 确保全选的文字大小和间距也一致
+        selectAllBtn.style.fontSize = "14px";
+        selectAllBtn.style.padding = "0 4px";
     }
+
     if (typeof renderCards === 'function') renderCards();
     updateBatchActionBar();
 }
@@ -1970,20 +2214,20 @@ async function submitInlineCategory(event) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, parentId: parentId || null, type: 'vocabulary' })
         });
-
         await loadCategories();
-
         document.getElementById('inline-cat-form').style.display = 'none';
         const selectEl = document.getElementById('modal-category-select');
         selectEl.style.display = 'block';
 
+        // 🌟 自动导达并选中下拉框
         setTimeout(() => {
             const createdCat = allCategories.find(c => c.name === name && (c.parentId || '') === parentId);
             if (createdCat) {
                 selectEl.value = createdCat._id;
+                selectSidebarItem(createdCat._id, createdCat.name, createdCat.type, null);
+                if (window.innerWidth <= 768) window.handleBottomNav('all');
             }
         }, 150);
-
     } catch (error) {
         console.error("行内创建报错:", error);
         alert("创建失败，请检查网络。");
@@ -2134,13 +2378,15 @@ async function submitQuickCategory() {
 
         // 在 submitQuickCategory 函数的最后面，把 setTimeout 替换成这样：
         setTimeout(() => {
-            // 🌟 动态获取来源下拉框，把新创建的分类自动选上！
             const sourceDropdownId = window.quickCreateSourceDropdown || 'modal-category-select';
             const selectEl = document.getElementById(sourceDropdownId);
             
             const createdChild = allCategories.find(c => c.name === childName && c.parentId === finalParentId);
-            if (createdChild && selectEl) {
-                selectEl.value = createdChild._id;
+            if (createdChild) {
+                if (selectEl) selectEl.value = createdChild._id;
+                // 🌟 自动导达新建立的子文件夹
+                selectSidebarItem(createdChild._id, createdChild.name, createdChild.type, null);
+                if (window.innerWidth <= 768) window.handleBottomNav('all');
             }
         }, 150);
 
@@ -2153,6 +2399,9 @@ async function submitQuickCategory() {
     }
 }
 
+// ==========================================
+// 🖱️ 右键/长按操作菜单引擎 (双端完美兼容 + 防溢出)
+// ==========================================
 (function setupContextMenu() {
     function injectContextMenu() {
         if (document.getElementById('custom-context-menu')) return;
@@ -2169,255 +2418,71 @@ async function submitQuickCategory() {
     let contextMenuTargetId = null;
     let contextMenuTargetName = '';
 
-    window.addEventListener('DOMContentLoaded', () => {
-        injectContextMenu();
-        const menu = document.getElementById('custom-context-menu');
-        const editBtn = document.getElementById('ctx-edit-btn');
-        const deleteBtn = document.getElementById('ctx-delete-btn');
-
-        const sidebar = document.getElementById('sidebar-menu');
-        if (sidebar) sidebar.style.touchAction = 'manipulation';
-
-        document.addEventListener('contextmenu', function (e) {
-            const targetElement = e.target.closest('[onclick]');
-            if (targetElement) {
-                const onclickStr = targetElement.getAttribute('onclick') || '';
-                const targetCat = allCategories.find(c => onclickStr.includes(c._id));
-
-                if (targetCat) {
-                    e.preventDefault();
-                    contextMenuTargetId = targetCat._id;
-                    contextMenuTargetName = targetCat.name;
-                    menu.style.display = 'block';
-                    menu.style.left = e.pageX + 'px';
-                    menu.style.top = e.pageY + 'px';
-                    return;
-                }
-            }
-            menu.style.display = 'none';
-        });
-
-        document.addEventListener('click', function (e) {
-            if (e.target.closest('#custom-context-menu')) return;
-            menu.style.display = 'none';
-        });
-
-        editBtn.addEventListener('click', async function () {
-            menu.style.display = 'none';
-            if (!contextMenuTargetId) return;
-
-            const newName = prompt(`请输入【${contextMenuTargetName}】的新名称：`, contextMenuTargetName);
-            if (newName && newName.trim() !== '' && newName.trim() !== contextMenuTargetName) {
-                try {
-                    const response = await fetch(`/api/categories/${contextMenuTargetId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: newName.trim() })
-                    });
-                    if (!response.ok) throw new Error('重命名接口报错');
-
-                    await loadCategories();
-                    if (currentCategoryId === contextMenuTargetId) {
-                        const titleEl = document.getElementById('category-title');
-                        if (titleEl) titleEl.innerText = newName.trim();
-                    }
-                } catch (error) {
-                    console.error("重命名失败:", error);
-                    alert('重命名失败，请检查网络或后端接口。');
-                }
-            }
-        });
-
-        deleteBtn.addEventListener('click', async function () {
-            menu.style.display = 'none';
-            if (!contextMenuTargetId) return;
-
-            if (confirm(`警告：确定要删除【${contextMenuTargetName}】吗？\n文件夹删除后，里面的卡片会自动进入“未分类区”。`)) {
-                try {
-                    const response = await fetch(`/api/categories/${contextMenuTargetId}`, { method: 'DELETE' });
-                    if (!response.ok) throw new Error('删除接口报错');
-
-                    await loadCategories();
-                    if (currentCategoryId === contextMenuTargetId) {
-                        const allCardsEl = document.querySelector(`.nav-item[onclick*="all"]`);
-                        if (allCardsEl) allCardsEl.click();
-                        else loadFlashcards();
-                    } else {
-                        loadFlashcards();
-                    }
-                } catch (error) {
-                    console.error("删除失败:", error);
-                    alert('删除失败，请检查网络。');
-                }
-            }
-        });
-    });
-})();
-
-function batchExportCards() {
-    if (typeof selectedCards === 'undefined' || selectedCards.size === 0) {
-        alert("请先勾选需要导出的卡片！");
-        return;
-    }
-
-    const cardsToExport = allCards.filter(card => selectedCards.has(card._id));
-    if (cardsToExport.length === 0) return;
-
-    let csvContent = "\uFEFF";
-    csvContent += "正面 (问题),反面 (答案)\n";
-
-    const escapeCSV = (str) => {
-        if (!str) return '""';
-        let safeStr = String(str).replace(/"/g, '""');
-        if (safeStr.search(/("|,|\n)/g) >= 0) {
-            safeStr = `"${safeStr}"`;
-        }
-        return safeStr;
-    };
-
-    cardsToExport.forEach(card => {
-        const q = escapeCSV(card.question);
-        const a = escapeCSV(card.answer);
-        csvContent += `${q},${a}\n`;
-    });
-
-    let fileName = "批量导出卡片.csv";
-    if (typeof currentCategoryId !== 'undefined' && currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
-        const cat = allCategories.find(c => c._id === currentCategoryId);
-        if (cat) fileName = `${cat.name}_导出.csv`;
-    } else if (currentCategoryId === 'uncategorized') {
-        fileName = "未分类区_导出.csv";
-    }
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-}
+})(); // 👈 极其重要的括号！刚才就是少了它导致的白屏！
 
 // ==========================================
-// ✨ 触控手势引擎 (滑动出抽屉) 
+// 📱 移动端专属交互引擎 (墨墨背单词-平级切换版)
 // ==========================================
-
-
-
-document.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-}, { passive: true });
-
-document.addEventListener('touchend', e => {
-    touchEndX = e.changedTouches[0].screenX;
-    touchEndY = e.changedTouches[0].screenY;
-    handleMobileSwipe();
-}, { passive: true });
-
-function handleMobileSwipe() {
-    if (window.innerWidth > 768) return; // 电脑端不启用手势
-
-    const swipeDistanceX = touchEndX - touchStartX;
-    const swipeDistanceY = Math.abs(touchEndY - touchStartY);
-
-    // 防误触：如果上下滑动的幅度比左右大（说明用户在往下看卡片），就不触发侧栏
-    if (swipeDistanceY > Math.abs(swipeDistanceX)) return;
-
-    const sidebar = document.querySelector('.sidebar');
-    if (!sidebar) return;
-
-    const isSidebarOpen = sidebar.classList.contains('mobile-active');
-
-    // 👉 向右滑动（呼出侧边栏）
-    // 苛刻条件：必须是从屏幕最左边（小于 40px 的边缘区域）开始滑，且滑行超过 50px 才触发
-    if (swipeDistanceX > 50 && touchStartX < 40 && !isSidebarOpen) {
-        toggleMobileSidebar();
+window.addEventListener('DOMContentLoaded', () => {
+    if (!document.getElementById('mobile-bottom-nav')) {
+        const bottomNavHTML = `
+            <nav id="mobile-bottom-nav" class="mobile-bottom-nav">
+                <div class="nav-tab active" id="tab-dashboard" onclick="handleBottomNav('dashboard')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                    <span>主页</span>
+                </div>
+                <div class="nav-tab" id="tab-all" onclick="handleBottomNav('all')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>词库</span>
+                </div>
+                <div class="nav-tab add-btn" onclick="openAddCardModal()">
+                    <div class="add-circle"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
+                </div>
+                <div class="nav-tab" id="tab-folders" onclick="handleBottomNav('folders')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    <span>分类</span>
+                </div>
+            </nav>
+        `;
+        document.body.insertAdjacentHTML('beforeend', bottomNavHTML);
     }
 
-    // 👈 向左滑动（收起侧边栏）
-    // 条件：侧边栏是打开的，并且向左滑了超过 50px
-    if (swipeDistanceX < -50 && isSidebarOpen) {
-        toggleMobileSidebar();
-    }
-}
-
-// ==========================================
-// ✨ 整合版交互引擎 (Esc回退 + 智能手势)
-// ==========================================
-
-// 🎹 全局键盘快捷键监听 (拆除白屏炸弹)
-// 🎹 全局键盘快捷键监听 (拆除白屏炸弹)
-window.addEventListener('keydown', async (e) => {
-    if (e.key === 'Escape' || e.keyCode === 27) {
-        
-        // 🚨 修复 1：只要按 Esc 退出，强制关闭自由模式，防止状态污染后续的学习！
-        window.isFreePracticeMode = false; 
-
-        const currentView = document.querySelector('.view:not(.hidden)');
-        if (currentView && currentView.id !== 'manage-view' && currentView.id !== 'dashboard-view') {
-            console.log("检测到 Esc，正在精准回退至列表...");
-            // ... (保留你原有的后续代码)
-            showMainView('manage-view'); // 🌟 修正：使用正确的 ID
-
-            // 🌟 修正：调用正确的渲染函数 renderCards
-            if (typeof renderCards === 'function') {
-                setTimeout(() => {
-                    renderCards();
-                    console.log("列表数据已强制重刷");
-                }, 50);
-            }
-
-            if (typeof renderDashboard === 'function') renderDashboard();
-        }
+    if (!document.getElementById('folders-view')) {
+        const foldersViewHTML = `
+            <div id="folders-view" class="view hidden" style="padding: 16px; box-sizing: border-box; animation: fadeIn 0.3s ease;">
+                <div style="background: white; border-radius: 20px; padding: 10px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
+                    <ul class="nav-menu" id="mobile-folders-menu" style="margin:0;"></ul>
+                </div>
+            </div>
+        `;
+        document.querySelector('.content-area').insertAdjacentHTML('beforeend', foldersViewHTML);
     }
 });
 
-// 📱 统一手势处理器 (合并呼出侧栏与滑动回退)
-function handleMobileSwipe() {
-    if (window.innerWidth > 1024) return;
+window.handleBottomNav = function(target) {
+    if (window.innerWidth > 768) return;
 
-    const diffX = touchEndX - touchStartX;
-    const diffY = Math.abs(touchEndY - touchStartY);
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    const tab = document.getElementById('tab-' + target);
+    if (tab) tab.classList.add('active');
 
-    // 如果上下滑动幅度过大，判定为翻页，不执行回退
-    if (diffY > Math.abs(diffX)) return;
-
-    const sidebar = document.querySelector('.sidebar');
-    const isSidebarOpen = sidebar && sidebar.classList.contains('mobile-active');
-
-    // 情况 A：呼出/隐藏侧边栏 (靠近左边缘)
-    if (touchStartX < 50) {
-        if (diffX > 60 && !isSidebarOpen) toggleMobileSidebar();
+    if (target === 'dashboard') {
+        const dashBtn = document.querySelector('.nav-item[onclick*="selectDashboard"]');
+        if (dashBtn) selectDashboard(dashBtn);
+    } else if (target === 'all') {
+        if (typeof goToAllCards === 'function') goToAllCards();
+    } else if (target === 'folders') {
+        document.getElementById('current-view-title').innerText = '知识库分类';
+        showMainView('folders-view'); 
     }
+};
 
-    // 情况 B：回退页面 (在屏幕中间右划)
-    if (diffX > 100 && touchStartX >= 50 && !isSidebarOpen) {
-        const currentView = document.querySelector('.view:not(.hidden)');
-        if (currentView && currentView.id !== 'manage-view' && document.activeElement.tagName !== 'INPUT') {
-            
-            // 🚨 修复：手机滑动回退也要关闭自由模式
-            window.isFreePracticeMode = false; 
-
-            showMainView('manage-view');
-            if (typeof renderCards === 'function') renderCards();
-            if (typeof renderDashboard === 'function') renderDashboard();
-        }
-    }
-
-    // 情况 C：向左划隐藏侧栏
-    if (diffX < -60 && isSidebarOpen) toggleMobileSidebar();
-}
-
-
-
-function startFreeStudy() {
+// ==========================================
+// 👻 自由背诵模式引擎 (修复被误杀的函数)
+// ==========================================
+window.startFreeStudy = function() {
     // 1. 开启“不留痕”开关
-    isFreePracticeMode = true;
+    window.isFreePracticeMode = true;
 
     // 2. 获取当前分类下的所有卡片（地毯式：不看时间，不看等级）
     let cards = [];
@@ -2440,7 +2505,7 @@ function startFreeStudy() {
         return;
     }
 
-    // 3. 随机洗牌 (满足你的随机性需求)
+    // 3. 随机洗牌 (满足随机性需求)
     cards.sort(() => Math.random() - 0.5);
 
     // 4. 进入背诵界面
@@ -2449,164 +2514,135 @@ function startFreeStudy() {
 
     // 切换视图
     showMainView('study-view');
-    renderStudyCard();
+    if (typeof renderStudyCard === 'function') renderStudyCard();
 
     console.log("👻 已开启自由背诵模式：全量加载，随机乱序，不记录进度。");
-}
+};
 
 // ==========================================
-// 🚀 首页数据看板按钮“神经中枢”跳转引擎
+// 📦 方案三专属：智能卡包引导引擎
 // ==========================================
-
-// ==========================================
-// 🚀 首页数据看板按钮“神经中枢” (带智能返回路径引擎版)
-// ==========================================
-
-// --- 0. 自动生成“智能返回看板”按钮 ---
-window.addEventListener('DOMContentLoaded', () => {
-    const manageView = document.getElementById('manage-view');
-    const toolbar = manageView ? manageView.querySelector('.toolbar') : null;
-    
-    if (toolbar && !document.getElementById('btn-back-to-dash')) {
-        const backBtn = document.createElement('button');
-        backBtn.id = 'btn-back-to-dash';
-        backBtn.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            返回数据看板
-        `;
-        // 莫兰迪靛蓝色，视觉层级最高，但依然优雅
-        backBtn.style.cssText = "display: none; align-items: center; gap: 6px; margin-bottom: 20px; padding: 10px 18px; border-radius: 12px; border:none; cursor:pointer; font-weight: bold; background: #eef2ff; color: #4f46e5; transition: 0.2s; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15); font-size: 0.95rem;";
-        
-        backBtn.onmouseover = () => backBtn.style.background = '#e0e7ff';
-        backBtn.onmouseout = () => backBtn.style.background = '#eef2ff';
-
-        // 点击返回看板，并深藏功与名
-        backBtn.onclick = () => {
-            backBtn.style.display = 'none'; 
-            if (typeof selectDashboard === 'function') selectDashboard();
-        };
-
-        // 插入到搜索栏的正上方
-        manageView.insertBefore(backBtn, toolbar);
+function promptSmartDeckCreation(parentFolder) {
+    if (!document.getElementById('smart-deck-modal')) {
+        const html = `
+        <div id="smart-deck-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10005;" onclick="closeSmartDeckModal()"></div>
+        <div id="smart-deck-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:24px; border-radius:16px; z-index:10006; width:320px; box-shadow:0 10px 25px rgba(0,0,0,0.1);">
+            <h3 style="margin-top:0; color:#1e293b; font-size:1.15rem; display:flex; align-items:center; gap:8px;">📦 需要建立一个卡包</h3>
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px; line-height:1.5;">【<span id="smart-deck-parent-name" style="color:#3b82f6; font-weight:bold;"></span>】 是一个大类文件夹，不能直接放卡片哦。<br>顺手帮它建个具体的卡包吧：</p>
+            <input type="text" id="smart-deck-input" placeholder="输入卡包名称 (如: List 1)" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px; outline:none; box-sizing:border-box; margin-bottom:20px; font-size:0.95rem; background:#f8fafc;">
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="closeSmartDeckModal()" style="padding:10px 16px; border:none; background:#f1f5f9; color:#475569; border-radius:8px; font-weight:600; cursor:pointer;">取消</button>
+                <button id="smart-deck-submit-btn" onclick="submitSmartDeckAndAddCard()" style="padding:10px 16px; border:none; background:#3b82f6; color:white; border-radius:8px; font-weight:600; cursor:pointer;">创建并加卡片</button>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
     }
-});
 
-// --- 1. 强行暴露：跳转到“困难卡片” ---
-window.goToHardCards = function() {
-    currentCategoryId = 'virtual-hard'; 
-    document.getElementById('current-view-title').innerText = '困难卡片 (待进阶)';
-    
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    showMainView('manage-view');
-    
-    const hardCards = allCards.filter(c => !c.stage || c.stage === 0);
-    renderCards(hardCards);
+    document.getElementById('smart-deck-parent-name').innerText = parentFolder.name;
+    window.smartDeckParentId = parentFolder._id; // 记住大类ID
 
-    // 🌟 核心：呼出返回按钮
-    const backBtn = document.getElementById('btn-back-to-dash');
-    if (backBtn) backBtn.style.display = 'inline-flex';
-};
-
-// --- 2. 强行暴露：跳转到“熟练掌握” ---
-window.goToMasteredCards = function() {
-    currentCategoryId = 'virtual-mastered';
-    document.getElementById('current-view-title').innerText = '熟练掌握 (可默写)';
-    
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    showMainView('manage-view');
-    
-    const masteredCards = allCards.filter(c => c.stage >= 1);
-    renderCards(masteredCards);
-
-    // 🌟 核心：呼出返回按钮
-    const backBtn = document.getElementById('btn-back-to-dash');
-    if (backBtn) backBtn.style.display = 'inline-flex';
-};
-
-// --- 3. 强行暴露：跳转到“知识库总览” ---
-window.goToAllCards = function() {
-    currentCategoryId = 'all';
-    document.getElementById('current-view-title').innerText = '所有卡片';
-    
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    showMainView('manage-view');
-    renderCards(allCards);
-
-    // 🌟 核心：呼出返回按钮
-    const backBtn = document.getElementById('btn-back-to-dash');
-    if (backBtn) backBtn.style.display = 'inline-flex';
-};
-
-// --- 4. 彻底解决极速建档按钮的接管问题 ---
-window.addEventListener('DOMContentLoaded', () => {
-    const quickCreateBtns = document.querySelectorAll('.dash-pill-btn[onclick*="openQuickCategoryModal"]');
-    quickCreateBtns.forEach(btn => {
-        btn.onclick = (e) => {
-            e.preventDefault();
-            window.quickCreateSourceModal = 'dashboard-view'; 
-            if(typeof openQuickCategoryModal === 'function') openQuickCategoryModal();
-        }
-    });
-});
-
-// --- 5. 智能打扫战场：只要点了左侧边栏，立刻清理返回按钮 ---
-if (typeof window.originalSelectSidebarItem === 'undefined' && typeof selectSidebarItem === 'function') {
-    window.originalSelectSidebarItem = selectSidebarItem; // 备份原函数
-    window.selectSidebarItem = function(id, title, type, element) {
-        // 发现用户进行了常规侧边栏点击，立刻把临时返回按钮藏起来
-        const backBtn = document.getElementById('btn-back-to-dash');
-        if(backBtn) backBtn.style.display = 'none'; 
-        
-        // 正常执行切换
-        window.originalSelectSidebarItem(id, title, type, element);
-    };
+    document.getElementById('smart-deck-overlay').style.display = 'block';
+    document.getElementById('smart-deck-modal').style.display = 'block';
+    setTimeout(() => document.getElementById('smart-deck-input').focus(), 100);
 }
 
+function closeSmartDeckModal() {
+    document.getElementById('smart-deck-overlay').style.display = 'none';
+    document.getElementById('smart-deck-modal').style.display = 'none';
+    document.getElementById('smart-deck-input').value = '';
+}
 
-// --- 弹窗控制引擎 (确保这几行都在) ---
-function openAddCardModal() { 
-    document.getElementById('modal-question').value = '';
-    document.getElementById('modal-answer').value = '';
-    
-    const selectEl = document.getElementById('modal-category-select');
-    if (typeof injectQuickCategoryModal === 'function') injectQuickCategoryModal();
-    
-    selectEl.onchange = function() {
-        if (this.value === 'CREATE_NEW') {
-            window.quickCreateSourceDropdown = 'modal-category-select';
-            window.quickCreateSourceModal = 'add-card-modal';
-            openQuickCategoryModal(); // 关联极速建档
-        }
-    };
+async function submitSmartDeckAndAddCard() {
+    const deckName = document.getElementById('smart-deck-input').value.trim();
+    if (!deckName) return alert("卡包名字不能为空哦！");
 
-    if (currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
-        const currentCat = allCategories.find(c => c._id === currentCategoryId);
-        const isParentFolder = currentCat && !currentCat.parentId; 
-        
-        if (isParentFolder) {
-            selectEl.value = ""; 
-        } else {
-            selectEl.value = currentCategoryId; 
+    const btn = document.getElementById('smart-deck-submit-btn');
+    btn.innerText = "正在创建...";
+    btn.disabled = true;
+
+    try {
+        // 1. 后台静默创建卡包
+        await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: deckName, parentId: window.smartDeckParentId, type: 'vocabulary' })
+        });
+
+        await loadCategories(); // 刷新左侧/手机端列表
+        closeSmartDeckModal();
+
+        // 2. 找到刚建好的卡包，瞬间切过去
+        const newDeck = allCategories.find(c => c.name === deckName && c.parentId === window.smartDeckParentId);
+        if (newDeck) {
+            selectSidebarItem(newDeck._id, newDeck.name, newDeck.type, null);
         }
-    } else {
-        selectEl.value = ""; 
+
+        // 3. 丝滑调出“添加卡片”弹窗，并且死死锁住新卡包！
+        setTimeout(() => {
+            if (typeof refreshSelectOptions === 'function') refreshSelectOptions();
+            document.getElementById('modal-question').value = '';
+            document.getElementById('modal-answer').value = '';
+            
+            const selectEl = document.getElementById('modal-category-select');
+            if (selectEl && newDeck) selectEl.value = newDeck._id;
+            
+            openModal('add-card-modal');
+        }, 150);
+
+    } catch (error) {
+        console.error("卡包创建失败:", error);
+        alert("创建失败，请检查网络。");
+    } finally {
+        btn.innerText = "创建并加卡片";
+        btn.disabled = false;
     }
-    openModal('add-card-modal');
 }
 
-// 统一的开/关弹窗底层逻辑
-function closeAllModals() { 
-    const overlay = document.getElementById('modal-overlay');
-    if (overlay) overlay.style.display = 'none'; 
-    document.querySelectorAll('.pro-modal').forEach(m => m.style.display = 'none'); 
-}
+// ==========================================
+// 📱 侧滑返回引擎 (右滑退出背诵/默写)
+// ==========================================
+(function setupSwipeBack() {
+    let touchStartX = 0;
+    let touchStartY = 0;
 
-function openModal(id) { 
-    const overlay = document.getElementById('modal-overlay');
-    const modal = document.getElementById(id);
-    if (overlay) overlay.style.display = 'block'; 
-    if (modal) modal.style.display = 'block'; 
-}
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = Math.abs(touchEndY - touchStartY);
+
+        // 阈值判断：
+        // 1. 水平向右滑动超过 100 像素
+        // 2. 垂直偏移不超过 50 像素（防止误触，比如斜着滑）
+        if (deltaX > 100 && deltaY < 50) {
+            handleSwipeBack();
+        }
+    }, { passive: true });
+
+    function handleSwipeBack() {
+        const studyView = document.getElementById('study-view');
+        const spellView = document.getElementById('spell-view');
+        const foldersView = document.getElementById('folders-view');
+
+        // 如果当前正在【背诵】或【默写】，则退回到列表页
+        if (
+            (studyView && !studyView.classList.contains('hidden')) || 
+            (spellView && !spellView.classList.contains('hidden'))
+        ) {
+            console.log("检测到右滑：退出学习模式");
+            showMainView('manage-view');
+            // 如果你希望回到词库页，可以加上底栏状态同步
+            if (window.innerWidth <= 768) window.handleBottomNav('all');
+        } 
+        // 如果当前正在【手机分类页】，可以退回到主页
+        else if (foldersView && !foldersView.classList.contains('hidden')) {
+            window.handleBottomNav('dashboard');
+        }
+    }
+})();

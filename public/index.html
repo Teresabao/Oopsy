@@ -151,6 +151,37 @@
                         </div>
                     </div>
 
+                    <div class="main-task-hero" onclick="startStudyMode()"
+                        style="margin-top: 24px; margin-bottom: 32px; background: white; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                            <div>
+                                <h3 style="margin: 0; font-size: 1.25rem; color: #1e293b; font-weight: 700;">📋 今日复习任务
+                                </h3>
+                                <p id="dash-mission-text"
+                                    style="margin: 6px 0 0 0; color: #64748b; font-size: 0.95rem;">加载中...</p>
+                            </div>
+                            <span id="study-progress-pill"
+                                style="padding: 4px 12px; background: #eff6ff; color: #4f46e5; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">待复习
+                                0</span>
+                        </div>
+
+                        <div id="dash-task-previews"
+                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <button class="continue-btn"
+                                style="background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer;">继续科学复习
+                                →</button>
+                            <span onclick="event.stopPropagation(); startFreeStudy()"
+                                style="font-size: 0.85rem; color: #94a3b8; text-decoration: underline; cursor: pointer;"
+                                onmouseover="this.style.color='#94a3b8'">开启自由背诵 (不留痕)</span>
+                        </div>
+                    </div>
+
+
+
                     <div class="dash-metrics-grid">
                         <div class="dash-stat-card">
                             <div class="stat-icon" style="background: #fff7ed; color: #f97316;">
@@ -223,34 +254,7 @@
                         </div>
                     </div>
 
-                    <div class="main-task-hero" onclick="startStudyMode()"
-                        style="margin-top: 24px; background: white; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
-                            <div>
-                                <h3 style="margin: 0; font-size: 1.25rem; color: #1e293b; font-weight: 700;">📋 今日复习任务
-                                </h3>
-                                <p id="dash-mission-text"
-                                    style="margin: 6px 0 0 0; color: #64748b; font-size: 0.95rem;">加载中...</p>
-                            </div>
-                            <span id="study-progress-pill"
-                                style="padding: 4px 12px; background: #eff6ff; color: #4f46e5; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">待复习
-                                0</span>
-                        </div>
 
-                        <div id="dash-task-previews"
-                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
-                        </div>
-
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <button class="continue-btn"
-                                style="background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer;">继续科学复习
-                                →</button>
-                            <span onclick="event.stopPropagation(); startFreeStudy()"
-                                style="font-size: 0.85rem; color: #94a3b8; text-decoration: underline; cursor: pointer;"
-                                onmouseover="this.style.color='#94a3b8'">开启自由背诵 (不留痕)</span>
-                        </div>
-                    </div>
 
                     <div style="margin-top: 48px;">
                         <h3
