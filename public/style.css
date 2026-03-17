@@ -17,15 +17,106 @@ body {
 .main-content { flex: 1; display: flex; flex-direction: column; background: #f4f7f9; height: 100vh; position: relative; }
 .main-header { background: #ffffff; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
 .main-header h2 { margin: 0; font-size: 1.5rem; color: #1a202c; }
-.header-actions { display: flex; gap: 12px; }
-.header-actions button { padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
-.header-actions button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); }
-.content-area { flex: 1; padding: 30px 40px; overflow-y: auto; }
+
+
 
 /* --- 3. 卡片瀑布流 --- */
-.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-.card-item { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #edf2f7; transition: transform 0.2s; }
-.card-item:hover { transform: translateY(-3px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
+/* ==========================================
+   ✨ 还原最美卡片外观 (无损回归版)
+   ========================================== */
+
+/* 1. 卡片主体：找回圆角、阴影和白色呼吸感 */
+.card-item {
+    background: white !important;
+    padding: 24px !important;
+    border-radius: 20px !important; /* 核心：原来的大圆角 */
+    border: 1px solid #f1f5f9 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 2. 悬停动画：找回轻盈的上浮感 */
+.card-item:hover {
+    transform: translateY(-4px) !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* 3. 文字排版：找回错落有致的层级 */
+.card-question {
+    color: #1e293b !important;
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 8px !important;
+    display: block !important;
+}
+
+.card-answer {
+    color: #475569 !important;
+    font-size: 0.95rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 16px !important; /* 撑开文字和下方按钮的距离 */
+}
+
+/* 4. 底部标签：还原那种精致的小胶囊感 */
+.card-meta {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 20px !important;
+    flex-wrap: wrap !important;
+}
+
+.card-meta span {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+}
+
+/* 5. 按钮区：还原红色删除和蓝色编辑的磨砂质感 */
+.card-actions {
+    display: flex !important;
+    gap: 12px !important;
+    margin-top: auto !important; /* 确保按钮永远沉在底部 */
+}
+
+.btn-edit {
+    background-color: #f8fafc !important;
+    color: #64748b !important;
+    padding: 8px 16px !important;
+    border-radius: 10px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    border: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: 0.2s !important;
+}
+
+.btn-delete {
+    background-color: #fff1f2 !important;
+    color: #fb7185 !important;
+    padding: 8px 16px !important;
+    border-radius: 10px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    border: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: 0.2s !important;
+}
+
+.btn-edit:hover { background: #f1f5f9 !important; color: #1e293b !important; }
+.btn-delete:hover { background: #ffe4e6 !important; color: #e11d48 !important; }
+
+
+/* 编辑按钮 - 浅灰背景 */
 
 /* --- 4. 弹窗与控制 --- */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 999; }
@@ -192,6 +283,12 @@ body {
         box-sizing: border-box !important;
         padding: 15px !important;
     }
+
+    /* 🛡️ 新增：强制隐藏手机顶部的系统按钮 */
+    .desktop-sys-btn { display: none !important; }
+
+    /* 🛡️ 确保在手机首页(dashboard)时 Header 依然显示，不被之前的逻辑隐藏 */
+    #dashboard-view:not(.hidden) ~ .main-header { display: flex !important; }
 }
 
 /* ==========================================
@@ -314,6 +411,660 @@ button[onclick*="openBatchModal"]:hover {
 } */
 
 
+.mobile-only-fab {
+    display: none; /* 电脑端默认隐藏 */
+    position: fixed;
+    width: 56px;  /* 稍微缩小一点，更精致 */
+    height: 56px;
+    background: #6366f1; /* 纯色或渐变均可 */
+    border-radius: 50%;
+    
+    /* 💡 核心修复：确保加号完美居中 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* 💡 增加高级感：更细腻的弥散阴影 */
+    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5);
+    
+    z-index: 2001; /* 确保在所有层级之上 */
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    touch-action: none; /* 防止移动端手势冲突 */
+}
+
+/* 增加触摸时的反馈效果 */
+.mobile-only-fab:active {
+    transform: scale(0.9);
+    filter: brightness(1.1);
+}
+
+/* 确保内部 SVG 也是居中的 */
+.mobile-only-fab svg {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .mobile-only-fab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* 🛡️ 终极锁定复习框，绝对不允许在电脑端被挤没 */
+#study-limit-wrapper {
+    display: flex !important;
+    flex-shrink: 0 !important; /* 核心：0代表宁死不屈，绝不缩小！ */
+    min-width: max-content !important; /* 强制保持内容原本的宽度 */
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* 🔓 解除电脑端顶部栏的宽度封印 */
+@media (min-width: 769px) {
+    .header-actions {
+        max-width: 100% !important; /* 确保有足够空间放下所有按钮 */
+    }
+}
+
+/* 🌟 强制洗掉词库列表的旧样式，变身原生全宽风格 */
+#mobile-folders-menu li {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 16px !important;
+    margin: 0 !important;
+    background: white !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-bottom: 0.5px solid #f1f5f9 !important;
+    box-shadow: none !important;
+}
+
+/* 最后一个元素不要下划线 */
+#mobile-folders-menu li:last-child {
+    border-bottom: none !important;
+}
+
+/* 伪造一个向右的小箭头，增加原生 App 质感 */
+/* #mobile-folders-menu li::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid #cbd5e1;
+    border-right: 2px solid #cbd5e1;
+    transform: rotate(45deg);
+    margin-left: auto;
+} */
+
+/* ==========================================
+   🚀 终极 UI 补丁：镇压幽灵箭头与页面晃动
+   ========================================== */
+
+/* 1. 彻底干掉旧版残留的幽灵右箭头 */
+#mobile-folders-menu li::after {
+    display: none !important;
+    content: none !important;
+}
+
+/* 2. 全局锁死横向滚动，彻底消灭左右晃动 */
+html, body, .content-area {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+}
+
+/* ==========================================
+   📱 手机端专用：词库全宽逻辑 (增加围栏)
+   ========================================== */
+@media (max-width: 768px) {
+    /* 只有在手机上，才允许词库贴边 */
+   
 
 
+    #mobile-folders-menu li {
+        box-sizing: border-box !important;
+        max-width: 100% !important;
+        /* 手机端列表项的内边距 */
+        padding: 16px !important; 
+    }
+}
+
+/* ==========================================
+   💻 电脑端专用：保持舒适间距
+   ========================================== */
+@media (min-width: 769px) {
+    /* 在电脑上，恢复正常的容器宽度，不要 100% 贴边 */
+    #folders-view {
+        width: auto !important;
+        max-width: 1000px !important; /* 电脑端给个限宽，更美观 */
+        margin: 0 auto !important;    /* 居中显示 */
+    }
+}
+
+/* ==========================================
+   🚀 终极 UI 补丁 2.0：彻底锁死上下晃动 (橡皮筋效应)
+   ========================================== */
+
+/* 1. 禁用手机浏览器的“全局上下回弹”和“下拉刷新”拉扯感 */
+
+
+/* 2. 确保背诵弹窗/全屏界面被死死钉在屏幕上 */
+#review-modal, 
+.modal-overlay {
+    height: 100vh !important;
+    height: 100dvh !important; /* 适配带地址栏的手机浏览器，精准满屏 */
+    overflow: hidden !important; /* 绝对禁止整个背景上下滑动 */
+    touch-action: none !important; /* 屏蔽背景层的多余手势 */
+}
+
+/* 3. 让卡片本身稳住（只有卡片内部文字超长时，才允许在卡片【内部】滑动） */
+.flashcard, 
+.flashcard-inner {
+    touch-action: pan-y !important; /* 只允许在卡片上垂直滑动看长文本 */
+    overscroll-behavior-y: contain !important; /* 滑到头了也不要把滑动传递给背后的网页 */
+}
+
+
+/* ==========================================
+   🏛️ 空间与设备隔离核心逻辑
+   ========================================== */
+
+
+
+/* --- 💻 电脑端：找回 3 列及以上的高级感 --- */
+@media (min-width: 769px) {
+    /* 1. 给主内容区适度的边距，确保空间足够放下 3 列 */
+    .content-area {
+        padding: 30px !important; 
+        max-width: 100% !important; /* 解除宽度封印，让它自动伸展 */
+        margin: 0 !important;
+        overflow-y: auto;
+    }
+    
+    /* 2. 核心修复：重新定义网格排列 */
+    .cards-grid {
+        display: grid !important;
+        /* minmax 调小一点（比如 280px），确保在普通屏幕也能挤下 3 列 */
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+        gap: 24px !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    /* 3. 词库视图微调 */
+    #folders-view {
+        width: 100% !important;
+        max-width: 1100px !important;
+        margin: 0 !important;
+    }
+}
+
+/* --- 📱 手机端：全屏沉浸，锁死晃动 --- */
+@media (max-width: 768px) {
+    .content-area {
+        padding: 16px !important;
+    }
+
+    /* 词库贴边 */
+    #folders-view {
+        margin: -16px !important;
+        width: calc(100% + 32px) !important;
+    }
+
+    /* 强制单列显示卡片 */
+    .cards-grid {
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+    }
+
+    /* 🚀 焊死背诵界面 */
+    #study-view, #spell-view {
+        position: fixed !important;
+        top: 0 !important; left: 0 !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        z-index: 9999 !important;
+        background: #f8fafc !important;
+        overflow: hidden !important; 
+        padding: 20px !important;
+    }
+}
+
+/* --- 🎨 4. 样式修正补丁 --- */
+.view.hidden { display: none !important; }
+.card-item { flex-shrink: 0 !important; }
+
+
+/* ==========================================
+   🔍 发现页 (Explore) 专属样式
+   ========================================== */
+
+/* 1. 顶部搜索区域 - 微圆角矩形 */
+.explore-header-section {
+    padding: 16px;
+    background: #ffffff;
+}
+
+.explore-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #f1f5f9;
+    border-radius: 12px; /* 微圆角 */
+    padding: 0 14px;
+    height: 44px;
+    transition: all 0.2s ease;
+}
+
+.explore-search-wrapper:focus-within {
+    background: #ffffff;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    border: 1px solid #6366f1;
+}
+
+.explore-search-wrapper input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px;
+    font-size: 0.95rem;
+    color: #1e293b;
+    outline: none;
+}
+
+.search-icon {
+    color: #94a3b8;
+}
+
+/* 2. 功能入口列表 - 复刻“我的”页面风格 */
+.explore-tools-list {
+    background: #ffffff;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.explore-action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.explore-action-row:active {
+    background-color: #f8fafc;
+}
+
+.row-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.row-icon-box {
+    width: 36px;
+    height: 36px;
+    background: #eef2ff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.row-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.row-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.row-subtitle {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+/* 3. 横向分类切换 - 支持左右滑动 */
+.explore-tabs-scroll {
+    overflow-x: auto;
+    background: #ffffff;
+    padding: 12px 16px;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch; /* iOS 丝滑滚动 */
+}
+
+/* 隐藏滚动条但保持滚动功能 */
+.explore-tabs-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.explore-tabs-content {
+    display: flex;
+    gap: 8px;
+}
+
+.tab-item {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-item.active {
+    background: #6366f1;
+    color: #ffffff;
+    border-color: #6366f1;
+}
+
+/* 4. 词库货架区 */
+.explore-market-list {
+    margin-top: 8px;
+}
+
+.list-section-label {
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-weight: 600;
+    background: #f8fafc;
+}
+
+/* 动态生成的卡片样式（JS渲染时使用） */
+.market-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: #ffffff;
+    border-bottom: 0.5px solid #f1f5f9;
+}
+
+.market-card-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.market-cover {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.market-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.market-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.market-count {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.get-btn {
+    padding: 6px 14px;
+    background: #f1f5f9;
+    color: #6366f1;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.get-btn:hover {
+    background: #eef2ff;
+}
+
+/* --- 成功提示 (Toast) 样式 --- */
+#global-toast {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: #1e293b;
+    color: #fff;
+    text-align: center;
+    border-radius: 12px;
+    padding: 16px;
+    position: fixed;
+    z-index: 10000;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+#global-toast.show {
+    visibility: visible;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+@keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadeout {
+    from {bottom: 30px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
+}
+
+
+/* ==========================================
+   📱 手机端核心组件与底栏适配 (提纯版)
+   ========================================== */
+
+/* 1. 全局弹窗层级保护（防止被其他元素遮挡） */
+#modal-overlay { z-index: 9998 !important; }
+.pro-modal { z-index: 9999 !important; }
+#quick-category-overlay { z-index: 10000 !important; }
+#quick-category-modal { z-index: 10001 !important; }
+
+/* 2. 手机端专属布局 (屏幕宽度 <= 768px) */
+@media (max-width: 768px) {
+    /* 隐藏电脑端侧边栏和汉堡菜单 */
+    .sidebar { display: none !important; }
+    #mobile-menu-btn { display: none !important; }
+    
+    /* 给主内容区留出底部导航的空间，防止最后一张卡片被挡住 */
+    .main-content { padding-bottom: 85px !important; }
+    
+    /* 🌟 手机端底部导航栏 */
+    .mobile-bottom-nav {
+        display: flex; justify-content: space-around; align-items: center;
+        position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
+        background: rgba(255, 255, 255, 0.98); 
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.05); 
+        z-index: 900; 
+        padding-bottom: env(safe-area-inset-bottom); 
+        border-top: 1px solid #f1f5f9;
+    }
+    .nav-tab {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: #94a3b8; font-size: 0.7rem; font-weight: 600; gap: 4px; flex: 1; cursor: pointer; transition: 0.2s;
+    }
+    .nav-tab.active { color: #4f46e5; }
+    .nav-tab svg { width: 22px; height: 22px; stroke: currentColor; transition: 0.2s; }
+    .nav-tab.active svg { transform: translateY(-2px); }
+
+    /* 🌟 手机端分类页专属 UI (大卡片) */
+    #folders-view { 
+        padding: 12px 16px 30px 16px !important; 
+        background: #f8fafc; 
+        min-height: 100vh; 
+    }
+    .mobile-folder-card {
+        background: white; border-radius: 16px; margin-bottom: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; overflow: hidden;
+    }
+    .mobile-folder-header { display: flex; align-items: center; height: 60px; }
+    .mobile-folder-content {
+        flex: 1; display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 100%; cursor: pointer;
+    }
+    .mobile-folder-toggle {
+        width: 56px; height: 100%; display: flex; align-items: center; justify-content: center;
+        border-left: 1px solid #f8fafc; color: #94a3b8; cursor: pointer;
+    }
+    .mobile-child-list { background: #f8fafc; border-top: 1px solid #f1f5f9; padding: 4px 0; }
+    .mobile-child-item {
+        padding: 14px 16px 14px 44px; display: flex; align-items: center; gap: 10px;
+        color: #475569; font-size: 0.95rem; border-bottom: 1px solid #f1f5f9; cursor: pointer;
+    }
+    .mobile-child-item:last-child { border-bottom: none; }
+}
+
+/* 3. 电脑端专属布局 (屏幕宽度 >= 769px) */
+@media (min-width: 769px) {
+    /* 电脑端隐藏手机底栏和手机专属分类页 */
+    .mobile-bottom-nav { display: none !important; }
+    #folders-view { display: none !important; } 
+    /* 确保侧边栏正常显示 */
+    .sidebar { display: flex !important; flex-direction: column !important; }
+}
+
+
+/* ========================================== */
+/* 🌟 拼写检测：纯净下划线 UI 专属样式 */
+/* ========================================== */
+
+/* 1. 外层保护罩：让整个区域都可以点击唤起键盘 */
+.spell-input-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60px; /* 保证手大的用户也能轻松点到 */
+    margin: 20px 0 30px 0;
+    cursor: text;
+}
+
+/* 2. 隐藏真正的输入框：只留灵魂，不留肉体 */
+#spell-hidden-input {
+    position: absolute;
+    opacity: 0;            /* 完全透明，肉眼看不见 */
+    pointer-events: none;  /* 防止鼠标误触 */
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
+/* 3. 字母展示区：支持长词组自动换行 */
+.spell-display-area {
+    display: flex;
+    flex-wrap: wrap;       /* 如果词组太长，自动换到下一行 */
+    justify-content: center;
+    gap: 6px;              /* 字母之间的精致小间距 */
+}
+
+/* 4. 单个字母的下划线（无边框，极简风） */
+.spell-char-box {
+    width: 22px;           /* 宽度特意调小，一行能装更多字母 */
+    height: 36px;
+    border-bottom: 2px solid #cbd5e1; /* 默认浅灰色的下划线 */
+    display: flex;
+    align-items: flex-end; /* 让字母稳稳地踩在下划线上 */
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    padding-bottom: 4px;   /* 字母距离下划线留一点点呼吸空间 */
+    transition: all 0.2s ease;
+}
+
+/* 字母被填入时的状态：点亮下划线 */
+.spell-char-box.filled {
+    border-bottom-color: #4f46e5; /* 变成你的主题蓝 */
+    color: #4f46e5;
+}
+
+/* 5. 🎯 核心魔法：词组空格专属样式！ */
+.spell-space-box {
+    width: 16px;           /* 制造单词之间的明显空隙 */
+    height: 36px;
+    /* 注意：这里故意不写 border-bottom，所以它是透明的空白！ */
+}
+
+/* 🌟 拼写检测：高级提交按钮 */
+.spell-check-btn {
+    width: 100%;
+    max-width: 400px;
+    margin: 30px auto 0 auto;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.spell-check-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+}
+
+.spell-check-btn:active {
+    transform: translateY(0);
+}
+
+/* ========================================== */
+/* 🎯 题量选择器专属 UI */
+/* ========================================== */
+.test-quantity-dropdown {
+    background-color: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #3b82f6; /* 统一的品牌蓝 */
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+/* 点击和悬浮时的微光特效 */
+.test-quantity-dropdown:focus,
+.test-quantity-dropdown:hover {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
 

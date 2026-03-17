@@ -11,65 +11,7 @@
 // 🛡️ 1. 注入绝对不会错位的 CSS (修复 Z-index 穿透和大按钮排版)
 
 // 🛡️ [终极防线]：修复层级穿透、恢复顶部加号，并加入手机端专属分类页样式
-const styleFix = document.createElement('style');
-styleFix.innerHTML = `
-    @media (max-width: 768px) {
-        .sidebar { display: none !important; }
-        #mobile-menu-btn { display: none !important; }
-        .main-content { padding-bottom: 85px !important; }
-        
-        .mobile-bottom-nav {
-            display: flex; justify-content: space-around; align-items: center;
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
-            background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.05); 
-            z-index: 900; 
-            padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid #f1f5f9;
-        }
-        .nav-tab {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: #94a3b8; font-size: 0.7rem; font-weight: 600; gap: 4px; flex: 1; cursor: pointer; transition: 0.2s;
-        }
-        .nav-tab.active { color: #4f46e5; }
-        .nav-tab svg { width: 22px; height: 22px; stroke: currentColor; transition: 0.2s; }
-        .nav-tab.active svg { transform: translateY(-2px); }
 
-        /* 🌟 手机端分类页专属 UI (大卡片 + 分离触控区) */
-        #folders-view { padding: 12px 16px 30px 16px !important; background: #f8fafc; min-height: 100vh; }
-        .mobile-folder-card {
-            background: white; border-radius: 16px; margin-bottom: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; overflow: hidden;
-        }
-        .mobile-folder-header { display: flex; align-items: center; height: 60px; }
-        /* 左侧 80%：点击直接进文件夹 */
-        .mobile-folder-content {
-            flex: 1; display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 100%; cursor: pointer;
-        }
-        /* 右侧 20%：折叠控制区 */
-        .mobile-folder-toggle {
-            width: 56px; height: 100%; display: flex; align-items: center; justify-content: center;
-            border-left: 1px solid #f8fafc; color: #94a3b8; cursor: pointer;
-        }
-        .mobile-child-list { background: #f8fafc; border-top: 1px solid #f1f5f9; padding: 4px 0; }
-        .mobile-child-item {
-            padding: 14px 16px 14px 44px; display: flex; align-items: center; gap: 10px;
-            color: #475569; font-size: 0.95rem; border-bottom: 1px solid #f1f5f9; cursor: pointer;
-        }
-        .mobile-child-item:last-child { border-bottom: none; }
-    }
-    
-    #modal-overlay { z-index: 9998 !important; }
-    .pro-modal { z-index: 9999 !important; }
-    #quick-category-overlay { z-index: 10000 !important; }
-    #quick-category-modal { z-index: 10001 !important; }
-    
-    @media (min-width: 769px) {
-        .mobile-bottom-nav { display: none !important; }
-        #folders-view { display: none !important; } 
-        .sidebar { display: flex !important; flex-direction: column !important; }
-    }
-`;
-document.head.appendChild(styleFix);
 
 
 // 🛡️ 2. 同步极速注入 HTML 容器 (解决空数据、无响应的元凶)
@@ -104,35 +46,97 @@ document.head.appendChild(styleFix);
 
     if (!document.getElementById('folders-view')) {
         const foldersViewHTML = `
-            <div id="folders-view" class="view hidden" style="padding: 16px; box-sizing: border-box; animation: fadeIn 0.3s ease;">
-                <div style="background: white; border-radius: 20px; padding: 10px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
-                    <ul class="nav-menu" id="mobile-folders-menu" style="margin:0;"></ul>
+            <div id="folders-view" class="view hidden" style="background: #f1f5f9; min-height: 100vh; padding: 0 !important; padding-bottom: 80px !important; width: 100%; box-sizing: border-box;">
+                
+                <div style="padding: 12px 16px 8px 16px; font-size: 0.85rem; color: #64748b; font-weight: 500;">
+                    我的词库与分类
+                </div>
+                
+                <div style="background: white; border-top: 0.5px solid #e2e8f0; border-bottom: 0.5px solid #e2e8f0; width: 100%;">
+                    <ul id="mobile-folders-menu" style="margin: 0; padding: 0; list-style: none; width: 100%;"></ul>
+                </div>
+                
+                <div style="padding: 16px; text-align: center;">
+                    <button onclick="createNewFolder()" style="background: transparent; color: #3b82f6; border: none; font-size: 0.95rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        新建词库分类
+                    </button>
                 </div>
             </div>
         `;
         const contentArea = document.querySelector('.content-area');
-        if (contentArea) contentArea.insertAdjacentHTML('beforeend', foldersViewHTML);
+        if (contentArea) {
+            contentArea.insertAdjacentHTML('beforeend', foldersViewHTML);
+            contentArea.style.padding = '0'; // 强行扒掉父元素的束缚
+        }
     }
 
 })();
 
 // 🛡️ 3. 注册底栏中枢路由
-window.handleBottomNav = function(target) {
-    if (window.innerWidth > 768) return;
+// 1. 核心路由枢纽：处理手机端底部点击
+// 📱 手机端底部导航路由中心
+window.handleBottomNav = function (target) {
+    if (window.innerWidth > 768) return; // 电脑端不执行
 
-    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    // 1. 切换底部图标的高亮状态 (变蓝)
+    document.querySelectorAll('.mobile-bottom-nav .nav-tab').forEach(t => {
+        t.classList.remove('active');
+        t.style.color = '#94a3b8'; // 恢复灰色
+    });
     const tab = document.getElementById('tab-' + target);
-    if (tab) tab.classList.add('active');
+    if (tab) {
+        tab.classList.add('active');
+        tab.style.color = '#3b82f6'; // 激活变成主题色
+    }
 
+    // 2. 核心：根据目标切页面
     if (target === 'dashboard') {
         const dashBtn = document.querySelector('.nav-item[onclick*="selectDashboard"]');
         if (dashBtn) selectDashboard(dashBtn);
-    } else if (target === 'all') {
-        if (typeof goToAllCards === 'function') goToAllCards();
-    } else if (target === 'folders') {
-        document.getElementById('current-view-title').innerText = '知识库分类';
-        showMainView('folders-view'); 
     }
+    else if (target === 'explore') {
+        if (typeof showExploreView === 'function') showExploreView();
+    }
+    else if (target === 'folders') {
+        document.getElementById('current-view-title').innerText = '词库书架';
+        showMainView('folders-view');
+    }
+    else if (target === 'profile') {
+        // 🎯 就是这里！召唤出咱们写好的高级设置页面
+        if (typeof showProfileView === 'function') {
+            showProfileView();
+        } else {
+            // 如果你没有 showProfileView 函数，直接用底层逻辑切过去：
+            document.getElementById('current-view-title').innerText = '我的设置';
+            showMainView('profile-view');
+        }
+    }
+};
+
+// 2. 发现页面逻辑
+window.showExploreView = function (element) {
+    document.getElementById('current-view-title').innerText = '发现词库';
+
+    // 如果是电脑端点的（带了 element 参数），处理左侧边栏高亮
+    if (element) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    showMainView('explore-view');
+};
+
+// 3. 我的/设置页面逻辑
+window.showProfileView = function (element) {
+    document.getElementById('current-view-title').innerText = '我的设置';
+
+    if (element) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    showMainView('profile-view');
 };
 
 // --- 下面接你原来的 let allCards = []; 等等代码 ---
@@ -155,10 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.isDataLoading = true;
     showMainView('dashboard-view');
     const titleEl = document.getElementById('current-view-title');
-    if (titleEl) titleEl.innerText = 'Tagi ～';
-    
+    if (titleEl) titleEl.innerText = ''; // 🌟 核心修改：主页加载时，标题强制留白
+
     // 此时渲染的是骨架屏，绝不跳动
-    if (typeof renderDashboard === 'function') renderDashboard(); 
+    if (typeof renderDashboard === 'function') renderDashboard();
 
     // 2. 异步静默拉取数据
     Promise.all([loadCategories(), loadFlashcards()]).then(() => {
@@ -172,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).catch(err => {
         console.error("加载数据失败:", err);
         window.isDataLoading = false;
-        renderDashboard(); 
+        renderDashboard();
     });
 
     // 3. 基础事件绑定
@@ -204,6 +208,28 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleMobileSidebar();
         }
     };
+
+    // ==========================================
+    // 4. ⚙️ 新增：每日复习量记忆逻辑
+    // ==========================================
+    const settingLimitInput = document.getElementById('setting-daily-limit');
+    const savedLimit = localStorage.getItem('dailyStudyLimit') || 20; // 默认20
+
+    if (settingLimitInput) {
+        settingLimitInput.value = savedLimit; // 页面一加载，就把记忆的数字填进去
+
+        settingLimitInput.addEventListener('change', function (e) {
+            let val = parseInt(e.target.value);
+
+            // 防御性编程：防止乱填
+            if (isNaN(val) || val < 1) val = 1;
+            if (val > 500) val = 500;
+
+            e.target.value = val; // 更新输入框显示
+            localStorage.setItem('dailyStudyLimit', val); // 永久存入浏览器记忆
+            console.log("🔥 你的今日复习目标已更新并保存为:", val);
+        });
+    }
 });
 
 // --- 1. 视图切换引擎 ---
@@ -211,73 +237,74 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- 1. 视图切换引擎 (🌟 修复异步覆盖 Bug 版) ---
 // --- 1. 视图切换引擎 (🚀 上线级：完美平衡版) ---
 // --- 1. 视图切换引擎 (🚀 上线级：完美平衡 + 笔记类型智能过滤版) ---
-function showMainView(viewId) {
-    const views = ['manage-view', 'study-view', 'spell-view', 'dashboard-view', 'folders-view'];
-    views.forEach(id => {
-        const el = document.getElementById(id);
+window.showMainView = function (viewId) {
+    const views = ['manage-view', 'study-view', 'spell-view', 'dashboard-view', 'folders-view', 'explore-view', 'profile-view'];
+
+    // 1. 显隐切换
+    views.forEach(v => {
+        const el = document.getElementById(v);
         if (el) el.classList.add('hidden');
     });
-    const target = document.getElementById(viewId);
-    if (target) target.classList.remove('hidden');
+    const targetView = document.getElementById(viewId);
+    if (targetView) targetView.classList.remove('hidden');
 
-    // ==== 🛡️ 核心修复：全局 Header 栏目控制 ====
-    const globalHeader = document.querySelector('.main-header');
-    const viewTitle = document.getElementById('current-view-title');
-    const headerActions = document.querySelector('.header-actions');
-    
-    if (viewId === 'dashboard-view') {
-        // 1. 【彻底抹除】主页顶部的白条
-        if (globalHeader) globalHeader.style.setProperty('display', 'none', 'important');
-        
-        // 2. 隐藏标题和动作区
-        if (viewTitle) viewTitle.style.display = 'none';
-        if (headerActions) headerActions.style.display = 'none';
+    // 2. 🌟 顶栏整体调度 (接管动态开关 + 手机端沉浸式优化)
+    // 🕵️ 核心修复：改用 querySelector 抓取 class，绝对不会找错人！
+    const mainHeader = document.querySelector('.main-header');
+    const isMobile = window.innerWidth <= 768; // 📡 开启手机端雷达
 
-        // 3. 执行主页渲染
-        window.isFreePracticeMode = false;
-        if (typeof renderDashboard === 'function') renderDashboard(); 
-        
-    } else if (viewId === 'folders-view') {
-        // 📁 【手机端分类页】：隐藏顶部繁杂按钮，但保留白条显示标题
-        if (globalHeader) globalHeader.style.display = 'flex';
-        if (headerActions) headerActions.style.display = 'none';
-        if (viewTitle) viewTitle.style.display = 'block';
+    if (mainHeader) {
+        if (viewId === 'study-view' || viewId === 'spell-view') {
+            // 场景A：背诵/默写模式
+            mainHeader.style.setProperty('display', 'none', 'important');
+        } else if (isMobile && viewId !== 'manage-view') {
+            // 场景B：📱 手机端专属！只要不是在词库卡片列表，统统隐藏！
+            mainHeader.style.setProperty('display', 'none', 'important');
+            console.log("📱 手机端雷达生效：顶栏已强行隐藏！当前进入：", viewId); // 👈 监控探头
+        } else {
+            // 场景C：💻 电脑端常规显示，或者手机端正好在词库列表中
+            mainHeader.style.setProperty('display', 'flex', 'important');
 
-    } else if (viewId === 'manage-view') {
-        // 📁 【常规列表页】：全副武装！恢复所有显示
-        if (globalHeader) globalHeader.style.display = 'flex';
-        if (headerActions) headerActions.style.display = 'flex';
-        if (viewTitle) viewTitle.style.display = 'block';
-        
-        // 原有的按钮显示逻辑...
-        const addBtn = document.getElementById('btn-add-card');
-        const manageBtn = document.getElementById('btn-toggle-manage');
-        if (addBtn) addBtn.style.display = 'inline-flex';
-        if (manageBtn) manageBtn.style.display = 'inline-flex';
-        
-        if (typeof filterCards === 'function') filterCards(); 
-
+            // 继续呼叫指挥官：控制里面的具体小按钮
+            const isDashboard = ['dashboard-view', 'explore-view', 'profile-view'].includes(viewId);
+            if (typeof updateHeaderUI === 'function') {
+                updateHeaderUI(isDashboard);
+            }
+        }
     } else {
-        // 🎯 【沉浸背诵/默写】：全屏清场！
-        if (globalHeader) globalHeader.style.display = 'none'; 
+        console.error("🚨 报告：雷达没找到顶栏！请检查你的 header 标签上是不是缺少了 class='main-header'");
     }
 
-    // 动态控制“未分类区”的专属清空按钮
-    const clearBtn = document.getElementById('btn-clear-uncategorized');
-    if (clearBtn) {
-        clearBtn.style.display = (currentCategoryId === 'uncategorized' && viewId === 'manage-view') ? 'inline-flex' : 'none';
+    // 3. 🎯 核心加固：延迟渲染卡片，防止闪现和消失
+    if (viewId === 'manage-view') {
+        setTimeout(() => {
+            if (typeof renderFlashcards === 'function') renderFlashcards();
+            else if (typeof loadFlashcards === 'function') loadFlashcards();
+        }, 10);
     }
-}
 
-// --- 2. 侧边栏与文件夹管理 ---
-// --- 2. 侧边栏与文件夹管理 ---
+    // 4. 手机端底栏调度
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav) {
+        bottomNav.style.display = (viewId === 'study-view' || viewId === 'spell-view') ? 'none' : 'flex';
+    }
+
+    // 5. 悬浮球调度 (保留你的原有设定)
+    const floatingBtn = document.getElementById('floating-add-btn');
+    if (floatingBtn) {
+        const isStudy = viewId === 'study-view' || viewId === 'spell-view';
+        const isDesktop = window.innerWidth > 768;
+        floatingBtn.style.display = (!isStudy && !isDesktop) ? 'flex' : 'none';
+    }
+};
+
 // --- 2. 侧边栏与文件夹管理 (双路渲染引擎) ---
 async function loadCategories() {
     try {
         const response = await fetch('/api/categories');
         allCategories = await response.json();
 
-        let desktopHtml = ''; 
+        let desktopHtml = '';
         let mobileHtml = '';
 
         const icons = {
@@ -286,10 +313,11 @@ async function loadCategories() {
             folder: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
             doc: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
             arrowRight: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
-            arrowDown: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>`
+            arrowDown: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>`,
+            rightChevron: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>` // 原生右箭头
         };
 
-        // ==== 1. 组装电脑端左侧菜单 ====
+        // ==== 1. 组装电脑端左侧菜单 (保持原样不动) ====
         desktopHtml = `
             <li class="nav-item ${currentCategoryId === 'dashboard' ? 'active' : ''}" onclick="selectDashboard(this)">
                 ${icons.dashboard} <span>学习数据</span>
@@ -316,28 +344,25 @@ async function loadCategories() {
             </li>
         `;
 
-        // ==== 2. 组装手机端大卡片 UI ====
+        // ==== 2. 组装手机端原生全宽列表 UI ====
         mobileHtml = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; margin-top: 10px;">
-                <h3 style="margin:0; font-size:1.4rem; color:#1e293b; font-weight:800;">知识库</h3>
-                <button onclick="openCategoryModal()" style="background:#eef2ff; color:#4f46e5; border:none; padding:8px 14px; border-radius:12px; font-weight:700; font-size:0.9rem; display:flex; align-items:center; gap:6px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>新建
-                </button>
-            </div>
+            <li onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', null)">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="color: #4f46e5; display: flex; align-items: center;">${icons.all}</div>
+                    <span style="color:#1e293b; font-size:1rem; font-weight:500;">所有卡片</span>
+                </div>
+                ${icons.rightChevron}
+            </li>
             
-            <div class="mobile-folder-card" onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', null)">
-                <div class="mobile-folder-header">
-                    <div class="mobile-folder-content">${icons.all} <strong style="color:#1e293b; font-size:1.05rem;">所有卡片</strong></div>
-                </div>
-            </div>
-            <div class="mobile-folder-card" onclick="selectSidebarItem('uncategorized', '未分类区', 'vocabulary', null)">
-                <div class="mobile-folder-header">
-                    <div class="mobile-folder-content">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                        <strong style="color:#475569; font-size:1.05rem;">未分类区</strong>
+            <li onclick="selectSidebarItem('uncategorized', '未分类区', 'vocabulary', null)">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="color: #64748b; display: flex; align-items: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                     </div>
+                    <span style="color:#475569; font-size:1rem; font-weight:500;">未分类区</span>
                 </div>
-            </div>
+                ${icons.rightChevron}
+            </li>
         `;
 
         const parents = allCategories.filter(c => !c.parentId);
@@ -350,7 +375,7 @@ async function loadCategories() {
             const icon = p.type === 'notes' ? icons.doc : icons.folder;
             const isActive = currentCategoryId === p._id ? 'active' : '';
 
-            // 电脑端拼接
+            // ================= 1. 电脑端父级拼接 =================
             desktopHtml += `
                 <li class="nav-item parent-nav ${isActive}" style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;" onclick="handleParentClick(event, '${p._id}', '${p.name}', '${p.type}', this.parentElement)">
@@ -364,52 +389,86 @@ async function loadCategories() {
                 <div id="children-of-${p._id}" style="display: ${isCollapsed ? 'none' : 'block'}; padding-left: 28px;">
             `;
 
-            // 手机端拼接 (分离触控区)
+            // ================= 2. 手机端父级拼接 =================
+            const sleekChevron = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+            let rightArrowHtml = '';
+
+            if (hasChildren) {
+                let rotation = isCollapsed ? '0deg' : '90deg';
+                rightArrowHtml = `
+                    <div onclick="toggleMobileFolder(event, '${p._id}')" style="padding: 10px; margin: -10px; display: flex; align-items: center; justify-content: center;">
+                        <svg id="m-arrow-${p._id}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" style="transition: transform 0.3s; transform: rotate(${rotation});"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>`;
+            } else {
+                rightArrowHtml = `<div style="display: flex; align-items: center;">${sleekChevron}</div>`;
+            }
+
             mobileHtml += `
-                <div class="mobile-folder-card">
-                    <div class="mobile-folder-header">
-                        <div class="mobile-folder-content" onclick="selectSidebarItem('${p._id}', '${p.name}', '${p.type}', null)">
-                            ${icon} <strong style="color:#1e293b; font-size:1.05rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</strong>
+                <li style="display: flex; flex-direction: column; padding: 0; border-bottom: 0.5px solid #f1f5f9; background: white; width: 100%; box-sizing: border-box;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 16px; box-sizing: border-box;">
+                        <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;" onclick="selectSidebarItem('${p._id}', '${p.name}', '${p.type}', null)">
+                            <div style="color: #3b82f6; display: flex; align-items: center;">${icon}</div>
+                            <span style="color:#1e293b; font-size:1rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</span>
                         </div>
-                        <div class="mobile-folder-toggle" onclick="toggleMobileFolder(event, '${p._id}')" style="visibility: ${hasChildren ? 'visible' : 'hidden'}">
-                            <svg id="m-arrow-${p._id}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition: transform 0.3s; transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                        </div>
+                        ${rightArrowHtml}
                     </div>
-                    <div id="m-children-${p._id}" class="mobile-child-list" style="display: ${isCollapsed ? 'none' : 'block'};">
+                    <ul id="m-children-${p._id}" style="display: ${isCollapsed ? 'none' : 'block'}; margin: 0; padding: 0; list-style: none; background: #f8fafc; width: 100%; box-sizing: border-box;">
             `;
 
+            // ================= 3. 循环插入子文件夹 =================
             children.filter(c => c.parentId === p._id).forEach(child => {
                 const cIcon = icons.doc;
                 const cActive = currentCategoryId === child._id ? 'active' : '';
-                
+
+                // 电脑端插入子项
                 desktopHtml += `<li class="nav-item is-child ${cActive}" onclick="selectSidebarItem('${child._id}', '${child.name}', '${child.type}', this)">${cIcon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${child.name}</span></li>`;
-                
-                mobileHtml += `<div class="mobile-child-item" onclick="selectSidebarItem('${child._id}', '${child.name}', '${child.type}', null)">${cIcon} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${child.name}</span></div>`;
+
+                // 手机端插入子项
+                mobileHtml += `
+                    <li onclick="selectSidebarItem('${child._id}', '${child.name}', '${child.type}', null)" style="padding: 14px 16px 14px 48px; border-bottom: 0.5px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="color: #94a3b8; display: flex; align-items: center;">${cIcon}</div>
+                            <span style="color:#475569; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${child.name}</span>
+                        </div>
+                        <div style="display: flex; align-items: center;">${sleekChevron}</div>
+                    </li>
+                `;
             });
-            
+
+            // ================= 4. ⚠️ 最关键的闭合标签 ⚠️ =================
+            // 给当前这个父文件夹的子级容器“关门”
             desktopHtml += `</div>`;
-            mobileHtml += `</div></div>`;
+            mobileHtml += `</ul></li>`;
         });
+
+        // 电脑端整个用户词库区域闭合
         desktopHtml += `</div>`;
 
-        // 渲染到 DOM
+        // ==== 3. 渲染到 DOM ====
         const sidebarMenu = document.getElementById('sidebar-menu');
         if (sidebarMenu) sidebarMenu.innerHTML = desktopHtml;
 
-        const foldersView = document.getElementById('folders-view');
-        if (foldersView) foldersView.innerHTML = mobileHtml; // 直接强行覆盖整个内容
+        // 🎯 核心修复：精准投喂，只替换菜单列表的内容，不炸掉标题和底部按钮
+        const mobileFoldersMenu = document.getElementById('mobile-folders-menu');
+        if (mobileFoldersMenu) {
+            mobileFoldersMenu.innerHTML = mobileHtml;
+        } else {
+            // 如果找不到列表，作为备用方案退化渲染
+            const foldersView = document.getElementById('folders-view');
+            if (foldersView) foldersView.innerHTML = `<ul class="nav-menu" id="mobile-folders-menu" style="margin: 0; padding: 0; list-style: none;">${mobileHtml}</ul>`;
+        }
 
         refreshSelectOptions();
-        
+
     } catch (error) { console.error('加载分类失败:', error); }
 }
 
 // 📱 手机端专属的手风琴折叠函数 (完全独立，不影响电脑端)
-window.toggleMobileFolder = function(event, folderId) {
+window.toggleMobileFolder = function (event, folderId) {
     event.stopPropagation(); // 阻止进入文件夹的点击事件
     const childrenContainer = document.getElementById(`m-children-${folderId}`);
     const arrow = document.getElementById(`m-arrow-${folderId}`);
-    
+
     if (childrenContainer) {
         if (childrenContainer.style.display === 'none') {
             childrenContainer.style.display = 'block';
@@ -435,7 +494,7 @@ function refreshSelectOptions() {
     parents.forEach(p => {
         // 🌟 方案三核心：大类文件夹变灰且 disabled，绝不让用户选中！
         optionsHtml += `<option value="" disabled style="font-weight: bold; color: #94a3b8; background: #f8fafc;">📁 [大类] ${p.name} (不可直放卡片)</option>`;
-        
+
         const myChildren = children.filter(c => c.parentId === p._id);
         if (myChildren.length > 0) {
             myChildren.forEach(c => {
@@ -480,6 +539,7 @@ function toggleRoot(event) {
 // ✨ 侧边栏点击逻辑 (安全收起版)
 // ✨ 侧边栏点击逻辑 (安全收起版 + 修复跨文件夹幽灵删除)
 function selectSidebarItem(id, title, type, element) {
+
     try {
         currentCategoryId = id;
 
@@ -507,7 +567,7 @@ function selectSidebarItem(id, title, type, element) {
                 settingsBtn.classList.add('hidden');
             }
         }
-        
+
         // 🌟 动态隐藏默写按钮
         const spellBtn = document.querySelector('button[onclick*="startSpellMode"]');
         if (spellBtn) {
@@ -517,7 +577,7 @@ function selectSidebarItem(id, title, type, element) {
                 spellBtn.style.display = '';
             }
         }
-        
+
         // 触发界面切换，内部会自动调用 filterCards 刷新列表
         showMainView('manage-view');
 
@@ -527,9 +587,10 @@ function selectSidebarItem(id, title, type, element) {
             const tabAll = document.getElementById('tab-all');
             if (tabAll) tabAll.classList.add('active');
         }
-    } catch (error) { 
+    } catch (error) {
         console.error("侧边栏点击报错拦截:", error);
     }
+
 }
 
 // ✨ 专属父级文件夹的完美双端逻辑
@@ -573,7 +634,12 @@ function handleParentClick(event, folderId, folderName, folderType, liElement) {
 
 
 function selectDashboard(element) {
-    document.getElementById('current-view-title').innerText = 'Tagi ～';
+    // document.getElementById('current-view-title').innerText = 'Tagi ～';
+    const titleEl = document.getElementById('current-view-title');
+    if (titleEl) {
+        titleEl.textContent = ''; // 👈 直接改成两个单引号，里面什么都不写！
+        // titleEl.style.display = 'none'; // 如果你想连占位都省了，也可以加上这句
+    }
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     if (element) element.classList.add('active');
     const settingsBtn = document.getElementById('category-settings-btn');
@@ -635,6 +701,18 @@ function openCategorySettingsModal() {
     openModal('category-settings-modal');
 }
 
+// 打开检测模式选择面板
+function openTestSelectorModal() {
+    const modal = document.getElementById('test-selector-modal');
+    modal.classList.remove('hidden');
+}
+
+// 关闭检测模式选择面板
+function closeTestSelectorModal() {
+    const modal = document.getElementById('test-selector-modal');
+    modal.classList.add('hidden');
+}
+
 async function submitCategorySettings() {
     const name = document.getElementById('edit-cat-name').value;
     const parentId = document.getElementById('edit-cat-parent').value;
@@ -669,11 +747,11 @@ async function confirmCategory() {
     const parentId = document.getElementById('parent-category-select') ? document.getElementById('parent-category-select').value : null;
     const type = document.getElementById('category-type-select') ? document.getElementById('category-type-select').value : 'vocabulary';
     if (!name) return alert('请输入名称');
-    try { 
-        await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, parentId: parentId || null, type }) }); 
-        closeAllModals(); 
-        await loadCategories(); 
-        
+    try {
+        await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, parentId: parentId || null, type }) });
+        closeAllModals();
+        await loadCategories();
+
         // 🌟 自动导达新文件夹！
         const createdCat = allCategories.find(c => c.name === name && (c.parentId || null) === (parentId || null));
         if (createdCat) {
@@ -685,7 +763,17 @@ async function confirmCategory() {
 
 async function loadFlashcards() {
     try {
-        const response = await fetch('/api/flashcards');
+        // 👇 1. 纯净的 await 写法 + 时间戳防缓存魔法
+        const response = await fetch(`/api/flashcards?t=${new Date().getTime()}`, {
+            method: 'GET',
+            cache: 'no-store', // 🍎 核心：专门击穿苹果等手机浏览器的终极物理缓存！
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
+
+        // 👇 2. 解析 JSON
         allCards = await response.json();
 
         // 🌟 无论在哪个页面，先把数据看板的逻辑刷一遍，确保左侧边栏或首页数字准确
@@ -758,10 +846,13 @@ function renderCards(cardsToRender = null) {
         return;
     }
 
+    // 🌟 【新增】：把当前屏幕上过滤出来的卡片存到全局，方便自由模式顺着往下看
+    window.currentDisplayQueue = cardsToRender;
+
     const list = document.getElementById('flashcards-list');
     if (!list) return;
 
-    
+
 
     if (cardsToRender.length === 0) {
         list.innerHTML = `<div style="text-align:center; padding: 60px 20px; color: #94a3b8; font-size: 0.95rem; grid-column: 1 / -1;">
@@ -790,7 +881,7 @@ function renderCards(cardsToRender = null) {
                 ? `<span style="${getBadgeStyle('#fef3c7', '#b45309')}">可默写</span>`
                 : `<span style="${getBadgeStyle('#f1f5f9', '#64748b')}">待进阶</span>`;
         }
-        
+
         const reviewDate = card.nextReviewDate ? new Date(card.nextReviewDate) : now;
         const isDue = reviewDate <= now;
 
@@ -807,42 +898,36 @@ function renderCards(cardsToRender = null) {
         const cardHoverColor = isChecked ? '#3b82f6' : '#e2e8f0';
 
         return `
-            <div class="card-item" onclick="toggleCardSelection('${card._id}')" style="cursor: ${isManageMode ? 'pointer' : 'default'}; padding: 24px; border-radius: 20px; background: white; border: 1px solid ${cardBorderColor}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); display: flex; align-items: flex-start; transition: 0.3s;" onmouseover="this.style.borderColor='${cardHoverColor}'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='${cardBorderColor}'; this.style.transform='translateY(0)'">
-                
-                <div id="checkbox-wrap-${card._id}" style="display: ${isManageMode ? 'block' : 'none'}; margin-right: 16px; margin-top: 2px; flex-shrink: 0;">
-                    ${checkboxIcon}
-                </div>
+    <div class="card-item" onclick="handleCardClick('${card._id}')">
+        
+        <div id="checkbox-wrap-${card._id}" class="card-checkbox" style="display: ${isManageMode ? 'block' : 'none'};">
+            ${checkboxIcon}
+        </div>
 
-                <div style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
-                    <strong style="color: #1e293b; font-size: 1.15rem; letter-spacing: -0.2px;">Q: ${card.question}</strong>
-                    <p style="color: #475569; margin: 0; line-height: 1.5;">A: ${card.answer}</p>
-                    
-                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap;">
-                        <span style="color: #94a3b8; font-size: 0.75rem; font-weight: 500;">${categoryName}</span>
-                        <span style="color: #e2e8f0;">|</span>
-                        ${stageHtml}
-                        ${statusHtml}
-                    </div>
-
-                    <div class="card-actions" style="display: flex; gap: 10px; margin-top: 14px;">
-                        <button onclick="event.stopPropagation(); editCard('${card._id}')" 
-                            style="${actionBtnStyle} background:#f8fafc; color:#64748b;" 
-                            onmouseover="this.style.backgroundColor='#f1f5f9'; this.style.color='#1e293b'" 
-                            onmouseout="this.style.backgroundColor='#f8fafc'; this.style.color='#64748b'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 
-                            编辑
-                        </button>
-                        <button onclick="event.stopPropagation(); deleteCard('${card._id}')" 
-                            style="${actionBtnStyle} background:#fff1f2; color:#fb7185;" 
-                            onmouseover="this.style.backgroundColor='#ffe4e6'; this.style.color='#e11d48'" 
-                            onmouseout="this.style.backgroundColor='#fff1f2'; this.style.color='#fb7185'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 
-                            删除
-                        </button>
-                    </div>
-                </div>
+        <div class="card-body">
+            <strong class="card-question">Q: ${card.question}</strong>
+            <p class="card-answer">A: ${card.answer}</p>
+            
+            <div class="card-meta">
+                <span class="meta-cat">${categoryName}</span>
+                <span class="meta-divider">|</span>
+                ${stageHtml}
+                ${statusHtml}
             </div>
-        `;
+
+            <div class="card-actions">
+                <button onclick="event.stopPropagation(); editCard('${card._id}')" class="btn-edit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 
+                    编辑
+                </button>
+                <button onclick="event.stopPropagation(); deleteCard('${card._id}')" class="btn-delete">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 
+                    删除
+                </button>
+            </div>
+        </div>
+    </div>
+`;
     }).join('');
 }
 
@@ -894,23 +979,35 @@ function processCardMemory(card, isCorrect, isSpellMode = false) {
     return card;
 }
 
+// 🌟 修复后的打卡引擎：严格按自然日计算，无视具体小时分钟
 function updateStreak() {
     const now = new Date();
-    const todayStr = now.toDateString();
+    const todayStr = now.toDateString(); // 例如 "Sat Mar 14 2026"
     let lastActive = localStorage.getItem('oopsy_last_active');
     let streak = parseInt(localStorage.getItem('oopsy_streak_days')) || 0;
 
-    if (lastActive === todayStr) return; // 今天已打卡
+    // 1. 如果今天已经打过卡了，直接跳过，天数不变
+    if (lastActive === todayStr) return;
 
     if (lastActive) {
+        // 2. 将时间全部抹平到当天的 00:00:00 进行纯日期对比
+        const todayDate = new Date(todayStr);
         const lastDate = new Date(lastActive);
-        const diffDays = Math.ceil(Math.abs(now - lastDate) / (1000 * 60 * 60 * 24));
-        if (diffDays === 1) streak += 1;
-        else if (diffDays > 1) streak = 1; // 断签清零
+
+        // 3. 计算两个自然日之间相差的整天数
+        const diffTime = Math.abs(todayDate - lastDate);
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) {
+            streak += 1; // 昨天打过卡，今天继续 -> 连击+1
+        } else if (diffDays > 1) {
+            streak = 1; // 漏了超过1天，断签清零 -> 重新从1开始
+        }
     } else {
-        streak = 1;
+        streak = 1; // 历史第一次打卡
     }
 
+    // 4. 保存今天的数据
     localStorage.setItem('oopsy_last_active', todayStr);
     localStorage.setItem('oopsy_streak_days', streak);
 }
@@ -919,13 +1016,16 @@ function updateStreak() {
 // 📊 首页数据引擎与智能推荐
 // ==========================================
 function renderDashboard() {
-    // 🛡️ 新增：进入主页时，把全局头部那个多余的标题藏起来
-    const viewTitle = document.getElementById('current-view-title');
-    if (viewTitle) viewTitle.style.display = 'none'; 
 
-    // 🛡️ 新增：顺便把那个“复习 20 张”的小方块也藏了，主页不需要它
-    const studyLimitWrap = document.querySelector('.header-actions div');
-    if (studyLimitWrap) studyLimitWrap.style.display = 'none';
+    // 🌟 核心修复：把无脑关灯删掉，并加上“只在主页才隐藏”的判定！
+    const isActuallyOnDashboard = !document.getElementById('dashboard-view').classList.contains('hidden');
+    if (isActuallyOnDashboard) {
+        const viewTitle = document.getElementById('current-view-title');
+        if (viewTitle) viewTitle.style.display = 'none';
+
+        const studyLimitWrap = document.querySelector('.header-actions div');
+        if (studyLimitWrap) studyLimitWrap.style.display = 'none';
+    }
     const now = new Date();
 
     // 1. 处理动态问候语 (根据时间)
@@ -961,7 +1061,7 @@ function renderDashboard() {
         if (pillText) pillText.innerText = `计算中...`;
 
         const previewBox = document.getElementById('dash-task-previews');
-        if (previewBox) previewBox.style.display = "none"; 
+        if (previewBox) previewBox.style.display = "none";
 
         const mainBtn = document.querySelector('.continue-btn');
         if (mainBtn) {
@@ -984,13 +1084,22 @@ function renderDashboard() {
     // 👇 真实数据渲染逻辑
     const totalCards = allCards.length;
     const masteredCards = allCards.filter(c => (c.stage || 0) >= 3).length;
+    // 🌟 替换为这段新代码（加入路线 B 的拦截逻辑）：
     const dueCardsList = allCards.filter(card => {
         const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
-        return date <= now;
+        const isDue = date <= now;
+
+        // 提取卡片的真实分类 ID
+        const catValue = card.category ? (card.category._id || card.category) : card.categoryId;
+
+        // 🛡️ 核心：统计时强行剔除没有文件夹的“流浪卡片”
+        const hasValidCategory = catValue && catValue !== 'uncategorized' && catValue !== 'null' && catValue !== '';
+
+        return isDue && hasValidCategory;
     });
     const dueCount = dueCardsList.length;
     let streakDays = localStorage.getItem('oopsy_streak_days') || 0;
-    
+
     const elTotal = document.getElementById('dash-total-cards');
     const elMastered = document.getElementById('dash-mastered-cards');
     const elStreak = document.getElementById('dash-streak-days');
@@ -1000,7 +1109,7 @@ function renderDashboard() {
     if (elTotal) elTotal.innerText = totalCards;
     if (elMastered) elMastered.innerText = masteredCards;
     if (elStreak) elStreak.innerText = streakDays;
-    if (elHard) elHard.innerText = hardCardsCount; 
+    if (elHard) elHard.innerText = hardCardsCount;
 
     const missionText = document.getElementById('dash-mission-text');
     if (missionText) {
@@ -1015,7 +1124,7 @@ function renderDashboard() {
 
     if (previewBox) {
         if (dueCount > 0) {
-            previewBox.style.display = "block"; 
+            previewBox.style.display = "block";
             previewBox.innerHTML = dueCardsList.slice(0, 3).map(c => `
                 <div style="padding: 16px; background: white; border-radius: 12px; border: 1px solid #eef2ff; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.02);">
                     <div>
@@ -1029,7 +1138,7 @@ function renderDashboard() {
                     <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 500;"> 复习 > </div>
                 </div>
             `).join('');
-            
+
             if (mainBtn) {
                 mainBtn.style.opacity = "1";
                 mainBtn.style.pointerEvents = "auto";
@@ -1037,21 +1146,21 @@ function renderDashboard() {
                 mainBtn.innerText = "继续科学复习 →";
             }
         } else {
-            previewBox.style.display = "none"; 
+            previewBox.style.display = "none";
             if (mainBtn) {
-                mainBtn.style.background = "#eef2ff"; 
-                mainBtn.style.color = "#a5b4fc";      
+                mainBtn.style.background = "#eef2ff";
+                mainBtn.style.color = "#a5b4fc";
                 mainBtn.style.boxShadow = "none";
                 mainBtn.innerText = "今日任务已达标";
-                mainBtn.style.pointerEvents = "none"; 
+                mainBtn.style.pointerEvents = "none";
             }
         }
     }
-    
+
     renderUrgentTasks(now);
 
     // 在 renderDashboard 函数内部的最下面
-    renderUrgentTasks(now); 
+    renderUrgentTasks(now);
 
     // 🛡️ 强制补丁：等任务渲染完后，瞬间把里面的 header 删掉
     setTimeout(() => {
@@ -1060,7 +1169,7 @@ function renderDashboard() {
             // 找到主页任务列表里的那个 header 并直接从 DOM 中移除
             const header = urgentBox.querySelector('.main-header');
             if (header) {
-                header.remove(); 
+                header.remove();
                 console.log("已强力移除主页冗余 Header");
             }
         }
@@ -1152,7 +1261,7 @@ function startGlobalReview() {
 }
 
 // --- 弹窗控制与拦截引擎 ---
-function openAddCardModal() { 
+function openAddCardModal() {
     if (typeof refreshSelectOptions === 'function') refreshSelectOptions();
 
     document.getElementById('modal-question').value = '';
@@ -1172,7 +1281,7 @@ function openAddCardModal() {
     if (isParentFolder) {
         // 🚨 触发温柔拦截，不打开添加卡片弹窗，去建卡包！
         promptSmartDeckCreation(currentCat);
-        return; 
+        return;
     }
 
     // 如果用户本来就在卡包里，或者在总览里，正常打开加卡片弹窗
@@ -1181,10 +1290,11 @@ function openAddCardModal() {
     } else {
         selectEl.value = ""; // 默认丢进未分类
     }
-    
+
     openModal('add-card-modal');
 }
 
+// --- 卡片保存引擎 (物理消灭毒瘤) ---
 // --- 卡片保存引擎 (物理消灭毒瘤) ---
 async function createFlashcardFromModal() {
     const question = document.getElementById('modal-question').value;
@@ -1202,6 +1312,7 @@ async function createFlashcardFromModal() {
     const payload = { question: question.trim(), answer: answer.trim(), categoryId };
 
     try {
+        // 👇 🌟 核心修复：把 GET 换回正常的 POST，把数据发给后端！
         const response = await fetch('/api/flashcards', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1209,10 +1320,10 @@ async function createFlashcardFromModal() {
         });
 
         if (!response.ok) return alert(`保存失败：状态码 ${response.status}`);
-        
+
         closeAllModals();
-        await loadFlashcards();
-        
+        await loadFlashcards(); // 这里拉取时会自动带上我们在 loadFlashcards 里写好的时间戳
+
         // 自动回到刚才的卡包
         let targetNavId = categoryId ? categoryId : 'uncategorized';
         selectSidebarItem(targetNavId, categoryId ? "知识库" : "未分类区", 'vocabulary', null);
@@ -1221,7 +1332,7 @@ async function createFlashcardFromModal() {
 }
 
 function openBatchModal() {
-    
+
     document.getElementById('batch-input').value = '';
     const selectEl = document.getElementById('batch-category-select');
 
@@ -1241,13 +1352,13 @@ function openBatchModal() {
         // 🚨 触发拦截：不允许在父文件夹直接批量导入，先去建个卡包！
         // 这里的 promptSmartDeckCreation 会引导用户建包，建完后会自动跳到添加界面
         alert(`提示：【${currentCat.name}】是大类文件夹，请先创建一个子卡包再进行批量导入。`);
-        promptSmartDeckCreation(currentCat); 
-        return; 
+        promptSmartDeckCreation(currentCat);
+        return;
     }
 
     // 👇 🌟 核心修复：给批量导入的下拉框装上极速建档的“监听神经”
     if (typeof injectQuickCategoryModal === 'function') injectQuickCategoryModal();
-    selectEl.onchange = function() {
+    selectEl.onchange = function () {
         if (this.value === 'CREATE_NEW') {
             window.quickCreateSourceDropdown = 'batch-category-select'; // 告诉系统：是从批量导入下拉框来的
             window.quickCreateSourceModal = 'batch-modal';              // 告诉系统：背后的父弹窗是批量导入
@@ -1377,26 +1488,27 @@ async function confirmBatchImport(event) {
         submitBtn.style.opacity = "0.8";
     }
 
-   try {
+    try {
         let successCount = 0;
         const chunkSize = 20; // 每次并发发送 20 张卡片
 
         for (let i = 0; i < newCards.length; i += chunkSize) {
             const chunk = newCards.slice(i, i + chunkSize);
-            
-            const promises = chunk.map(card => 
+
+            const promises = chunk.map(card =>
+                // 👇 🌟 核心修复：把这里的 GET 也换回 POST！
                 fetch('/api/flashcards', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(card)
                 })
-                .then(res => res.ok ? 1 : 0)
-                .catch(() => 0)
+                    .then(res => res.ok ? 1 : 0)
+                    .catch(() => 0)
             );
-            
+
             const results = await Promise.all(promises);
             successCount += results.reduce((sum, current) => sum + current, 0);
-            
+
             // 批次间稍微休息，给服务器喘息空间
             if (i + chunkSize < newCards.length) {
                 await new Promise(r => setTimeout(r, 50));
@@ -1446,52 +1558,90 @@ function startStudyMode() {
     const limitInput = document.getElementById('study-limit');
     const maxCards = limitInput ? parseInt(limitInput.value) || 20 : 20;
     const now = new Date();
+    window.isFreePracticeMode = false;
 
-    // 1. 构建分类筛选池
+    // 1. 获取目标文件夹 ID
     const targetCategoryIds = new Set([currentCategoryId]);
     allCategories.forEach(cat => {
-        if (cat.parentId === currentCategoryId) {
-            targetCategoryIds.add(cat._id);
+        if (cat.parentId === currentCategoryId) targetCategoryIds.add(cat._id);
+    });
+
+    // ==========================================
+    // 🛡️ 新增护盾：构建【免默写】黑名单
+    // ==========================================
+    const immuneCategoryIds = new Set();
+    allCategories.forEach(cat => {
+        if (cat.type === 'notes') {
+            immuneCategoryIds.add(cat._id); // 笔记大类免考
+            // 连坐机制：父级是笔记，子文件夹自动免考
+            allCategories.filter(child => child.parentId === cat._id).forEach(child => {
+                immuneCategoryIds.add(child._id);
+            });
         }
     });
 
-    // 2. 筛选待复习卡片 (科学模式)
+    // 2. 筛选所有到期的卡片
+    // 2. 筛选所有到期的卡片
     let dueCards = allCards.filter(card => {
         const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
         const isDue = date <= now;
 
         let isMatch = false;
+        // 提取卡片的真实分类 ID
+        const catValue = card.category ? (card.category._id || card.category) : card.categoryId;
+
         if (currentCategoryId === 'all' || currentCategoryId === 'dashboard') {
-            isMatch = true;
+            // 🌟 路线 B 核心：主页全局复习时，强行剔除没有文件夹的“流浪卡片”
+            isMatch = catValue && catValue !== 'uncategorized' && catValue !== 'null' && catValue !== '';
         } else if (currentCategoryId === 'uncategorized') {
-            const catValue = card.category || card.categoryId;
-            isMatch = !catValue || catValue === 'uncategorized';
+            isMatch = !catValue || catValue === 'uncategorized' || catValue === 'null' || catValue === '';
         } else {
-            const cardCatId = card.category ? (card.category._id || card.category) : card.categoryId;
-            isMatch = targetCategoryIds.has(cardCatId);
+            isMatch = targetCategoryIds.has(catValue);
         }
+
         return isDue && isMatch;
     });
 
-    // --- 🌟 核心改进：分流逻辑 ---
     if (dueCards.length === 0) {
-        // 如果没有到期卡片，引导至自由浏览
-        const goFree = confirm('当前没有需要复习的卡片。是否开启【自由模式】浏览该分类下的所有卡片？\n(提示：自由模式不会记录学习进度)');
-
-        if (goFree) {
-            startFreeStudy(); // 调用自由模式函数
-        }
+        if (confirm('当前没有需要复习的卡片。是否开启【自由模式】浏览该分类下的所有卡片？')) startFreeStudy();
         return;
     }
 
-    // 3. 科学复习模式进入
-    window.isFreePracticeMode = false; // 确保关闭自由模式标识
-    dueCards.sort((a, b) => (b.interval || 0) - (a.interval || 0) || Math.random() - 0.5);
-    studyCards = dueCards.slice(0, maxCards);
-    currentStudyIndex = 0;
+    // 3. 洗牌打乱，并截取最大复习数量
+    dueCards.sort(() => Math.random() - 0.5);
+    const selectedCards = dueCards.slice(0, maxCards);
 
-    showMainView('study-view');
-    renderStudyCard();
+    // ==========================================
+    // 🚀 核心升级：带免疫判定的人性化分流
+    // ==========================================
+    studyCards = [];
+    spellCards = [];
+
+    selectedCards.forEach(c => {
+        const cardCatId = c.category ? (c.category._id || c.category) : c.categoryId;
+
+        // 判断条件：如果它在免考黑名单里，或者它的等级不足 2 级 -> 进背诵区
+        if (immuneCategoryIds.has(cardCatId) || (c.stage || 0) < 2) {
+            studyCards.push(c);
+        } else {
+            // 只有非笔记类别，且等级 >= 2 的“熟练老词”，才进默写区
+            spellCards.push(c);
+        }
+    });
+
+    currentStudyIndex = 0;
+    currentSpellIndex = 0;
+
+    // 4. 决定起跑线
+    if (studyCards.length > 0) {
+        showMainView('study-view');
+        renderStudyCard();
+        console.log(`🚀 复习启动: ${studyCards.length}张待背诵, ${spellCards.length}张待默写`);
+    } else if (spellCards.length > 0) {
+        showMainView('spell-view');
+        renderSpellCard();
+        console.log(`🚀 全是老兵，直接进入默写: ${spellCards.length}张`);
+    }
 }
 
 function renderStudyCard() {
@@ -1525,78 +1675,73 @@ function flipCard() { document.getElementById('card-inner').classList.toggle('is
 // ==========================================
 // 🚨 加了 Debug 弹窗的 submitReview 函数
 // ==========================================
-async function submitReview(isKnown) { // 注意这里加了 async
-    if (!studyCards || studyCards.length === 0 || currentStudyIndex >= studyCards.length) return;
-    const currentCard = studyCards[currentStudyIndex];
+// 🌟 核心 1：注意这里加了 async！
+function submitReview(isKnown) {
+    // 1. 基础安全检查
+    if (!studyCards || studyCards.length === 0 || currentStudyIndex >= studyCards.length) return;
 
-    if (window.isFreePracticeMode) {
-        console.log("👻 自由模式：不更新进度，不发请求");
-    } else {
-        processCardMemory(currentCard, isKnown, false);
+    const currentCard = studyCards[currentStudyIndex];
 
-        if (!isKnown) {
-            studyCards.push(currentCard); 
-        }
+    // 2. 逻辑处理 (本地先变，立刻生效)
+    if (!window.isFreePracticeMode) {
+        processCardMemory(currentCard, isKnown, false);
 
-        try {
-            const payload = {
-                isKnown,
-                stage: currentCard.stage,
-                nextReviewDate: currentCard.nextReviewDate
-            };
-            
-            // // 🐛 第一处弹窗：准备发送的数据
-            // alert(`准备发送到后端:\n卡片ID: ${currentCard._id}\n数据: ${JSON.stringify(payload)}`);
-
-            const response = await fetch(`/api/flashcards/${currentCard._id}/review`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            
-            // // 🐛 第二处弹窗：后端的响应状态
-            // alert(`后端返回状态码: ${response.status}\n是否成功(ok): ${response.ok}`);
-
-        } catch (e) { 
-            // 🐛 第三处弹窗：极其关键！捕捉手机端的静默崩溃！
-            // alert(`手机端网络请求彻底崩溃啦！\n报错信息: ${e.message}\n错误详情: ${e.toString()}`);
-            // console.warn("后台同步稍后重试", e); 
+        // 🌟 本地双保险：立刻更新本地大数组
+        const globalCard = allCards.find(c => c._id === currentCard._id);
+        if (globalCard) {
+            globalCard.nextReviewDate = currentCard.nextReviewDate;
+            globalCard.stage = currentCard.stage;
         }
-    }
 
-    currentStudyIndex++;
+        if (!isKnown) {
+            studyCards.push(currentCard); // 错词加入队尾
+        }
 
-    if (currentStudyIndex >= studyCards.length) {
-        setTimeout(() => {
-            const msg = window.isFreePracticeMode ? '👻 自由预习圆满完成！' : '🎉 恭喜！本次背诵任务圆满完成！';
-            alert(msg);
-            window.isFreePracticeMode = false;
-            showMainView('dashboard-view');
-            renderDashboard(); 
-        }, 150);
-    } else {
-        renderStudyCard();
-    }
+        // 3. 【乐观更新】：后台静默发送，不加 await，绝不阻塞画面！
+        const payload = {
+            isKnown: isKnown,
+            stage: currentCard.stage,
+            nextReviewDate: currentCard.nextReviewDate
+        };
 
-    // --- 无论什么模式，都要切下一张 ---
+        fetch(`/api/flashcards/${currentCard._id}/review`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(e => console.warn("后台同步被浏览器中断，但不影响前端背单词:", e));
+        // 失败了也不弹窗烦人，只在控制台留个记录
+    }
+
+    // 4. 【立即切题】：用户点击瞬间就看到下一张
     currentStudyIndex++;
 
     if (currentStudyIndex >= studyCards.length) {
+        // ==========================================
+        // 🚀 背诵结束后的接力判定
+        // ==========================================
         setTimeout(() => {
-            const msg = window.isFreePracticeMode ? '👻 自由预习圆满完成！' : '🎉 恭喜！本次背诵任务圆满完成！';
-            alert(msg);
-
-            // 结束后重置开关，防止影响下次科学复习
-            window.isFreePracticeMode = false;
-
-            // 如果是从首页进的，建议跳回 dashboard-view
-            showMainView('dashboard-view');
-            renderDashboard(); // 刷新一下首页数字
+            if (window.isFreePracticeMode) {
+                alert('👻 自由预习圆满完成！');
+                window.isFreePracticeMode = false;
+                showMainView('dashboard-view');
+                renderDashboard();
+            }
+            else if (spellCards && spellCards.length > 0) {
+                showMainView('spell-view');
+                renderSpellCard();
+                console.log("👉 背诵完成，无缝切入高阶默写阶段！");
+            }
+            else {
+                alert('🎉 恭喜！本次背诵任务圆满完成！');
+                showMainView('dashboard-view');
+                renderDashboard();
+            }
         }, 150);
     } else {
         renderStudyCard();
     }
 }
+
 
 function nextStudyCard() {
     currentStudyIndex++;
@@ -1652,7 +1797,7 @@ function startSpellMode() {
 
             // 🛡️ 核心隔离墙生效：如果这张卡属于 notes 文件夹，直接一脚踢出默写队伍！
             if (immuneCategoryIds.has(cardCatId)) {
-                return false; 
+                return false;
             }
 
             let isMatch = false;
@@ -1718,16 +1863,32 @@ function renderSpellCard() {
     if (currentSpellIndex >= spellCards.length) {
         alert('🎉 恭喜你，完成了所有的拼写检验！');
         // 🌟 修复：默写结束后回到数据看板，让用户看到进度清空的爽感
-        showMainView('dashboard-view'); 
+        showMainView('dashboard-view');
         return;
     }
-    
+
     // ... 下面的代码保持你原来的不变 ...
     const card = spellCards[currentSpellIndex];
     document.getElementById('spell-question').innerText = card.answer || '（空问题）';
 
-    const inputEl = document.getElementById('spell-input');
-    inputEl.value = ''; inputEl.disabled = false; inputEl.focus();
+    // 🌟 核心替换：呼叫下划线魔术师！
+    // 逻辑推断：如果你的页面上显示的问题是 card.answer（比如中文），
+    // 那么你要拼写的单词应该就是 card.question（英文）。如果你的字段名不一样，请改一下这里：
+    const targetWord = card.question || '';
+
+    // 1. 根据单词长度，铺设好几条下划线
+    if (typeof setupSpellDisplay === 'function') {
+        setupSpellDisplay(targetWord);
+    }
+
+    // 2. 稍微延迟一点点，强行让隐形输入框获取焦点（自动弹出手机键盘）
+    setTimeout(() => {
+        const hiddenInput = document.getElementById('spell-hidden-input');
+        if (hiddenInput) {
+            hiddenInput.disabled = false;
+            hiddenInput.focus();
+        }
+    }, 50);
     document.getElementById('spell-feedback').innerHTML = '';
 
     // 强行把底部的按钮恢复成蓝色的“提交”
@@ -1740,78 +1901,147 @@ function renderSpellCard() {
     }
 }
 
-async function checkSpelling() {
-    const inputEl = document.getElementById('spell-input');
-    if (inputEl.disabled) return nextSpellCard();
+// 🚀 去掉了 async 和 await，不阻塞 UI！
+function checkSpelling() {
+    console.log("🚀 checkSpelling 被触发了！");
+    const inputEl = document.getElementById('spell-hidden-input');
+    const submitBtn = document.querySelector('#spell-view .spell-check-btn') || document.querySelector('#spell-view .check-btn');
+    const feedbackEl = document.getElementById('spell-feedback');
 
+    // ==========================================
+    // 🌟 1. 智能分流器 (多状态路由)
+    // ==========================================
+    
+    // 状态 A：如果是“继续”，说明已经拼对了，切下一题
+    if (submitBtn && submitBtn.innerText.includes('继续')) {
+        console.log("➡️ 进入切换下一题逻辑");
+        nextSpellCard();
+        return;
+    }
+
+    // 状态 B：如果是“再拼一次”，说明用户刚看完正确答案，需要【重置界面】！
+    if (submitBtn && submitBtn.innerText.includes('再拼一次')) {
+        console.log("🔄 确认错词，重置界面准备盲打...");
+        
+        // 1. 核心诉求：清空底下显示的答案！
+        feedbackEl.innerHTML = ''; 
+        
+        // 2. 按钮恢复原貌 (清除内联样式，交还给 CSS 控制)
+        submitBtn.style.background = ''; 
+        submitBtn.innerHTML = '提交校验 (Enter)';
+        
+        // 3. 解锁输入框，拿回焦点，准备重打
+        inputEl.disabled = false;
+        inputEl.value = '';
+        inputEl.dispatchEvent(new Event('input'));
+        setTimeout(() => inputEl.focus(), 50);
+        
+        return; // 🛑 拦截结束，等待用户面对干净的界面重新盲打！
+    }
+
+    // ==========================================
+    // 2. 核心校验逻辑
+    // ==========================================
     const card = spellCards[currentSpellIndex];
-    if (!card) return; // 🌟 安全检查：防止卡片数据丢失
+    if (!card) return;
 
-    // 1. 双向净化逻辑
-    const cleanText = (text) => {
-        return (text || "")
-            .toLowerCase()
-            // 🌟 第一层净化：把连字符(-)和下划线(_)统统变成空格。这样 user-friendly 和 user friendly 就能画等号！
-            .replace(/[-_]/g, " ")
-            // 🌟 第二层净化：无情抹除所有其他花里胡哨的标点符号（顺便把单双引号、中文符号也防住了）
-            .replace(/[.,\/#!$%\^&\*;:{}=`~()'"“”‘’]/g, "")
-            // 🌟 第三层净化：把可能出现的多个连续空格压缩成一个，并去掉首尾多余空格
-            .replace(/\s+/g, ' ')
-            .trim();
-    };
-
+    const cleanText = (text) => (text || "").toLowerCase().replace(/[-_]/g, "").replace(/[.,\/#!$%\^&\*;:{}=`~()'"“”‘’]/g, "").replace(/\s+/g, '');
     const inputStr = cleanText(inputEl.value);
     const answerStr = cleanText(card.question);
-
-    console.log(`比对详情: [${inputStr}] vs [${answerStr}]`); // 🌟 调试日志
-
-    const feedbackEl = document.getElementById('spell-feedback');
-    inputEl.disabled = true;
     const isCorrect = (inputStr === answerStr);
 
-    // 2. 模式识别与引擎更新
-    // 🌟 使用 window. 确保变量不存在时也不会崩掉
-    if (window.isFreePracticeMode === false) {
-        console.log("执行科学复习逻辑...");
-        if (typeof processCardMemory === 'function') {
-            processCardMemory(card, isCorrect, true);
+    console.log("📝 判定结果:", isCorrect ? "对" : "错");
+
+    if (isCorrect) {
+        // ✅ 拼对分支
+        inputEl.disabled = true; // 锁死，防止乱敲
+        feedbackEl.innerHTML = '<strong style="color:#10b981;">✅ 拼写正确！</strong>';
+        if (typeof speakWord === 'function') speakWord(card.question);
+
+        if (submitBtn) {
+            submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            submitBtn.innerHTML = '<span>继续下一张 (Enter)</span>';
+            // 把焦点给绿按钮，回车直接去下一题
+            setTimeout(() => { submitBtn.focus(); }, 100);
+        }
+    } else {
+        // ❌ 拼错分支
+        console.log("执行错误展示动作...");
+
+        // 🌟 核心改动：把输入框锁死！逼迫用户看完答案后，敲回车重置界面，不能直接看着答案抄！
+        inputEl.disabled = true; 
+        inputEl.blur();
+        inputEl.value = '';
+        inputEl.dispatchEvent(new Event('input'));
+
+        feedbackEl.innerHTML = `<div style="color:#ef4444;">❌ 拼写错误，请看清答案后重试。<br>正确答案：<strong style="letter-spacing: 1px;">${card.question}</strong></div>`;
+
+        if (submitBtn) {
+            submitBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            submitBtn.innerHTML = '<span>再拼一次 (Enter)</span>';
+            // 把焦点给红按钮，等用户看懂了按回车重置
+            setTimeout(() => { submitBtn.focus(); }, 100);
         }
 
-        try {
-            await fetch(`/api/flashcards/${card._id}/review`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    isKnown: isCorrect,
-                    stage: card.stage,
-                    nextReviewDate: card.nextReviewDate
-                })
-            });
-        } catch (e) { console.error("同步进度失败", e); }
-    } else {
-        console.log("执行自由练习逻辑，不更新数据。");
+        // 抖动动效
+        const cardEl = document.querySelector('.spell-card');
+        if (cardEl) {
+            cardEl.classList.remove('shake-error');
+            void cardEl.offsetWidth;
+            cardEl.classList.add('shake-error');
+        }
+
+        // 错题推入队列尾部重练
+        if (typeof spellCards !== 'undefined' && !spellCards.slice(currentSpellIndex + 1).includes(card)) {
+            spellCards.push(card);
+        }
     }
 
-    // 3. 渲染反馈 (确保这部分代码存在，否则界面没反应)
-    if (isCorrect) {
-        feedbackEl.innerHTML = '<strong style="color:#48bb78;">✅ 拼写正确！</strong>';
-        if (typeof speakWord === 'function') speakWord(card.question);
-    } else {
-        feedbackEl.innerHTML = `<div style="color:#e53e3e;">❌ 拼写错误。<br>正确答案：<strong>${card.question}</strong></div>`;
-        spellCards.push(card); // 错词重练
-    }
-
-    // 4. 激活“继续”按钮
-    const submitBtn = document.querySelector('#spell-view .check-btn');
-    if (submitBtn) {
-        submitBtn.innerHTML = '继续下一张 (Enter) ➔';
-        submitBtn.style.background = '#10b981';
-        submitBtn.onclick = nextSpellCard;
+    // ==========================================
+    // 3. 后台数据同步
+    // ==========================================
+    if (window.isFreePracticeMode === false) {
+        if (typeof processCardMemory === 'function') processCardMemory(card, isCorrect, true);
+        // 如果你有 API 请求也可以放这里
     }
 }
 
 function prevSpellCard() { if (currentSpellIndex > 0) { currentSpellIndex--; renderSpellCard(); } }
-function nextSpellCard() { currentSpellIndex++; renderSpellCard(); }
+function nextSpellCard() {
+    // 1. 核心基础逻辑：索引推进一步
+    currentSpellIndex++;
+
+    // 2. 呼叫渲染函数，把新卡片画出来
+    renderSpellCard();
+
+    // ==========================================
+    // 3. 🌟 核心修复：状态重置（一秒卸妆）
+    // ==========================================
+
+    // 抓取底部控制区的提交按钮
+    const submitBtn = document.querySelector('#spell-view .spell-check-btn') || document.querySelector('#spell-view .check-btn');
+    if (submitBtn) {
+        // 【关键防御】：清空 JS 强加的内联样式，把外观控制权彻底交还给你的 style.css！绝不让 JS 和 CSS 打架！
+        submitBtn.style.background = '';
+
+        // 恢复按钮的本来面目和灵魂
+        submitBtn.innerHTML = '提交校验 (Enter)';
+        submitBtn.onclick = checkSpelling;
+    }
+
+    // 抓取隐藏的盲打输入框 (严格保持 ID 一致性)
+    const inputEl = document.getElementById('spell-hidden-input');
+    if (inputEl) {
+        // 解除上一题的封印，清空残留字迹
+        inputEl.disabled = false;
+        inputEl.value = '';
+
+        // 给浏览器 50 毫秒的喘息时间，等新卡片渲染稳了，瞬间把焦点抢回来！
+        setTimeout(() => {
+            inputEl.focus();
+        }, 50);
+    }
+}
 
 function handleSpellEnter(event) {
     if (event.key === 'Enter') {
@@ -1992,6 +2222,38 @@ function toggleSelectAllCards() {
     });
 
     updateBatchActionBar();
+}
+
+// ==========================================
+// 👆 卡片点击分发中枢
+// ==========================================
+function handleCardClick(cardId) {
+    // 如果在批量管理模式，点击就是打勾选卡片
+    if (isManageMode) {
+        toggleCardSelection(cardId);
+    }
+    // 否则，点击就是直接进入这张卡片的自由背诵模式
+    else {
+        startFreeStudyFromCard(cardId);
+    }
+}
+
+function startFreeStudyFromCard(cardId) {
+    // 1. 开启“不留痕”护盾
+    window.isFreePracticeMode = true;
+
+    // 2. 拿到当前列表里正在显示的所有卡片，作为浏览队列
+    studyCards = window.currentDisplayQueue || allCards;
+
+    // 3. 找到你点击的那张卡片排第几，直接空降过去！
+    currentStudyIndex = studyCards.findIndex(c => c._id === cardId);
+    if (currentStudyIndex === -1) currentStudyIndex = 0;
+
+    // 4. 切入背诵视图
+    showMainView('study-view');
+    renderStudyCard();
+
+    console.log(`👻 截获单卡点击！开启自由模式，当前队列: ${studyCards.length}张，空降位置: ${currentStudyIndex + 1}`);
 }
 
 function toggleCardSelection(cardId) {
@@ -2263,9 +2525,9 @@ function injectQuickCategoryModal() {
 function toggleNewParentInput() {
     const select = document.getElementById('quick-parent-select');
     const input = document.getElementById('quick-new-parent-name');
-    
+
     // 🛡️ 安全锁：如果页面上还没生成这两个元素，直接返回，绝不报错
-    if (!select || !input) return; 
+    if (!select || !input) return;
 
     if (select.value === 'CREATE_NEW_PARENT') {
         input.style.display = 'block';
@@ -2284,7 +2546,7 @@ function openQuickCategoryModal() {
 
     const sourceModalId = window.quickCreateSourceModal || 'add-card-modal';
     const baseModal = document.getElementById(sourceModalId);
-    
+
     if (baseModal && baseModal.style.display !== 'none' && baseModal.style.display !== '') {
         baseModal.style.filter = 'brightness(0.6)';
         baseModal.style.pointerEvents = 'none';
@@ -2293,30 +2555,30 @@ function openQuickCategoryModal() {
     const quickModal = document.getElementById('quick-category-modal');
     const quickOverlay = document.getElementById('quick-category-overlay');
 
-    if(quickModal) quickModal.style.zIndex = '30000';
-    if(quickOverlay) quickOverlay.style.zIndex = '29999';
+    if (quickModal) quickModal.style.zIndex = '30000';
+    if (quickOverlay) quickOverlay.style.zIndex = '29999';
 
     const parentSelect = document.getElementById('quick-parent-select');
-    if(parentSelect) {
+    if (parentSelect) {
         parentSelect.innerHTML = `<option value="CREATE_NEW_PARENT" style="color:#3b82f6; font-weight:bold;">创建全新大类...</option><option disabled>──────────────</option>`;
         allCategories.filter(c => !c.parentId).forEach(p => {
             parentSelect.innerHTML += `<option value="${p._id}">挂载到现有: ${p.name}</option>`;
         });
     }
 
-    if(quickOverlay) quickOverlay.style.display = 'block';
-    if(quickModal) quickModal.style.display = 'block';
-    
+    if (quickOverlay) quickOverlay.style.display = 'block';
+    if (quickModal) quickModal.style.display = 'block';
+
     // 因为前面加了自动注入，现在这里调用绝对安全
     toggleNewParentInput();
 
     setTimeout(() => {
         if (parentSelect && parentSelect.value === 'CREATE_NEW_PARENT') {
             const newParentInput = document.getElementById('quick-new-parent-name');
-            if(newParentInput) newParentInput.focus();
+            if (newParentInput) newParentInput.focus();
         } else {
             const childInput = document.getElementById('quick-child-name');
-            if(childInput) childInput.focus();
+            if (childInput) childInput.focus();
         }
     }, 100);
 }
@@ -2380,7 +2642,7 @@ async function submitQuickCategory() {
         setTimeout(() => {
             const sourceDropdownId = window.quickCreateSourceDropdown || 'modal-category-select';
             const selectEl = document.getElementById(sourceDropdownId);
-            
+
             const createdChild = allCategories.find(c => c.name === childName && c.parentId === finalParentId);
             if (createdChild) {
                 if (selectEl) selectEl.value = createdChild._id;
@@ -2449,38 +2711,72 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (!document.getElementById('folders-view')) {
         const foldersViewHTML = `
-            <div id="folders-view" class="view hidden" style="padding: 16px; box-sizing: border-box; animation: fadeIn 0.3s ease;">
-                <div style="background: white; border-radius: 20px; padding: 10px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
-                    <ul class="nav-menu" id="mobile-folders-menu" style="margin:0;"></ul>
+            <div id="folders-view" class="view hidden" style="background: #f1f5f9; min-height: 100vh; padding-bottom: 80px;">
+                
+                <div style="padding: 12px 16px 8px 16px; font-size: 0.85rem; color: #64748b; font-weight: 500;">
+                    我的词库与分类
+                </div>
+                
+                <div style="background: white; border-top: 0.5px solid #e2e8f0; border-bottom: 0.5px solid #e2e8f0;">
+                    <ul class="nav-menu" id="mobile-folders-menu" style="margin: 0; padding: 0; list-style: none;"></ul>
+                </div>
+                
+                <div style="padding: 16px; text-align: center;">
+                    <button onclick="createNewFolder()" style="background: transparent; color: #3b82f6; border: none; font-size: 0.95rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        新建词库分类
+                    </button>
                 </div>
             </div>
         `;
-        document.querySelector('.content-area').insertAdjacentHTML('beforeend', foldersViewHTML);
+        const contentArea = document.querySelector('.content-area');
+        if (contentArea) contentArea.insertAdjacentHTML('beforeend', foldersViewHTML);
     }
 });
 
-window.handleBottomNav = function(target) {
-    if (window.innerWidth > 768) return;
+// 📱 手机端底部导航路由中心
+window.handleBottomNav = function (target) {
+    if (window.innerWidth > 768) return; // 电脑端不执行
 
-    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    // 1. 切换底部图标的高亮状态 (变蓝)
+    document.querySelectorAll('.mobile-bottom-nav .nav-tab').forEach(t => {
+        t.classList.remove('active');
+        t.style.color = '#94a3b8'; // 恢复灰色
+    });
     const tab = document.getElementById('tab-' + target);
-    if (tab) tab.classList.add('active');
+    if (tab) {
+        tab.classList.add('active');
+        tab.style.color = '#3b82f6'; // 激活变成主题色
+    }
 
+    // 2. 核心：根据目标切页面
     if (target === 'dashboard') {
         const dashBtn = document.querySelector('.nav-item[onclick*="selectDashboard"]');
         if (dashBtn) selectDashboard(dashBtn);
-    } else if (target === 'all') {
-        if (typeof goToAllCards === 'function') goToAllCards();
-    } else if (target === 'folders') {
-        document.getElementById('current-view-title').innerText = '知识库分类';
-        showMainView('folders-view'); 
+    }
+    else if (target === 'explore') {
+        if (typeof showExploreView === 'function') showExploreView();
+    }
+    else if (target === 'folders') {
+        document.getElementById('current-view-title').innerText = '词库书架';
+        showMainView('folders-view');
+    }
+    else if (target === 'profile') {
+        // 🎯 就是这里！召唤出咱们写好的高级设置页面
+        if (typeof showProfileView === 'function') {
+            showProfileView();
+        } else {
+            // 如果你没有 showProfileView 函数，直接用底层逻辑切过去：
+            document.getElementById('current-view-title').innerText = '我的设置';
+            showMainView('profile-view');
+        }
     }
 };
 
 // ==========================================
 // 👻 自由背诵模式引擎 (修复被误杀的函数)
 // ==========================================
-window.startFreeStudy = function() {
+window.startFreeStudy = function () {
     // 1. 开启“不留痕”开关
     window.isFreePracticeMode = true;
 
@@ -2582,10 +2878,10 @@ async function submitSmartDeckAndAddCard() {
             if (typeof refreshSelectOptions === 'function') refreshSelectOptions();
             document.getElementById('modal-question').value = '';
             document.getElementById('modal-answer').value = '';
-            
+
             const selectEl = document.getElementById('modal-category-select');
             if (selectEl && newDeck) selectEl.value = newDeck._id;
-            
+
             openModal('add-card-modal');
         }, 150);
 
@@ -2632,17 +2928,302 @@ async function submitSmartDeckAndAddCard() {
 
         // 如果当前正在【背诵】或【默写】，则退回到列表页
         if (
-            (studyView && !studyView.classList.contains('hidden')) || 
+            (studyView && !studyView.classList.contains('hidden')) ||
             (spellView && !spellView.classList.contains('hidden'))
         ) {
             console.log("检测到右滑：退出学习模式");
             showMainView('manage-view');
             // 如果你希望回到词库页，可以加上底栏状态同步
             if (window.innerWidth <= 768) window.handleBottomNav('all');
-        } 
+        }
         // 如果当前正在【手机分类页】，可以退回到主页
         else if (foldersView && !foldersView.classList.contains('hidden')) {
             window.handleBottomNav('dashboard');
         }
     }
 })();
+
+// ==========================================
+// 📊 数据看板快捷跳转引擎 (修复连环跳转 Bug 版)
+// ==========================================
+
+function goToAllCards() {
+    currentCategoryId = 'all'; // 显式声明
+    const rootItem = document.querySelector('.root-nav');
+    selectSidebarItem('all', '所有卡片', 'vocabulary', rootItem);
+}
+
+function goToHardCards() {
+    currentCategoryId = 'hard';
+    document.getElementById('current-view-title').innerText = '困难卡片 (待进阶)';
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+    if (window.innerWidth <= 768) {
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        const tabAll = document.getElementById('tab-all');
+        if (tabAll) tabAll.classList.add('active');
+    }
+
+    showMainView('manage-view');
+    filterCards(); // 👈 补上这一句！命令系统重新洗牌发牌
+}
+
+function goToMasteredCards() {
+    currentCategoryId = 'mastered';
+    document.getElementById('current-view-title').innerText = '熟练掌握 (Stage 3+)';
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+    if (window.innerWidth <= 768) {
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        const tabAll = document.getElementById('tab-all');
+        if (tabAll) tabAll.classList.add('active');
+    }
+
+    showMainView('manage-view');
+    filterCards(); // 👈 同样补上这一句！
+}
+
+// 🍏 苹果级悬浮球拖拽逻辑
+const fab = document.getElementById('floating-add-btn');
+let isDragging = false;
+let startX, startY, initialX, initialY;
+
+// 从本地存储读取上次的位置
+const savedPos = JSON.parse(localStorage.getItem('fabPosition') || '{"right":20, "bottom":100}');
+Object.assign(fab.style, { right: savedPos.right + 'px', bottom: savedPos.bottom + 'px', left: 'auto' });
+
+fab.addEventListener('touchstart', (e) => {
+    isDragging = true;
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    initialX = fab.offsetLeft;
+    initialY = fab.offsetTop;
+    fab.style.transition = 'none'; // 拖拽时关闭动画
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+
+    // 限制在屏幕范围内
+    let newX = initialX + dx;
+    let newY = initialY + dy;
+    fab.style.left = newX + 'px';
+    fab.style.top = newY + 'px';
+    fab.style.right = 'auto';
+    fab.style.bottom = 'auto';
+}, { passive: false });
+
+document.addEventListener('touchend', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    fab.style.transition = 'all 0.5s cubic-bezier(0.19, 1, 0.22, 1)'; // 开启丝滑吸附动画
+
+    // 自动吸附逻辑
+    const screenWidth = window.innerWidth;
+    const fabWidth = fab.offsetWidth;
+    const currentX = fab.offsetLeft;
+
+    if (currentX + fabWidth / 2 < screenWidth / 2) {
+        fab.style.left = '20px'; // 吸附到左边
+    } else {
+        fab.style.left = (screenWidth - fabWidth - 20) + 'px'; // 吸附到右边
+    }
+
+    // 记忆位置
+    setTimeout(() => {
+        const finalPos = { left: fab.style.left, top: fab.style.top };
+        localStorage.setItem('fabPosition', JSON.stringify(finalPos));
+    }, 500);
+});
+
+/* ==========================================
+   🔎 发现页 (Explore) 逻辑中心
+   ========================================== */
+
+// 1. 内置词库模拟数据库
+const MARKET_BOOKS = [
+    {
+        id: 'book_001',
+        title: '雅思听力·高频场景词',
+        count: 1200,
+        category: 'english',
+        cover: '🎧',
+        desc: '涵盖租房、学术讨论、旅游等核心场景'
+    },
+    {
+        id: 'book_002',
+        title: 'PTE 阅读·真题学术词',
+        count: 850,
+        category: 'english',
+        cover: '📖',
+        desc: '精准锁定学术精读与机经高频词汇'
+    },
+    {
+        id: 'book_003',
+        title: '一级建造师·法规必背',
+        count: 450,
+        category: 'build',
+        cover: '🏗️',
+        desc: '2026年最新大纲核心考点提炼'
+    }
+];
+
+// 2. 渲染货架列表
+function renderMarketList(filter = 'all') {
+    const container = document.getElementById('market-list-container');
+    if (!container) return;
+
+    const filteredBooks = filter === 'all'
+        ? MARKET_BOOKS
+        : MARKET_BOOKS.filter(book => book.category === filter);
+
+    container.innerHTML = filteredBooks.map(book => `
+        <div class="market-card">
+            <div class="market-card-left">
+                <div class="market-cover">${book.cover}</div>
+                <div class="market-info">
+                    <span class="market-title">${book.title}</span>
+                    <span class="market-count">${book.count} 词条 · 精选</span>
+                </div>
+            </div>
+            <button class="get-btn" onclick="importFromMarket('${book.id}', '${book.title}')">
+                获取
+            </button>
+        </div>
+    `).join('');
+}
+
+// 3. 执行获取（导入逻辑）
+function importFromMarket(bookId, bookTitle) {
+    // 这里模拟导入逻辑：实际开发时你会在这里调用你的数据库保存函数
+    console.log(`正在从市场导入: ${bookTitle}`);
+
+    // 弹出成功提示 (Toast)
+    showToast(`✅ 已将《${bookTitle}》加入您的词库`);
+
+    // 模拟跳转到词库页并刷新（可选）
+    // setTimeout(() => showMainView('manage-view'), 1500);
+}
+
+// 4. 简易 Toast 提示函数
+function showToast(message) {
+    // 检查是否已有 toast 容器，没有就创建一个
+    let toast = document.getElementById('global-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'global-toast';
+        // 样式我们在 CSS 里统一写过，这里只管显示
+        document.body.appendChild(toast);
+    }
+
+    toast.innerText = message;
+    toast.className = 'show';
+
+    setTimeout(() => {
+        toast.className = toast.className.replace('show', '');
+    }, 3000);
+}
+
+// 5. 分类切换逻辑
+function switchMarketTab(category) {
+    // 切换按钮高亮
+    const tabs = document.querySelectorAll('.tab-item');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    event.target.classList.add('active');
+
+    // 重新渲染列表
+    renderMarketList(category);
+}
+
+// 页面加载时自动执行一次渲染
+document.addEventListener('DOMContentLoaded', () => {
+    renderMarketList();
+});
+
+// ==========================================
+// 🌟 顶栏动态控制器：负责主页和词库页的 UI 切换
+// ==========================================
+function updateHeaderUI(isDashboard) {
+    const manageBtn = document.getElementById('btn-toggle-manage'); // 编辑按钮
+    const testBtn = document.getElementById('btn-test-mode');       // 检测按钮
+    const addBtn = document.getElementById('btn-add-card');
+
+    if (isDashboard) {
+        // 🏠 场景 1：在主界面 (Dashboard)
+        // 动作：隐藏专属功能按钮
+        if (manageBtn) manageBtn.style.display = 'none';
+        if (testBtn) testBtn.style.display = 'none';
+        if (addBtn) addBtn.style.display = 'none'; // 🌟 核心：在主页把它也藏起来！
+    } else {
+        // 📂 场景 2：在具体词库界面
+        // 动作：显示专属功能按钮，准备学习
+        if (manageBtn) manageBtn.style.display = 'inline-flex';
+        if (testBtn) testBtn.style.display = 'inline-flex';
+        if (addBtn) addBtn.style.display = 'inline-flex'; // 🌟 核心：进词库再让它出来！
+    }
+}
+
+// ==========================================
+// 🌟 拼写检测：高级下划线渲染与隐形输入绑定
+// ==========================================
+
+// 1. 初始化下划线界面（每次切到新单词时调用）
+function setupSpellDisplay(targetWord) {
+    const displayArea = document.getElementById('spell-display-area');
+    const hiddenInput = document.getElementById('spell-hidden-input');
+
+    if (!displayArea || !hiddenInput) return;
+
+    // 清空旧的下划线和输入框里的残留数据
+    displayArea.innerHTML = '';
+    hiddenInput.value = '';
+    hiddenInput.maxLength = targetWord.length; // 限制最多只能输入这么多字符
+
+    // 根据目标单词的长度和空格，动态生成对应的盒子
+    for (let i = 0; i < targetWord.length; i++) {
+        const char = targetWord[i];
+        const box = document.createElement('div');
+
+        if (char === ' ') {
+            box.className = 'spell-space-box'; // 遇到空格，放一个隐形的占位盒子
+        } else {
+            box.className = 'spell-char-box';  // 遇到字母，放一个带下划线的盒子
+        }
+        displayArea.appendChild(box);
+    }
+}
+
+// 2. 监听隐形输入框的“打字”动作，实时投影到下划线上
+// 2. 监听隐形输入框的“打字”动作，极致平滑映射
+document.getElementById('spell-hidden-input')?.addEventListener('input', function (e) {
+    // 🌟 核心升级：剥离所有空格，只提取用户敲的纯字母！
+    const pureInput = e.target.value.replace(/\s+/g, '');
+
+    // 🌟 只抓取真正的字母下划线盒子（透明的空格占位盒子直接无视）
+    const charBoxes = Array.from(document.getElementById('spell-display-area').children)
+        .filter(box => box.classList.contains('spell-char-box'));
+
+    // 纯字母依次投射，再也不用管空格在哪了！
+    for (let i = 0; i < charBoxes.length; i++) {
+        if (i < pureInput.length) {
+            charBoxes[i].innerText = pureInput[i];
+            charBoxes[i].classList.add('filled'); // 点亮变蓝
+        } else {
+            charBoxes[i].innerText = '';
+            charBoxes[i].classList.remove('filled'); // 恢复灰色
+        }
+    }
+});
+
+// 3. 监听键盘的回车键 (Enter)，自动触发提交校验
+document.getElementById('spell-hidden-input')?.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+        if (typeof checkSpelling === 'function') {
+            checkSpelling(); // 呼叫你原本就写好的检测函数
+        }
+    }
+});

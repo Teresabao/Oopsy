@@ -70,7 +70,7 @@ This project is licensed under the MIT License.
 3. `git push`
 
 git add .
-git commit -m "feat(Oopsy): 手机底部设置好四个bar，即将添加网页端  侧栏bar"
+git commit -m "feat(Oopsy): 即将开始接入检测界面分量练习以及完成检测的🎉闯关界面"
 git push 
 
 ## 其它

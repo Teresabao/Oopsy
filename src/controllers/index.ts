@@ -215,7 +215,8 @@ export const recordReview = async (req: any, res: any) => {
         await card.save();
         res.json(card);
 
-    } catch (error) {
-        res.status(500).json({ error: '更新记忆曲线失败' });
-    }
+} catch (error) {
+    console.error("🔥 抓到后台崩溃的真凶了：", error); // 👈 加上这句！！
+    res.status(500).json({ error: '更新记忆曲线失败' });
+}
 };
