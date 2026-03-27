@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import Flashcard from '../models/Flashcard'; // 👈 加上这一行，把模型引入进来
 import { 
   createCategory, 
   getCategories, 
@@ -30,4 +31,23 @@ router.patch('/flashcards/:id/review', recordReview);
 router.post('/flashcards/batch', createFlashcardsBatch);
 router.delete('/categories/:id', deleteCategory);
 
+// 🌟 收藏开关接口：切换卡片的星标状态
+// 🌟 核心修复：补上缺失的 /flashcards 前缀！
+router.patch('/flashcards/:id/star', async (req, res) => {
+    try {
+        const { id } = req.params;
+        // 1. 查找卡片
+        const card = await Flashcard.findById(id); 
+        if (!card) return res.status(404).json({ message: '找不到卡片' });
+
+        // 2. 取反收藏状态
+        card.isStarred = !card.isStarred;
+        
+        // 3. 保存并返回
+        await card.save();
+        res.json({ success: true, isStarred: card.isStarred });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
 export default router;

@@ -212,7 +212,8 @@ export const recordReview = async (req: any, res: any) => {
         }
         card.nextReviewDate = nextDate;
 
-        await card.save();
+// 🌟 颁发免死金牌：只校验这次修改的记忆曲线，不要去管这张老卡片以前有没有分类！
+        await card.save({ validateModifiedOnly: true });
         res.json(card);
 
 } catch (error) {

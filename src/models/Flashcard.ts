@@ -16,6 +16,7 @@ export interface IFlashcard extends Document {
     // 瀑布流打怪核心
     stage: number;               
     consecutiveCorrect: number;  
+    isStarred?: boolean; // 👈 核心修复：加上这一行，问号表示它是可选的
     
     createdAt: Date;
 }
@@ -31,6 +32,7 @@ const FlashcardSchema: Schema = new Schema({
     easeFactor: { type: Number, default: 2.5 },
     stage: { type: Number, default: 0 },              
     consecutiveCorrect: { type: Number, default: 0 }, 
+    isStarred: { type: Boolean, default: false }, // 👈 必须确保有这一行！
     
     createdAt: { type: Date, default: Date.now }
 });

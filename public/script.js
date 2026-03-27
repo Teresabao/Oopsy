@@ -238,6 +238,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- 1. 视图切换引擎 (🚀 上线级：完美平衡版) ---
 // --- 1. 视图切换引擎 (🚀 上线级：完美平衡 + 笔记类型智能过滤版) ---
 window.showMainView = function (viewId) {
+
+    // 🚀 第一步：进任何新页面前，先给我把上一个页面的垃圾全扫干净！
+    if (typeof clearAllGhostStates === 'function') clearAllGhostStates();
+
     const views = ['manage-view', 'study-view', 'spell-view', 'dashboard-view', 'folders-view', 'explore-view', 'profile-view'];
 
     // 1. 显隐切换
@@ -248,34 +252,25 @@ window.showMainView = function (viewId) {
     const targetView = document.getElementById(viewId);
     if (targetView) targetView.classList.remove('hidden');
 
-    // 2. 🌟 顶栏整体调度 (接管动态开关 + 手机端沉浸式优化)
-    // 🕵️ 核心修复：改用 querySelector 抓取 class，绝对不会找错人！
+    // 2. 🌟 顶栏整体调度
     const mainHeader = document.querySelector('.main-header');
-    const isMobile = window.innerWidth <= 768; // 📡 开启手机端雷达
+    const isMobile = window.innerWidth <= 768;
 
     if (mainHeader) {
         if (viewId === 'study-view' || viewId === 'spell-view') {
-            // 场景A：背诵/默写模式
             mainHeader.style.setProperty('display', 'none', 'important');
         } else if (isMobile && viewId !== 'manage-view') {
-            // 场景B：📱 手机端专属！只要不是在词库卡片列表，统统隐藏！
             mainHeader.style.setProperty('display', 'none', 'important');
-            console.log("📱 手机端雷达生效：顶栏已强行隐藏！当前进入：", viewId); // 👈 监控探头
         } else {
-            // 场景C：💻 电脑端常规显示，或者手机端正好在词库列表中
             mainHeader.style.setProperty('display', 'flex', 'important');
-
-            // 继续呼叫指挥官：控制里面的具体小按钮
             const isDashboard = ['dashboard-view', 'explore-view', 'profile-view'].includes(viewId);
             if (typeof updateHeaderUI === 'function') {
                 updateHeaderUI(isDashboard);
             }
         }
-    } else {
-        console.error("🚨 报告：雷达没找到顶栏！请检查你的 header 标签上是不是缺少了 class='main-header'");
     }
 
-    // 3. 🎯 核心加固：延迟渲染卡片，防止闪现和消失
+    // 3. 🎯 针对特殊页面的重新渲染 (已修复嵌套 Bug，现在逻辑极其清晰)
     if (viewId === 'manage-view') {
         setTimeout(() => {
             if (typeof renderFlashcards === 'function') renderFlashcards();
@@ -283,13 +278,23 @@ window.showMainView = function (viewId) {
         }, 10);
     }
 
+    if (viewId === 'dashboard-view') {
+        // 回主页，刷新数字和动态按钮
+        if (typeof updateDashboardPlanUI === 'function') updateDashboardPlanUI();
+    } else if (viewId === 'manage-view' || viewId === 'library-view') {
+        // 回词库，以绝对干净的状态重新画一次卡片
+        if (typeof renderCards === 'function' && window.currentDisplayQueue) {
+            renderCards(window.currentDisplayQueue);
+        }
+    }
+
     // 4. 手机端底栏调度
     const bottomNav = document.querySelector('.bottom-nav');
     if (bottomNav) {
-        bottomNav.style.display = (viewId === 'study-view' || viewId === 'spell-view') ? 'none' : 'flex';
+        bottomNav.style.display = (viewId === 'study-view' || viewId === 'spell-view' || isManageMode) ? 'none' : 'flex';
     }
 
-    // 5. 悬浮球调度 (保留你的原有设定)
+    // 5. 悬浮球调度
     const floatingBtn = document.getElementById('floating-add-btn');
     if (floatingBtn) {
         const isStudy = viewId === 'study-view' || viewId === 'spell-view';
@@ -297,6 +302,62 @@ window.showMainView = function (viewId) {
         floatingBtn.style.display = (!isStudy && !isDesktop) ? 'flex' : 'none';
     }
 };
+
+
+// ==========================================
+// ☢️ 终极消毒舱：一键剿灭所有幽灵状态！
+// ==========================================
+function clearAllGhostStates() {
+    // 1. 记忆清零（数据层）
+    if (typeof isManageMode !== 'undefined') isManageMode = false;
+    if (typeof isAllSelected !== 'undefined') isAllSelected = false;
+    if (typeof selectedCards !== 'undefined' && selectedCards) selectedCards.clear();
+    sessionStorage.removeItem('pickNewCardsMode');
+    sessionStorage.removeItem('pickNewCardsQuota');
+
+    // ==========================================
+    // 2. 界面暴力复位（UI层）
+    // ==========================================
+    // 强制隐藏底部悬浮栏
+    const batchBar = document.getElementById('batch-action-bar');
+    if (batchBar) batchBar.style.display = 'none';
+
+    // 🎯 核心修复：用真实的 ID 抓取顶部按钮！
+    const btnManage = document.getElementById('btn-toggle-manage'); // 👈 换成了你真实的编辑按钮 ID
+    const btnSelectAll = document.getElementById('btn-select-all'); // 全选按钮
+
+    // 1. 强制复原【编辑】按钮（哪怕它变成了“退出”，也给它强行掰回四个小方块的图标！）
+    // 1. 强制复原【编辑】按钮（连带颜色、边框一起强制洗白！）
+    // 1. 强制复原【编辑】按钮（颜色、尺寸、圆角、布局，100%像素级覆盖重置！）
+    if (btnManage) {
+        // 🎨 直接把最初始的整段 style 字符串强行拍上去！绝不遗漏任何一个属性！
+        btnManage.setAttribute('style', 'background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;');
+
+        // 恢复四个小方块图标
+        btnManage.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+        `;
+    }
+    // 2. 强制隐藏并重置【全选】按钮
+    if (btnSelectAll) {
+        btnSelectAll.style.display = 'none';
+        btnSelectAll.innerHTML = `<span style="font-size: 0.9rem; font-weight: bold;">全选</span>`;
+    }
+
+    // 3. 强制把所有可能变异的按钮文字掰回来
+    document.querySelectorAll('button').forEach(btn => {
+        if (btn.innerText.includes('取消全选') || btn.innerText === '取消选中') {
+            btn.innerText = '全选';
+        }
+    });
+}
+
 
 // --- 2. 侧边栏与文件夹管理 (双路渲染引擎) ---
 async function loadCategories() {
@@ -309,27 +370,34 @@ async function loadCategories() {
 
         const icons = {
             dashboard: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`,
-            all: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+            allIcon: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+            starIcon: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>`,
             folder: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
             doc: `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
             arrowRight: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
             arrowDown: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>`,
-            rightChevron: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>` // 原生右箭头
+            rightChevron: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>`
         };
 
-        // ==== 1. 组装电脑端左侧菜单 (保持原样不动) ====
+        // ==== 1. 组装电脑端左侧菜单 ====
         desktopHtml = `
             <li class="nav-item ${currentCategoryId === 'dashboard' ? 'active' : ''}" onclick="selectDashboard(this)">
                 ${icons.dashboard} <span>学习数据</span>
             </li>
+            
+            <li class="nav-item starred-nav ${currentCategoryId === 'starred' ? 'active' : ''}" onclick="showStarredCards(this)">
+                ${icons.starIcon} <span style="color: #854d0e; font-weight: 600;">星标收藏夹</span>
+            </li>
+            
             <div style="height: 1px; background: #e2e8f0; margin: 10px 0;"></div>
         `;
+
         const rootArrow = rootCollapsed ? icons.arrowRight : icons.arrowDown;
         desktopHtml += `
             <li class="nav-item root-nav ${currentCategoryId === 'all' ? 'active' : ''}" style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 8px; flex: 1;" onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', this.parentElement)">
                     <div class="toggle-arrow" onclick="toggleRoot(event)">${rootArrow}</div>
-                    ${icons.all} <span>所有卡片</span>
+                    ${icons.allIcon} <span>所有卡片</span>
                 </div>
                 <div class="folder-actions" onclick="quickCreateSubCategory(event, '')" title="新建顶级文件夹">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -337,19 +405,23 @@ async function loadCategories() {
             </li>
             <div id="user-folders-container" style="display: ${rootCollapsed ? 'none' : 'block'}; padding-left: 14px;">
         `;
-        desktopHtml += `
-            <li class="nav-item ${currentCategoryId === 'uncategorized' ? 'active' : ''}" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;" onclick="selectSidebarItem('uncategorized', '未分类区', 'vocabulary', this)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 20px;"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                <span style="color: #475569;">未分类区</span>
-            </li>
-        `;
 
         // ==== 2. 组装手机端原生全宽列表 UI ====
         mobileHtml = `
             <li onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', null)">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="color: #4f46e5; display: flex; align-items: center;">${icons.all}</div>
+                    <div style="color: #4f46e5; display: flex; align-items: center;">${icons.allIcon}</div>
                     <span style="color:#1e293b; font-size:1rem; font-weight:500;">所有卡片</span>
+                </div>
+                ${icons.rightChevron}
+            </li>
+
+            <li onclick="showStarredCards(null)" style="background: #fefce8;" class="starred-nav">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="color: #eab308; display: flex; align-items: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                    </div>
+                    <span style="color:#854d0e; font-size:1rem; font-weight:600;">星标收藏夹</span>
                 </div>
                 ${icons.rightChevron}
             </li>
@@ -375,14 +447,22 @@ async function loadCategories() {
             const icon = p.type === 'notes' ? icons.doc : icons.folder;
             const isActive = currentCategoryId === p._id ? 'active' : '';
 
-            // ================= 1. 电脑端父级拼接 =================
+        // ================= 1. 电脑端父级拼接 (加固版) =================
             desktopHtml += `
-                <li class="nav-item parent-nav ${isActive}" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;" onclick="handleParentClick(event, '${p._id}', '${p.name}', '${p.type}', this.parentElement)">
+                <li class="nav-item parent-nav ${isActive}" 
+                    data-id="${p._id}" 
+                    data-name="${p.name}"
+                    style="display: flex; justify-content: space-between; align-items: center;">
+                    
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;" 
+                         onclick="handleParentClick(event, '${p._id}', '${p.name}', '${p.type}', this.parentElement)">
                         <div class="toggle-arrow" style="visibility: ${hasChildren ? 'visible' : 'hidden'}">${arrow}</div>
                         ${icon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${p.name}</span>
                     </div>
-                    <div class="folder-actions" onclick="quickCreateSubCategory(event, '${p._id}')" title="在此文件夹下新建" style="cursor: pointer; padding: 4px; color: #cbd5e1; transition: 0.2s;" onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#cbd5e1'">
+                    
+                    <div class="folder-actions" onclick="quickCreateSubCategory(event, '${p._id}')" title="在此文件夹下新建" 
+                         style="cursor: pointer; padding: 4px; color: #cbd5e1; transition: 0.2s;" 
+                         onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#cbd5e1'">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     </div>
                 </li>
@@ -484,39 +564,43 @@ window.toggleMobileFolder = function (event, folderId) {
 
 // --- 下拉框隔离引擎 ---
 function refreshSelectOptions() {
+    // 包含你所有弹窗里的下拉菜单 ID
     const selects = ['modal-category-select', 'batch-category-select', 'edit-category-select'];
+    
+    // 默认的未分类选项
+    let optionsHtml = '<option value="">未分类区</option>';
+
+    // 梳理父子关系
     const parents = allCategories.filter(c => !c.parentId);
     const children = allCategories.filter(c => c.parentId);
 
-    let optionsHtml = `<option value="">(无) 放入未分类区...</option>`;
-    optionsHtml += `<option disabled>──────────────</option>`;
-
+    // 🌟 核心：遍历所有顶级文件夹
     parents.forEach(p => {
-        // 🌟 方案三核心：大类文件夹变灰且 disabled，绝不让用户选中！
-        optionsHtml += `<option value="" disabled style="font-weight: bold; color: #94a3b8; background: #f8fafc;">📁 [大类] ${p.name} (不可直放卡片)</option>`;
+        // 🚀 解除封印！把 value 设置为它真实的 _id，并且【绝对不要】加 disabled！
+        // 这样“默认卡片夹”就变成了一个可以选中的正常选项
+        optionsHtml += `<option value="${p._id}" style="font-weight: bold; color: #4f46e5;">📁 ${p.name}</option>`;
 
+        // 把这个大类下面的子卡包也列出来
         const myChildren = children.filter(c => c.parentId === p._id);
-        if (myChildren.length > 0) {
-            myChildren.forEach(c => {
-                optionsHtml += `<option value="${c._id}" style="color: #1e293b; font-weight:500;">&nbsp;&nbsp;&nbsp;&nbsp;↳ 📦 [卡包] ${c.name}</option>`;
-            });
-        } else {
-            optionsHtml += `<option value="" disabled style="color: #cbd5e1;">&nbsp;&nbsp;&nbsp;&nbsp;↳ (空，请先在外部建卡包)</option>`;
-        }
+        myChildren.forEach(c => {
+            optionsHtml += `<option value="${c._id}" style="color: #1e293b;">&nbsp;&nbsp;&nbsp;&nbsp;↳ 📦 ${c.name}</option>`;
+        });
     });
 
+    // 批量注入到界面上所有的下拉菜单里
     selects.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = optionsHtml;
     });
 
-    // 处理建大类的下拉框
+    // 顺便处理“新建大类”弹窗里的父级选择
     const parentSelect = document.getElementById('parent-category-select');
     if (parentSelect) {
-        parentSelect.innerHTML = '<option value="">(无) 作为顶级大类</option>';
+        let parentOptions = '<option value="">(无) 作为顶级大类</option>';
         parents.forEach(cat => {
-            parentSelect.innerHTML += `<option value="${cat._id}">归属于 -> 📁 ${cat.name}</option>`;
+            parentOptions += `<option value="${cat._id}">归属于 -> 📁 ${cat.name}</option>`;
         });
+        parentSelect.innerHTML = parentOptions;
     }
 }
 
@@ -729,16 +813,43 @@ async function submitCategorySettings() {
 }
 
 async function deleteCurrentCategory() {
-    if (!confirm('确定要彻底删除该文件夹吗？\n\n放心，里面的卡片不会丢失，会被自动移入【未分类区】池中保护！')) return;
+    // 🌟 核心修复：如果全局变量丢了，尝试从当前页面的标题或状态中重新抓取
+    if (!window.currentCategoryId || window.currentCategoryId === 'undefined') {
+        // 尝试从侧边栏的高亮项重新获取（这是一种常见的兜底方案）
+        const activeNav = document.querySelector('.nav-item.active');
+        if (activeNav && activeNav.dataset.id) {
+            window.currentCategoryId = activeNav.dataset.id;
+        }
+    }
+
+    console.log("🔥 准备删除文件夹，当前获取到的 ID:", window.currentCategoryId);
+    
+    // 如果还是拿不到，说明真的没选中任何具体的文件夹
+    if (!window.currentCategoryId || window.currentCategoryId === 'all' || window.currentCategoryId === 'uncategorized' || window.currentCategoryId === 'starred') {
+        alert("系统提示：无法删除当前系统保留的分类或未选中的文件夹！");
+        return;
+    }
+
+    if (!confirm('确定要彻底删除该文件夹吗？\n\n放心，里面的卡片会被自动移入【未分类区】！')) return;
+    
     try {
-        await fetch(`/api/categories/${currentCategoryId}`, { method: 'DELETE' });
+        const res = await fetch(`/api/categories/${window.currentCategoryId}`, { 
+            method: 'DELETE' 
+        });
+        
+        if (!res.ok) throw new Error(`删除失败，状态码: ${res.status}`);
+
+        console.log("✅ 删除成功！");
         closeAllModals();
         await loadCategories();
-        await loadFlashcards();
-
+        // 强制跳回“所有卡片”
         const rootItem = document.querySelector('.root-nav');
         selectSidebarItem('all', '所有卡片', 'vocabulary', rootItem);
-    } catch (error) { console.error(error); }
+        
+    } catch (error) { 
+        console.error("❌ 删除出错:", error); 
+        alert("删除失败: " + error.message);
+    }
 }
 
 // --- 4. 卡片管理与渲染 ---
@@ -792,11 +903,13 @@ async function loadFlashcards() {
 
 function filterCards() {
     const searchInput = document.getElementById('search-input');
-    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    // 🌟 修复1：使用 trim() 砍掉首尾的误触空格，防呆设计！
+    const rawSearchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
     let filtered = allCards;
 
-    if (currentCategoryId === 'all' || currentCategoryId === 'dashboard') {
+    // --- 文件夹过滤逻辑保持不变 ---
+    if (currentCategoryId === 'all' || currentCategoryId === 'dashboard' || !currentCategoryId) {
         filtered = allCards;
     }
     else if (currentCategoryId === 'uncategorized') {
@@ -807,11 +920,13 @@ function filterCards() {
     }
     else {
         const targetCategoryIds = new Set([currentCategoryId]);
-        allCategories.forEach(cat => {
-            if (cat.parentId === currentCategoryId) {
-                targetCategoryIds.add(cat._id);
-            }
-        });
+        if (typeof allCategories !== 'undefined') {
+            allCategories.forEach(cat => {
+                if (cat.parentId === currentCategoryId) {
+                    targetCategoryIds.add(cat._id);
+                }
+            });
+        }
 
         filtered = allCards.filter(card => {
             const catId = card.category ? (card.category._id || card.category) : card.categoryId;
@@ -819,115 +934,203 @@ function filterCards() {
         });
     }
 
-    if (searchTerm) {
-        filtered = filtered.filter(card =>
-            (card.question && card.question.toLowerCase().includes(searchTerm)) ||
-            (card.answer && card.answer.toLowerCase().includes(searchTerm))
-        );
+    // --- 🌟 修复2：高级分词搜索逻辑 ---
+    if (rawSearchTerm) {
+        // 把输入按空格拆分成多个关键词，例如 "苹果 红色" -> ["苹果", "红色"]
+        const keywords = rawSearchTerm.split(/\s+/);
+
+        filtered = filtered.filter(card => {
+            const q = (card.question || '').toLowerCase();
+            const a = (card.answer || '').toLowerCase();
+
+            // 🌟 核心魔法：用户输入的【每一个】关键词，都必须能在 Q 或 A 里找到
+            return keywords.every(kw => q.includes(kw) || a.includes(kw));
+        });
     }
 
-    renderCards(filtered);
+    // 🌟 修复3：悄悄把当前的搜索词挂在全局，为我们接下来的“一键查词加卡片”做准备！
+    window.currentSearchTerm = rawSearchTerm;
+
+    // 最后交给渲染引擎
+    if (typeof renderCards === 'function') {
+        renderCards(filtered);
+    }
 }
 
 function renderCards(cardsToRender = null) {
-    // ==========================================
-    // 🛡️ 终极防空护盾：只要进了这个函数，如果是异常状态就拨乱反正
-    // ==========================================
     if (currentCategoryId === 'dashboard' || !currentCategoryId) {
         currentCategoryId = 'all';
-        // 点亮左侧的“所有卡片”
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         const allCardsNav = document.querySelector(`.nav-item[onclick*="all"]`);
         if (allCardsNav) allCardsNav.classList.add('active');
     }
 
     if (!cardsToRender) {
-        filterCards();
+        if (typeof filterCards === 'function') filterCards();
         return;
     }
 
-    // 🌟 【新增】：把当前屏幕上过滤出来的卡片存到全局，方便自由模式顺着往下看
     window.currentDisplayQueue = cardsToRender;
-
     const list = document.getElementById('flashcards-list');
     if (!list) return;
 
-
-
+    // ... 在 renderCards 函数的开头部分 ...
     if (cardsToRender.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding: 60px 20px; color: #94a3b8; font-size: 0.95rem; grid-column: 1 / -1;">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" style="margin-bottom:12px; display:block; margin-left:auto; margin-right:auto;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            这里空空如也，赶快添加或导入几张卡片吧！
-        </div>`;
+        // 🌟 检查当前是不是因为搜索才导致没结果的
+        const searchTerm = window.currentSearchTerm || '';
+        const list = document.getElementById('flashcards-list');
+
+        if (searchTerm) {
+            // 🎯 专属空状态：没搜到？全自动无缝查词！(完美复用 UI)
+            list.innerHTML = `
+                <div style="padding: 60px 20px; text-align: center; grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center;">
+                    <div style="color: #94a3b8; font-size: 15px; margin-bottom: 20px;">
+                        本地未找到 <strong style="color:#ef4444;">"${searchTerm}"</strong>，已自动为您联网查询 👇
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01); border: 1px solid #e2e8f0; width: 100%; max-width: 450px;">
+                        <div style="display: flex; flex-direction: column; gap: 6px; text-align: left;">
+                            <span style="font-size: 20px; color: #1e293b; font-weight: 600;">${searchTerm}</span>
+                            <span id="auto-translation" style="font-size: 14px; color: #3b82f6;">🔍 正在获取有道释义...</span>
+                        </div>
+                        <button id="auto-add-btn" disabled style="color: #cbd5e1; border: 2px solid #cbd5e1; background: transparent; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; line-height: 1; transition: 0.2s;">
+                            +
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // 🚀 UI 刚渲染完，立刻在后台悄悄去查词！
+            fetch(`/api/dict?word=${encodeURIComponent(searchTerm)}`)
+                .then(res => res.json())
+                .then(data => {
+                    let transText = (data.translation && data.translation !== "未找到确切释义") ? data.translation : "未查到完整词性，可先添加后修改";
+
+                    // 更新全局变量（给咱们之前写好的 quickAddMarketWord 用）
+                    if (typeof currentLiveTranslation !== 'undefined') {
+                        currentLiveTranslation = transText;
+                    }
+
+                    // 更新 UI，显示带词性的释义
+                    const transUI = document.getElementById('auto-translation');
+                    if (transUI) {
+                        transUI.innerText = transText;
+                        transUI.style.color = '#64748b';
+                    }
+
+                    // 激活绿色的加号按钮！
+                    const btn = document.getElementById('auto-add-btn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.style.color = '#10b981';
+                        btn.style.borderColor = '#10b981';
+                        btn.style.cursor = 'pointer';
+                        // 完美复用发现页的添加魔法！
+                        const safeWord = searchTerm.replace(/'/g, "\\'");
+                        btn.setAttribute('onclick', `quickAddMarketWord('${safeWord}', this)`);
+                    }
+                })
+                .catch(err => {
+                    console.error("查词异常:", err);
+                    const transUI = document.getElementById('auto-translation');
+                    if (transUI) transUI.innerText = "网络异常，未查到释义";
+
+                    // 即使报错，也允许用户强制点击加号保存单词本体
+                    const btn = document.getElementById('auto-add-btn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.style.color = '#10b981'; btn.style.borderColor = '#10b981'; btn.style.cursor = 'pointer';
+                        const safeWord = searchTerm.replace(/'/g, "\\'");
+                        btn.setAttribute('onclick', `quickAddMarketWord('${safeWord}', this)`);
+                    }
+                });
+        } else {
+            // 普通空状态（文件夹本来就空）
+            list.innerHTML = `
+                <div style="text-align:center; padding: 60px 20px; color: #94a3b8; font-size: 0.95rem; grid-column: 1 / -1;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" style="margin-bottom:12px; display:block; margin-left:auto; margin-right:auto;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    这里空空如也，赶快添加或导入几张卡片吧！
+                </div>
+            `;
+        }
         return;
     }
 
+    // 🛡️ 极其安全的模式检测 (防止变量未定义报错)
+    const isPickMode = sessionStorage.getItem('pickNewCardsMode') === 'true';
+    const safeIsManageMode = (typeof isManageMode !== 'undefined' && isManageMode === true);
 
+    // 🌟 如果是进货模式，主动唤醒底栏
+    if (isPickMode) {
+        setTimeout(() => {
+            if (typeof updateBatchActionBar === 'function') updateBatchActionBar();
+        }, 100);
+    }
+
+    // 排序逻辑：新词置顶
+    let displayArray = [...cardsToRender];
+    if (isPickMode) {
+        displayArray.sort((a, b) => {
+            const aIsOld = (a.stage > 0) ? 1 : 0;
+            const bIsOld = (b.stage > 0) ? 1 : 0;
+            return aIsOld - bIsOld;
+        });
+    }
+    window.currentDisplayQueue = displayArray;
 
     const now = new Date();
     const getBadgeStyle = (bg, color) => `display:inline-flex; align-items:center; gap:4px; padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; background:${bg}; color:${color};`;
-    const actionBtnStyle = "display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:8px; border:none; cursor:pointer; font-size:0.85rem; font-weight:500; transition:0.2s;";
 
-    list.innerHTML = cardsToRender.map(card => {
+    // 🌟 核心开关：决定是否显示圆圈勾选框
+    const showCheckbox = (safeIsManageMode || isPickMode);
+
+    list.innerHTML = displayArray.map(card => {
         const categoryName = card.category ? card.category.name : '未分类区';
         const cardCatId = card.category ? (card.category._id || card.category) : card.categoryId;
-        const currentCat = allCategories.find(c => c._id === cardCatId);
+        const currentCat = typeof allCategories !== 'undefined' ? allCategories.find(c => c._id === cardCatId) : null;
         const isNoteType = currentCat ? currentCat.type === 'notes' : false;
-        let stageHtml = '';
-        if (isNoteType) {
-            stageHtml = `<span style="${getBadgeStyle('#e0f2fe', '#0369a1')}">已归档</span>`;
-        } else {
-            stageHtml = card.stage >= 1
-                ? `<span style="${getBadgeStyle('#fef3c7', '#b45309')}">可默写</span>`
-                : `<span style="${getBadgeStyle('#f1f5f9', '#64748b')}">待进阶</span>`;
-        }
 
-        const reviewDate = card.nextReviewDate ? new Date(card.nextReviewDate) : now;
-        const isDue = reviewDate <= now;
+        let stageHtml = isNoteType
+            ? `<span style="${getBadgeStyle('#e0f2fe', '#0369a1')}">已归档</span>`
+            : (card.stage >= 1 ? `<span style="${getBadgeStyle('#fef3c7', '#b45309')}">可默写</span>` : `<span style="${getBadgeStyle('#f1f5f9', '#64748b')}">待进阶</span>`);
 
+        const isDue = (card.nextReviewDate ? new Date(card.nextReviewDate) : now) <= now;
         const statusHtml = isDue
             ? `<span style="${getBadgeStyle('#fff1f2', '#e11d48')}">待复习</span>`
             : `<span style="${getBadgeStyle('#ecfdf5', '#059669')}">已同步</span>`;
 
-        const isChecked = selectedCards.has(card._id);
+        const isChecked = typeof selectedCards !== 'undefined' && selectedCards.has(card._id);
         const checkboxIcon = isChecked
             ? `<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#3b82f6" stroke="#3b82f6" stroke-width="2"></circle><path d="M8 12l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`
             : `<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>`;
 
-        const cardBorderColor = isChecked ? '#3b82f6' : '#f1f5f9';
-        const cardHoverColor = isChecked ? '#3b82f6' : '#e2e8f0';
+        const isOldCard = card.stage > 0;
+        const disabledStyle = (isPickMode && isOldCard)
+            ? 'opacity: 0.4; pointer-events: none; filter: grayscale(1);'
+            : 'cursor: pointer;';
 
         return `
-    <div class="card-item" onclick="handleCardClick('${card._id}')">
-        
-        <div id="checkbox-wrap-${card._id}" class="card-checkbox" style="display: ${isManageMode ? 'block' : 'none'};">
+    <div class="card-item" onclick="handleCardClick('${card._id}')" style="${disabledStyle}">
+        <div id="checkbox-wrap-${card._id}" class="card-checkbox" style="display: ${showCheckbox ? 'block !important' : 'none'};">
             ${checkboxIcon}
         </div>
-
         <div class="card-body">
             <strong class="card-question">Q: ${card.question}</strong>
             <p class="card-answer">A: ${card.answer}</p>
-            
             <div class="card-meta">
                 <span class="meta-cat">${categoryName}</span>
                 <span class="meta-divider">|</span>
                 ${stageHtml}
                 ${statusHtml}
             </div>
-
-            <div class="card-actions">
-                <button onclick="event.stopPropagation(); editCard('${card._id}')" class="btn-edit">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 
-                    编辑
-                </button>
-                <button onclick="event.stopPropagation(); deleteCard('${card._id}')" class="btn-delete">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 
-                    删除
-                </button>
+            <div class="card-actions" style="display: ${isPickMode ? 'none' : 'flex'}">
+                <button onclick="event.stopPropagation(); editCard('${card._id}')" class="btn-edit">编辑</button>
+                <button onclick="event.stopPropagation(); deleteCard('${card._id}')" class="btn-delete">删除</button>
             </div>
         </div>
-    </div>
-`;
+    </div>`;
+
+
+    
     }).join('');
 }
 
@@ -936,45 +1139,57 @@ function renderCards(cardsToRender = null) {
 // ==========================================
 const REVIEW_INTERVALS = [0.5, 1, 2, 4, 7, 15, 30]; // 艾宾浩斯间隔天数
 
-function processCardMemory(card, isCorrect, isSpellMode = false) {
+// ==========================================
+// 🛡️ 主线引擎：背诵模式打分器 (负责时间线与记账)
+// ==========================================
+function processCardMemory(card, isCorrect) {
     if (typeof card.stage !== 'number') card.stage = 0;
-    // 🌟 初始化错误分（如果没有的话）
     if (typeof card.failCount !== 'number') card.failCount = 0;
 
+    // 1. 阶段升降
     if (isCorrect) {
-        // ✅ 对了：正常升级
-        if (isSpellMode) {
-            card.stage = Math.min(card.stage + 2, REVIEW_INTERVALS.length - 1);
-        } else {
-            card.stage = Math.min(card.stage + 1, REVIEW_INTERVALS.length - 1);
-        }
+        card.stage = Math.min(card.stage + 1, REVIEW_INTERVALS.length - 1);
     } else {
-        // ❌ 错了：执行“保级惩罚”
-        if (isSpellMode) {
-            // 🌟 关键改动：最低保在 Stage 1，确保它依然拥有“默写资格”
-            card.stage = Math.max(1, card.stage - 1);
-            card.failCount += 0.5; // 🌟 默写错：只加 0.5 分
-        } else {
-            // 背诵错了：如果是老兵(Stage>=1)就留级在1，如果是新人就回0
-            card.stage = card.stage >= 1 ? 1 : 0;
-            card.failCount += 1;   // 🌟 背诵错：加 1 分
-        }
+        card.stage = card.stage >= 1 ? 1 : 0;
+        card.failCount += 1;
     }
 
+    // 2. 严格控制复习时间线
     const nextDate = new Date();
-
-    // 🌟 核心逻辑重写：只要错了，不管是 Stage 1、2 还是 5，通通明天见！
     if (!isCorrect) {
         nextDate.setDate(nextDate.getDate() + 1);
         nextDate.setHours(4, 0, 0, 0);
-        console.log(`错题锁定：[${card.question}] 将在明天凌晨4点重新出现`);
     } else {
-        // 只有对了，才按照艾宾浩斯阶梯延后
         const daysToAdd = REVIEW_INTERVALS[card.stage];
         nextDate.setTime(nextDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
     }
-
     card.nextReviewDate = nextDate.toISOString();
+
+    // 3. 墨墨式“今日账本”精确去重记账
+    const todayStr = new Date().toDateString();
+    let lastDate = localStorage.getItem('lastStudyDate');
+    let studiedIds = [];
+
+    if (lastDate !== todayStr) {
+        localStorage.setItem('lastStudyDate', todayStr);
+        localStorage.setItem('todayStudiedCardIds', JSON.stringify([]));
+        localStorage.setItem('cardsStudiedToday', 0);
+    } else {
+        try {
+            const storedIds = localStorage.getItem('todayStudiedCardIds');
+            studiedIds = storedIds ? JSON.parse(storedIds) : [];
+        } catch (e) {
+            studiedIds = [];
+        }
+    }
+
+    const currentCardId = card._id || card.id || card.question;
+    if (!studiedIds.includes(currentCardId)) {
+        studiedIds.push(currentCardId);
+        localStorage.setItem('todayStudiedCardIds', JSON.stringify(studiedIds));
+        localStorage.setItem('cardsStudiedToday', studiedIds.length);
+    }
+
     updateStreak();
     return card;
 }
@@ -1016,7 +1231,6 @@ function updateStreak() {
 // 📊 首页数据引擎与智能推荐
 // ==========================================
 function renderDashboard() {
-
     // 🌟 核心修复：把无脑关灯删掉，并加上“只在主页才隐藏”的判定！
     const isActuallyOnDashboard = !document.getElementById('dashboard-view').classList.contains('hidden');
     if (isActuallyOnDashboard) {
@@ -1044,137 +1258,339 @@ function renderDashboard() {
     if (window.isDataLoading) {
         const elTotal = document.getElementById('dash-total-cards');
         if (elTotal) elTotal.innerText = '-';
-
         const elMastered = document.getElementById('dash-mastered-cards');
         if (elMastered) elMastered.innerText = '-';
-
         const elStreak = document.getElementById('dash-streak-days');
         if (elStreak) elStreak.innerText = '-';
-
         const elHard = document.getElementById('hard-cards-count');
         if (elHard) elHard.innerText = '-';
 
-        const missionText = document.getElementById('dash-mission-text');
-        if (missionText) missionText.innerText = "正在从记忆宇宙同步数据...";
+        // 🌟 更新全新双核面板的骨架屏
+        const summaryEl = document.getElementById('dash-plan-summary');
+        if (summaryEl) summaryEl.innerText = "正在从记忆宇宙同步数据...";
+        const reviewEl = document.getElementById('dash-review-count');
+        if (reviewEl) reviewEl.innerText = "-";
+        const newEl = document.getElementById('dash-new-count');
+        if (newEl) newEl.innerText = "-";
 
-        const pillText = document.getElementById('study-progress-pill');
-        if (pillText) pillText.innerText = `计算中...`;
-
-        const previewBox = document.getElementById('dash-task-previews');
-        if (previewBox) previewBox.style.display = "none";
-
-        const mainBtn = document.querySelector('.continue-btn');
-        if (mainBtn) {
-            mainBtn.style.background = "#eef2ff";
-            mainBtn.style.color = "#a5b4fc";
-            mainBtn.style.boxShadow = "none";
-            mainBtn.innerText = "数据同步中...";
-            mainBtn.style.pointerEvents = "none";
-        }
+        const btnReview = document.getElementById('btn-start-review');
+        if (btnReview) { btnReview.innerText = '加载中...'; btnReview.disabled = true; }
+        const btnPick = document.getElementById('btn-pick-new');
+        if (btnPick) { btnPick.innerText = '加载中...'; btnPick.disabled = true; }
 
         const urgentBox = document.getElementById('dash-urgent-tasks');
         if (urgentBox) {
             urgentBox.style.display = 'block';
             urgentBox.innerHTML = `<div style="text-align:center; padding: 40px 20px; color: #94a3b8; font-size: 0.9rem;">⏳ 正在分析你的记忆曲线...</div>`;
         }
-        return; // 🛑 骨架屏渲染完毕，直接打断，绝不去算 0
+        return; // 🛑 骨架屏渲染完毕，直接打断
     }
     // ==========================================
 
-    // 👇 真实数据渲染逻辑
+    // 👇 真实数据基础渲染逻辑 (保留你原本的总数统计)
     const totalCards = allCards.length;
     const masteredCards = allCards.filter(c => (c.stage || 0) >= 3).length;
-    // 🌟 替换为这段新代码（加入路线 B 的拦截逻辑）：
-    const dueCardsList = allCards.filter(card => {
-        const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
-        const isDue = date <= now;
-
-        // 提取卡片的真实分类 ID
-        const catValue = card.category ? (card.category._id || card.category) : card.categoryId;
-
-        // 🛡️ 核心：统计时强行剔除没有文件夹的“流浪卡片”
-        const hasValidCategory = catValue && catValue !== 'uncategorized' && catValue !== 'null' && catValue !== '';
-
-        return isDue && hasValidCategory;
-    });
-    const dueCount = dueCardsList.length;
+    const hardCardsCount = allCards.filter(c => !c.stage || c.stage === 0).length;
     let streakDays = localStorage.getItem('oopsy_streak_days') || 0;
 
     const elTotal = document.getElementById('dash-total-cards');
-    const elMastered = document.getElementById('dash-mastered-cards');
-    const elStreak = document.getElementById('dash-streak-days');
-    const elHard = document.getElementById('hard-cards-count');
-    const hardCardsCount = allCards.filter(c => !c.stage || c.stage === 0).length;
-
     if (elTotal) elTotal.innerText = totalCards;
+    const elMastered = document.getElementById('dash-mastered-cards');
     if (elMastered) elMastered.innerText = masteredCards;
+    const elStreak = document.getElementById('dash-streak-days');
     if (elStreak) elStreak.innerText = streakDays;
+    const elHard = document.getElementById('hard-cards-count');
     if (elHard) elHard.innerText = hardCardsCount;
 
-    const missionText = document.getElementById('dash-mission-text');
-    if (missionText) {
-        missionText.innerText = dueCount > 0 ? `今天有 ${dueCount} 张卡片等着你复习~` : "今日任务已全部清空，休息一下吧！";
-    }
+    // ==========================================
+    // 🚀 核心替换：直接呼叫全新的双核算账引擎！
+    // ==========================================
+    updateDashboardPlanUI();
 
-    const pillText = document.getElementById('study-progress-pill');
-    if (pillText) pillText.innerText = `待复习 ${dueCount}`;
+    // ==========================================
 
-    const previewBox = document.getElementById('dash-task-previews');
-    const mainBtn = document.querySelector('.continue-btn');
 
-    if (previewBox) {
-        if (dueCount > 0) {
-            previewBox.style.display = "block";
-            previewBox.innerHTML = dueCardsList.slice(0, 3).map(c => `
-                <div style="padding: 16px; background: white; border-radius: 12px; border: 1px solid #eef2ff; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.02);">
-                    <div>
-                        <div style="color: #4f46e5; font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; background: #eef2ff; display: inline-block; padding: 2px 8px; border-radius: 4px;">
-                            ${c.category?.name || '未分类'}
-                        </div>
-                        <div style="font-weight: 600; color: #1e293b; font-size: 1rem;">
-                            ${c.question}
-                        </div>
-                    </div>
-                    <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 500;"> 复习 > </div>
-                </div>
-            `).join('');
 
-            if (mainBtn) {
-                mainBtn.style.opacity = "1";
-                mainBtn.style.pointerEvents = "auto";
-                mainBtn.style.background = "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)";
-                mainBtn.innerText = "继续科学复习 →";
-            }
-        } else {
-            previewBox.style.display = "none";
-            if (mainBtn) {
-                mainBtn.style.background = "#eef2ff";
-                mainBtn.style.color = "#a5b4fc";
-                mainBtn.style.boxShadow = "none";
-                mainBtn.innerText = "今日任务已达标";
-                mainBtn.style.pointerEvents = "none";
-            }
-        }
-    }
-
-    renderUrgentTasks(now);
-
-    // 在 renderDashboard 函数内部的最下面
+    // 底部 Urgent Tasks 渲染
     renderUrgentTasks(now);
 
     // 🛡️ 强制补丁：等任务渲染完后，瞬间把里面的 header 删掉
     setTimeout(() => {
         const urgentBox = document.getElementById('dash-urgent-tasks');
         if (urgentBox) {
-            // 找到主页任务列表里的那个 header 并直接从 DOM 中移除
             const header = urgentBox.querySelector('.main-header');
             if (header) {
                 header.remove();
-                console.log("已强力移除主页冗余 Header");
             }
         }
-    }, 50); // 延迟 50 毫秒确保渲染已完成
+    }, 50);
 }
+
+
+
+
+
+// ==========================================
+// 📊 全新双核主页 UI 渲染引擎
+// ==========================================
+// 📊 全新双核主页 UI 渲染引擎 (极其纯净版)
+// ==========================================
+function updateDashboardPlanUI() {
+    // 1. 查账本
+    const dailyLimit = parseInt(localStorage.getItem('dailyStudyLimit')) || 20;
+    const todayStr = new Date().toDateString();
+    let lastDate = localStorage.getItem('lastStudyDate');
+    let studiedToday = parseInt(localStorage.getItem('cardsStudiedToday')) || 0;
+
+    if (lastDate !== todayStr) {
+        studiedToday = 0;
+        localStorage.setItem('lastStudyDate', todayStr);
+        localStorage.setItem('cardsStudiedToday', 0);
+        localStorage.setItem('todayStudiedCardIds', JSON.stringify([]));
+    }
+
+    const remainingTotal = Math.max(0, dailyLimit - studiedToday);
+
+    // 2. 盘点【真实到期老词】数量
+    let dueOldCount = 0;
+    const now = new Date();
+
+    if (typeof allCards !== 'undefined') {
+        allCards.forEach(card => {
+            const catValue = card.category ? (card.category._id || card.category) : card.categoryId;
+            let isMatch = false;
+            // 判断当前卡片夹
+            if (currentCategoryId === 'all' || currentCategoryId === 'dashboard') {
+                isMatch = catValue && catValue !== 'uncategorized' && catValue !== 'null' && catValue !== '';
+            } else if (currentCategoryId === 'uncategorized') {
+                isMatch = !catValue || catValue === 'uncategorized' || catValue === 'null' || catValue === '';
+            } else {
+                isMatch = (catValue === currentCategoryId);
+            }
+
+            if (isMatch) {
+                const stage = card.stage || 0;
+                const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
+                // 🌟 只数老词 (stage > 0) 且 时间已到
+                if (stage > 0 && date <= now) {
+                    dueOldCount++;
+                }
+            }
+        });
+    }
+
+    // 3. 核心魔法算式：完美拆分复习与新词！
+    const displayReview = Math.min(dueOldCount, remainingTotal);
+    const displayNew = Math.max(0, remainingTotal - displayReview);
+
+    // 4. 更新文字与数字
+    const summaryEl = document.getElementById('dash-plan-summary');
+    if (summaryEl) summaryEl.innerText = `每日目标 ${dailyLimit} 词，今天已背 ${studiedToday} 词`;
+
+    const reviewEl = document.getElementById('dash-review-count');
+    if (reviewEl) reviewEl.innerText = displayReview;
+
+    const newEl = document.getElementById('dash-new-count');
+    if (newEl) newEl.innerText = displayNew;
+
+    // ==========================================
+    // 🌟 5. 核心：呼叫单核智能主按钮变身！
+    // ==========================================
+    if (typeof updateDashboardMainButton === 'function') {
+        updateDashboardMainButton();
+    }
+}
+
+// ==========================================
+// 🎛️ 1. 按钮状态机：根据数据自动变身
+// (请将这段代码塞进你的 updateDashboardPlanUI 函数的最后面)
+// ==========================================
+function updateDashboardMainButton() {
+    const btnMain = document.getElementById('btn-main-action');
+    if (!btnMain) return;
+
+    const displayReview = parseInt(document.getElementById('dash-review-count').innerText) || 0;
+    const displayNew = parseInt(document.getElementById('dash-new-count').innerText) || 0;
+
+    if (displayReview > 0) {
+        // 🔵 状态 A：有老词欠债！(优先复习)
+        btnMain.innerText = `开始复习 (${displayReview})`;
+        btnMain.style.background = '#4f46e5';
+        btnMain.style.color = 'white';
+        btnMain.style.boxShadow = '0 4px 6px -1px rgba(59, 130, 246, 0.3)';
+        btnMain.disabled = false;
+        btnMain.style.cursor = 'pointer';
+    }
+    else if (displayNew > 0) {
+        // 🟠 状态 B：老词清空了！(去进货)
+        btnMain.innerText = `去挑选新词 (${displayNew})`;
+        btnMain.style.background = '#f59e0b';
+        btnMain.style.color = 'white';
+        btnMain.style.boxShadow = '0 4px 6px -1px rgba(245, 158, 11, 0.3)';
+        btnMain.disabled = false;
+        btnMain.style.cursor = 'pointer';
+    }
+    else {
+        // ⚪ 状态 C：大满贯！
+        btnMain.innerText = '今日任务已达标';
+        btnMain.style.background = '#4f46e5';
+        btnMain.style.color = '#ffffff';
+        btnMain.style.boxShadow = 'none';
+        btnMain.disabled = true;
+        btnMain.style.cursor = 'not-allowed';
+    }
+}
+
+// 记得在你原本的 updateDashboardPlanUI 里面，调用一下它：
+// updateDashboardMainButton();
+
+
+// ==========================================
+// 🎛️ 2. 主按钮的点击路由
+// ==========================================
+function handleMainAction() {
+    const displayReview = parseInt(document.getElementById('dash-review-count').innerText) || 0;
+    const displayNew = parseInt(document.getElementById('dash-new-count').innerText) || 0;
+
+    if (displayReview > 0) {
+        // 去背老词
+        if (typeof startStudyMode === 'function') startStudyMode();
+    } else if (displayNew > 0) {
+        // 去拉起购物车
+        if (typeof goToPickNewCards === 'function') goToPickNewCards();
+    }
+}
+
+// ⚙️ 快捷调整计划的函数 (点一下就能改数量)
+function quickAdjustPlan() {
+    const currentLimit = localStorage.getItem('dailyStudyLimit') || 20;
+    const newLimit = prompt("🎯 请输入你期望的每日背单词总数量：", currentLimit);
+
+    if (newLimit !== null) {
+        const parsed = parseInt(newLimit);
+        if (!isNaN(parsed) && parsed > 0) {
+            localStorage.setItem('dailyStudyLimit', parsed);
+            alert(`✅ 调整成功！今日目标已更新为 ${parsed} 词。`);
+            updateDashboardPlanUI(); // 实时刷新面板
+        } else {
+            alert("❌ 请输入有效的数字！");
+        }
+    }
+}
+
+// =====================================
+// ==========================================
+// ==========================================
+// 🚀 传送门：带任务跳转 (完美尊重用户选择)
+// ==========================================
+// ==========================================
+// 🚀 传送门：带任务跳转 (智能识别手机与电脑)
+// ==========================================
+// ==========================================
+// 🚀 传送门：带任务跳转 (全平台精确制导版)
+// ==========================================
+// ==========================================
+// 🚀 传送门：终极防空白·暴力直达版
+// ==========================================
+// ==========================================
+// 🚀 传送门：纯净导航版 (绝不在后台乱弹窗)
+// ==========================================
+function goToPickNewCards() {
+    const displayNewCount = document.getElementById('dash-new-count')?.innerText || "0";
+    const quota = parseInt(displayNewCount) || 0;
+
+    if (quota <= 0) {
+        alert("🎉 今日新词配额已满，不需要进货啦！");
+        return;
+    }
+
+    // 1. 获取所有有效的分类
+    const validCategories = (typeof allCategories !== 'undefined')
+        ? allCategories.filter(cat => cat.type !== 'notes')
+        : [];
+
+    // 2. 🌟 核心升级：强行把“所有卡片”放在列表最前面！
+    // 传给 confirmPickFolder 的 ID 是 'all'，这和你系统的默认逻辑是一致的
+    let folderOptions = `
+        <div class="pick-folder-item" onclick="confirmPickFolder('all', ${quota})" style="background: #f8fafc; border-color: #cbd5e1;">
+             所有卡片 (不限文件夹)
+        </div>
+    `;
+
+    // 3. 接着把其他的具体文件夹拼接在下面
+    if (validCategories.length > 0) {
+        folderOptions += validCategories.map(cat => `
+            <div class="pick-folder-item" onclick="confirmPickFolder('${cat._id}', ${quota})">
+                📁 ${cat.name}
+            </div>
+        `).join('');
+    }
+
+    // 4. 生成弹窗并显示
+    const modalHTML = `
+        <div id="pick-folder-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+            <div style="background:white; padding:24px; border-radius:20px; width:340px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); text-align:center;">
+                <h3 style="margin:0 0 10px 0; color:#1e293b; font-size:1.2rem;">挑选新词 🛒</h3>
+                <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">请选择一个进货范围：</p>
+                <div style="max-height:280px; overflow-y:auto; margin-bottom:20px; padding-right:5px; text-align:left;">
+                    ${folderOptions}
+                </div>
+                <button onclick="document.getElementById('pick-folder-modal').remove()" style="width:100%; padding:12px; background:#f1f5f9; border:none; border-radius:10px; color:#64748b; font-weight:600; cursor:pointer;">取消</button>
+            </div>
+        </div>
+        <style>
+            .pick-folder-item { 
+                padding:15px; border-radius:12px; cursor:pointer; transition:0.2s; 
+                border:1px solid #f1f5f9; margin-bottom:10px; color:#334155; 
+                font-weight:500; font-size: 15px; display: flex; align-items: center; gap: 8px;
+            }
+            .pick-folder-item:hover { background:#eff6ff; border-color:#3b82f6; color:#3b82f6; transform:translateY(-2px); }
+        </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// 🎯 核心回调：用户选好文件夹后的精准跳转
+function confirmPickFolder(catId, quota) {
+    // 1. 关掉弹窗
+    const modal = document.getElementById('pick-folder-modal');
+    if (modal) modal.remove();
+
+    // 2. 🚀 先执行跳转！（触发你系统的原生切换逻辑，让它该清空的清空）
+    if (typeof switchCategory === 'function') {
+        switchCategory(catId);
+    } else {
+        const catBtn = document.querySelector(`[onclick*="${catId}"]`);
+        if (catBtn) catBtn.click();
+        else if (typeof showMainView === 'function') showMainView('cards-view');
+    }
+
+    // 3. 🌟 等系统切换完毕（风平浪静后），我们再“注入”进货模式！
+    setTimeout(() => {
+        // A. 重新写入进货标记（绝对不会被洗掉了）
+        sessionStorage.setItem('pickNewCardsMode', 'true');
+        sessionStorage.setItem('pickNewCardsQuota', quota);
+        if (typeof selectedCards !== 'undefined') selectedCards.clear();
+
+        // 强制指明当前分类ID
+        if (typeof window !== 'undefined') window.currentCategoryId = catId;
+
+        // B. 强制刷新卡片列表（这次必定带出勾选框）
+        if (typeof filterCards === 'function') {
+            filterCards(); // filter 会自动抓取最新分类并触发 renderCards
+        } else if (typeof renderCards === 'function' && window.currentDisplayQueue) {
+            renderCards(window.currentDisplayQueue);
+        }
+
+        // C. 强制升起底部悬浮条
+        if (typeof updateBatchActionBar === 'function') {
+            updateBatchActionBar();
+        }
+
+        console.log("🚀 进货模式已在跳转后强制注入！");
+    }, 400); // 延迟 400 毫秒，确保页面的原生跳转彻底执行完毕
+}
+
 
 function renderUrgentTasks(now) {
     const tasksContainer = document.getElementById('dash-urgent-tasks');
@@ -1268,13 +1684,16 @@ function openAddCardModal() {
     document.getElementById('modal-answer').value = '';
     const selectEl = document.getElementById('modal-category-select');
 
-    // 🌟 方案三核心：智能拦截！判断当前在什么层级
     let isParentFolder = false;
     let currentCat = null;
+
     if (currentCategoryId !== 'all' && currentCategoryId !== 'uncategorized' && currentCategoryId !== 'dashboard') {
         currentCat = allCategories.find(c => c._id === currentCategoryId);
-        if (currentCat && !currentCat.parentId) {
-            isParentFolder = true; // 用户停留在“大类”中
+
+        // 👇👇👇 🌟 核心特批：VIP 通行证 👇👇👇
+        // 如果它没有 parentId，但它的名字叫“📥 收件箱”，我们就特批它不是大类！允许放卡片！
+        if (currentCat && !currentCat.parentId && currentCat.name !== '默认卡片夹') {
+            isParentFolder = true; // 只有普通的顶级文件夹才会被拦截
         }
     }
 
@@ -1284,11 +1703,17 @@ function openAddCardModal() {
         return;
     }
 
-    // 如果用户本来就在卡包里，或者在总览里，正常打开加卡片弹窗
-    if (currentCat && currentCat.parentId) {
-        selectEl.value = currentCategoryId; // 默认选中当前卡包
+    // 🌟 智能选中逻辑升级
+    if (currentCat && (currentCat.parentId || currentCat.name === '默认卡片夹')) {
+        selectEl.value = currentCategoryId; // 默认选中当前卡包或收件箱
     } else {
-        selectEl.value = ""; // 默认丢进未分类
+        // 如果在全局界面点添加，我们默认优先找真实的收件箱
+        const inboxCat = typeof allCategories !== 'undefined' ? allCategories.find(c => c.name === '默认卡片夹') : null;
+        if (inboxCat) {
+            selectEl.value = inboxCat._id; // 强行默认选中真实的收件箱
+        } else {
+            selectEl.value = "";
+        }
     }
 
     openModal('add-card-modal');
@@ -1303,32 +1728,82 @@ async function createFlashcardFromModal() {
 
     if (!question || !answer) return alert('请填写完整内容');
 
-    let categoryId = null;
-    // 🚨 终极清洗：只要不是有效的 ID，一律视为 null (放入未分类)
-    if (selectValue && selectValue !== "" && selectValue !== "uncategorized" && selectValue !== "CREATE_NEW") {
-        categoryId = selectValue;
+    let finalCategoryId = selectValue;
+
+    // 🌟 核心破局点：如果没选分类，我们强行给它分配/创建一个真实的“收件箱”！
+    if (!finalCategoryId || finalCategoryId === "" || finalCategoryId === "uncategorized" || finalCategoryId === "CREATE_NEW") {
+
+        // 1. 在现有的卡片夹里找找，有没有叫“📥 收件箱”的真实文件夹
+        let inboxCat = typeof allCategories !== 'undefined' ?
+            allCategories.find(c => c.name === '默认卡片夹' || c.name === '未分类' || c.name === '未分类区') : null;
+
+        // 2. 🚨 如果没有，我们当场让后端建一个真实的！(完美利用了你现有的建文件夹接口)
+        if (!inboxCat) {
+            try {
+                console.log("⚙️ 正在为您自动创建真实的【默认卡片夹】...");
+                const catRes = await fetch('/api/categories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: '默认卡片夹', type: 'vocabulary' }) // 顶层文件夹
+                });
+
+                if (catRes.ok) {
+                    if (typeof loadCategories === 'function') await loadCategories(); // 刷新左侧菜单
+                    inboxCat = allCategories.find(c => c.name === '默认卡片夹');
+                }
+            } catch (err) {
+                console.error("自动创建默认卡片夹失败:", err);
+            }
+        }
+
+        // 3. 把这个合法的真实 ID 赋给我们要建的卡片！
+        if (inboxCat && inboxCat._id) {
+            finalCategoryId = inboxCat._id;
+        } else {
+            return alert("系统错误：无法获取或创建默认卡片夹，请手动选择一个卡片夹！");
+        }
     }
 
-    const payload = { question: question.trim(), answer: answer.trim(), categoryId };
+    // 📦 组装数据，这次带的是绝对保真的 VIP 通行证 (真实的 categoryId)
+    const payload = {
+        question: question.trim(),
+        answer: answer.trim(),
+        categoryId: finalCategoryId
+    };
 
     try {
-        // 👇 🌟 核心修复：把 GET 换回正常的 POST，把数据发给后端！
+        // 🚀 发送给后端
         const response = await fetch('/api/flashcards', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) return alert(`保存失败：状态码 ${response.status}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("🔥 保存失败详细信息:", errorText);
+            return alert(`保存失败：状态码 ${response.status}`);
+        }
 
+        // 🎉 大功告成
         closeAllModals();
-        await loadFlashcards(); // 这里拉取时会自动带上我们在 loadFlashcards 里写好的时间戳
+        await loadFlashcards();
 
-        // 自动回到刚才的卡包
-        let targetNavId = categoryId ? categoryId : 'uncategorized';
-        selectSidebarItem(targetNavId, categoryId ? "知识库" : "未分类区", 'vocabulary', null);
+        // 🎯 镜头精准跟随：跳到我们刚刚用的那个真实文件夹
+        const targetCat = allCategories.find(c => c._id === finalCategoryId);
+        if (targetCat && typeof selectSidebarItem === 'function') {
+            selectSidebarItem(targetCat._id, targetCat.name, targetCat.type, null);
+        } else {
+            window.currentCategoryId = finalCategoryId;
+            if (typeof filterCards === 'function') filterCards();
+        }
 
-    } catch (error) { console.error("🔥 网络崩溃:", error); }
+        if (typeof showMainView === 'function') showMainView('manage-view');
+
+    } catch (error) {
+        console.error("🔥 网络崩溃:", error);
+        alert("网络似乎有点问题哦");
+    }
 }
 
 function openBatchModal() {
@@ -1554,44 +2029,131 @@ function speakWord(text, event) {
     window.speechSynthesis.speak(utterance);
 }
 
+// ==========================================
+// 🌟 学习模式专属：右上角高级操作栏逻辑
+// ==========================================
+
+// ⭐ 1. 独立学习模式的“收藏”功能
+// ==========================================
+// 🌟 学习模式：收藏/取消收藏逻辑
+// ==========================================
+async function toggleStudyStar(event) {
+    if (event) event.stopPropagation();
+
+    // 1. 获取当前背诵卡片的 ID 
+    // (注意：请确保你的 #study-card 标签上有 data-id 属性)
+    const studyCard = document.getElementById('study-card');
+    const cardId = studyCard ? studyCard.dataset.id : null;
+
+    if (!cardId) {
+        console.error("无法获取卡片 ID，请检查 #study-card 是否存在 dataset.id");
+        return;
+    }
+
+    // 2. 找到星星图标（用于改变颜色）
+    const starIcon = document.querySelector('.study-star-icon');
+    const starBtn = document.querySelector('.study-star-btn');
+
+    try {
+        // 3. 呼叫后端 PATCH 接口
+        const res = await fetch(`/api/flashcards/${cardId}/star`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            // 4. 动画效果：点亮/熄灭
+            if (starIcon) {
+                // 如果是收藏状态：填充黄色，边框变黄
+                // 如果是非收藏状态：无填充，边框恢复原色
+                starIcon.setAttribute('fill', data.isStarred ? '#eab308' : 'none');
+                starIcon.style.color = data.isStarred ? '#eab308' : '#94a3b8';
+
+                // 给按钮加一个小缩放动画
+                if (starBtn) {
+                    starBtn.style.transform = 'scale(1.2)';
+                    setTimeout(() => starBtn.style.transform = 'scale(1)', 200);
+                }
+            }
+            console.log(`🌟 卡片 [${cardId}] 收藏状态: ${data.isStarred}`);
+
+            // 5. ⚠️ 重要：同步更新本地内存中的卡片数据
+            // 这样切换回列表页时，收藏夹才能立刻感应到变化
+            if (typeof allFlashcards !== 'undefined') {
+                const card = allFlashcards.find(c => (c._id === cardId || c.id === cardId));
+                if (card) card.isStarred = data.isStarred;
+            }
+        }
+    } catch (err) {
+        console.error("收藏请求失败，请检查后端路由是否配置了 PATCH /api/flashcards/:id/star", err);
+    }
+}
+
+
+// ✏️ 独立学习模式的“编辑”功能 (已精准对接真实函数)
+function openStudyEditModal(event) {
+    if (event) event.stopPropagation(); // 施展防冒泡魔法，防止卡片翻转！
+
+    // 1. 拿到当前卡片的 ID
+    const studyCard = document.getElementById('study-card');
+    if (!studyCard) return;
+    const currentCardId = studyCard.dataset.id;
+    if (!currentCardId) {
+        console.error("找不到卡片 ID！");
+        return;
+    }
+
+    // 2. 🚀 精准呼叫你真实的编辑函数！
+    if (typeof editCard === 'function') {
+        editCard(currentCardId);
+    } else {
+        console.error("天呐，连 editCard 都找不到？请检查函数名是否拼写正确！");
+    }
+}
+
+// ==========================================
+// 🚀 核心发牌引擎 (纯净版：绝不偷偷掺杂新词！)
+// ==========================================
+// ==========================================
+// 🚀 全能发牌引擎 (支持笔记、默写、普通卡全量复习)
+// ==========================================
 function startStudyMode() {
-    const limitInput = document.getElementById('study-limit');
-    const maxCards = limitInput ? parseInt(limitInput.value) || 20 : 20;
+    // 1. 账本与配额计算 (保持不变)
+    const savedLimit = localStorage.getItem('dailyStudyLimit');
+    const limitInput = document.getElementById('setting-daily-limit');
+    const dailyLimit = savedLimit ? parseInt(savedLimit) : (limitInput ? parseInt(limitInput.value) || 20 : 20);
+    const studiedToday = parseInt(localStorage.getItem('cardsStudiedToday')) || 0;
+    const remainingQuota = Math.max(0, dailyLimit - studiedToday);
+
+    if (remainingQuota <= 0) {
+        alert('🎉 今日背诵任务已完美达标，明天再来吧！');
+        return;
+    }
+
     const now = new Date();
     window.isFreePracticeMode = false;
 
-    // 1. 获取目标文件夹 ID
+    // 2. 确定目标范围 (当前文件夹及子文件夹)
     const targetCategoryIds = new Set([currentCategoryId]);
-    allCategories.forEach(cat => {
-        if (cat.parentId === currentCategoryId) targetCategoryIds.add(cat._id);
-    });
+    if (typeof allCategories !== 'undefined') {
+        allCategories.forEach(cat => {
+            if (cat.parentId === currentCategoryId) targetCategoryIds.add(cat._id);
+        });
+    }
 
-    // ==========================================
-    // 🛡️ 新增护盾：构建【免默写】黑名单
-    // ==========================================
-    const immuneCategoryIds = new Set();
-    allCategories.forEach(cat => {
-        if (cat.type === 'notes') {
-            immuneCategoryIds.add(cat._id); // 笔记大类免考
-            // 连坐机制：父级是笔记，子文件夹自动免考
-            allCategories.filter(child => child.parentId === cat._id).forEach(child => {
-                immuneCategoryIds.add(child._id);
-            });
-        }
-    });
+    // 3. 抓取【所有类型】的到期老词
+    let dueOldCards = [];
 
-    // 2. 筛选所有到期的卡片
-    // 2. 筛选所有到期的卡片
-    let dueCards = allCards.filter(card => {
-        const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
-        const isDue = date <= now;
-
-        let isMatch = false;
-        // 提取卡片的真实分类 ID
+    allCards.forEach(card => {
+        // 获取分类 ID
         const catValue = card.category ? (card.category._id || card.category) : card.categoryId;
 
+        // 📂 分类匹配逻辑
+        let isMatch = false;
         if (currentCategoryId === 'all' || currentCategoryId === 'dashboard') {
-            // 🌟 路线 B 核心：主页全局复习时，强行剔除没有文件夹的“流浪卡片”
+            // 总览模式：只要不是彻底没分类的就抓
             isMatch = catValue && catValue !== 'uncategorized' && catValue !== 'null' && catValue !== '';
         } else if (currentCategoryId === 'uncategorized') {
             isMatch = !catValue || catValue === 'uncategorized' || catValue === 'null' || catValue === '';
@@ -1599,49 +2161,39 @@ function startStudyMode() {
             isMatch = targetCategoryIds.has(catValue);
         }
 
-        return isDue && isMatch;
-    });
+        if (!isMatch) return;
 
-    if (dueCards.length === 0) {
-        if (confirm('当前没有需要复习的卡片。是否开启【自由模式】浏览该分类下的所有卡片？')) startFreeStudy();
-        return;
-    }
+        // 🌟 核心：取消类型过滤！不再判断 card.type !== 'notes'
+        // 🌟 核心：取消文件夹黑名单！不再判断 immuneCategoryIds
 
-    // 3. 洗牌打乱，并截取最大复习数量
-    dueCards.sort(() => Math.random() - 0.5);
-    const selectedCards = dueCards.slice(0, maxCards);
+        const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
+        if (date > now) return; // 还没到时间的错题不抓
 
-    // ==========================================
-    // 🚀 核心升级：带免疫判定的人性化分流
-    // ==========================================
-    studyCards = [];
-    spellCards = [];
-
-    selectedCards.forEach(c => {
-        const cardCatId = c.category ? (c.category._id || c.category) : c.categoryId;
-
-        // 判断条件：如果它在免考黑名单里，或者它的等级不足 2 级 -> 进背诵区
-        if (immuneCategoryIds.has(cardCatId) || (c.stage || 0) < 2) {
-            studyCards.push(c);
-        } else {
-            // 只有非笔记类别，且等级 >= 2 的“熟练老词”，才进默写区
-            spellCards.push(c);
+        const stage = card.stage || 0;
+        if (stage > 0) {
+            dueOldCards.push(card);
         }
     });
 
-    currentStudyIndex = 0;
-    currentSpellIndex = 0;
+    dueOldCards.sort(() => Math.random() - 0.5);
 
-    // 4. 决定起跑线
-    if (studyCards.length > 0) {
-        showMainView('study-view');
-        renderStudyCard();
-        console.log(`🚀 复习启动: ${studyCards.length}张待背诵, ${spellCards.length}张待默写`);
-    } else if (spellCards.length > 0) {
-        showMainView('spell-view');
-        renderSpellCard();
-        console.log(`🚀 全是老兵，直接进入默写: ${spellCards.length}张`);
+    // 4. 只取老词，绝不自动掺杂新词
+    let selectedCards = dueOldCards.slice(0, remainingQuota);
+
+    if (selectedCards.length === 0) {
+        alert('🎉 当前没有需要复习的内容啦！请去挑选新内容吧！');
+        updateDashboardPlanUI();
+        return;
     }
+
+    // 5. 发车
+    studyCards = [...selectedCards];
+    spellCards = [];
+    currentStudyIndex = 0;
+
+    showMainView('study-view');
+    renderStudyCard();
+    console.log(`🚀 全能复习启动: 本次发牌 ${studyCards.length} 张（含笔记/默写）`);
 }
 
 function renderStudyCard() {
@@ -1650,14 +2202,54 @@ function renderStudyCard() {
         showMainView('manage-view');
         return;
     }
+
     const card = studyCards[currentStudyIndex];
+    const cardInner = document.getElementById('card-inner');
+
+    // ==========================================
+    // 🛡️ 防剧透魔法：瞬间归位，绝不泄露背面！
+    // ==========================================
+    if (cardInner) {
+        // 1. 瞬间关掉 CSS 动画
+        cardInner.style.transition = 'none';
+        // 2. 瞬间把卡片掰回正面（英文面）
+        cardInner.classList.remove('is-flipped');
+
+        // 3. 核心魔法：读取一次 offsetWidth，强制浏览器立刻重绘画面（打断它的异步渲染）
+        void cardInner.offsetWidth;
+
+        // 4. 把动画开关重新打开，保证等会儿用户点击翻牌时依然有丝滑的动画
+        cardInner.style.transition = '';
+    }
+
+    // 5. 卡片已经安全地在正面了，这时候再把新单词写上去！
     document.getElementById('study-question').innerText = card.question;
     document.getElementById('study-answer').innerText = card.answer;
-    const cardInner = document.getElementById('card-inner'); if (cardInner) cardInner.classList.remove('is-flipped');
+    // ==========================================
+    // 🌟 搭桥魔法：给卡片贴上隐形的 ID 标签，并初始化正反面的星星
+    // ==========================================
+    const studyCardElement = document.getElementById('study-card');
+    if (studyCardElement) {
+        // 把卡片的真实 ID 悄悄存进 HTML 里（兼容 _id 或 id）
+        studyCardElement.dataset.id = card._id || card.id;
+    }
 
+    // 因为我们正反面各放了一个星星，所以要同时更新它们俩的状态！
+    const starIcons = document.querySelectorAll('.study-star-icon');
+    starIcons.forEach(icon => {
+        const isStarred = card.isStarred; // 读取数据里的收藏状态
+        icon.setAttribute('fill', isStarred ? '#eab308' : 'none');
+        icon.style.color = isStarred ? '#eab308' : 'currentColor';
+    });
+
+    // ==========================================
+    // 下面是你原本的进度条和头部文字逻辑，保持不变
+    // ==========================================
     const centerProgress = document.getElementById('study-progress-center');
     if (centerProgress) centerProgress.innerText = `${currentStudyIndex + 1} / ${studyCards.length}`;
+
     document.getElementById('progress-bar-fill').style.width = `${((currentStudyIndex + 1) / studyCards.length) * 100}%`;
+
     const studyHeader = document.querySelector('#study-view .study-header-title');
     if (studyHeader) {
         if (window.isFreePracticeMode) {
@@ -1709,7 +2301,6 @@ function submitReview(isKnown) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).catch(e => console.warn("后台同步被浏览器中断，但不影响前端背单词:", e));
-        // 失败了也不弹窗烦人，只在控制台留个记录
     }
 
     // 4. 【立即切题】：用户点击瞬间就看到下一张
@@ -1724,21 +2315,46 @@ function submitReview(isKnown) {
                 alert('👻 自由预习圆满完成！');
                 window.isFreePracticeMode = false;
                 showMainView('dashboard-view');
-                renderDashboard();
+                if (typeof renderDashboard === 'function') renderDashboard();
             }
             else if (spellCards && spellCards.length > 0) {
                 showMainView('spell-view');
-                renderSpellCard();
+                if (typeof renderSpellCard === 'function') renderSpellCard();
                 console.log("👉 背诵完成，无缝切入高阶默写阶段！");
             }
             else {
-                alert('🎉 恭喜！本次背诵任务圆满完成！');
-                showMainView('dashboard-view');
-                renderDashboard();
+                // ==========================================
+                // 🌟 关键补丁：在抓取数字之前，强制算一次最新的账本！
+                // ==========================================
+                if (typeof updateDashboardPlanUI === 'function') {
+                    updateDashboardPlanUI();
+                }
+
+                // 🌟 1. 抓取今日的新词配额
+                const newCountEl = document.getElementById('dash-new-count');
+                const newQuota = newCountEl ? (parseInt(newCountEl.innerText) || 0) : 0;
+
+                if (newQuota > 0) {
+                    // 🌟 2. 温柔的进货邀请
+                    const wantToPick = confirm(`🎉 恭喜！今天的复习债全部还清！\n\n🎯 你今天还有 ${newQuota} 个新词额度，要趁热打铁去挑选新词吗？`);
+
+                    if (wantToPick) {
+                        if (typeof goToPickNewCards === 'function') goToPickNewCards();
+                    } else {
+                        showMainView('dashboard-view');
+                        if (typeof renderDashboard === 'function') renderDashboard();
+                    }
+                } else {
+                    // 🌟 3. 新词老词全背完的终极形态！
+                    alert('🏆 完美！今天的复习和新词任务全部达标！去休息吧！');
+                    showMainView('dashboard-view');
+                    if (typeof renderDashboard === 'function') renderDashboard();
+                }
             }
-        }, 150);
+        }, 150); // 👈 延时动画的收尾括号，绝对不能丢！
     } else {
-        renderStudyCard();
+        // 👈 如果还没背完，就立刻画下一张牌！
+        if (typeof renderStudyCard === 'function') renderStudyCard();
     }
 }
 
@@ -1747,7 +2363,7 @@ function nextStudyCard() {
     currentStudyIndex++;
     if (currentStudyIndex >= studyCards.length) {
         setTimeout(() => {
-            alert('🎉 恭喜！本次复习任务已全部搞定！');
+            alert('🎉 恭喜！已完成本轮复习～');
             showMainView('manage-view');
         }, 150);
         return;
@@ -1762,101 +2378,106 @@ function markAsReview() { submitReview(false); }
 
 
 
+// 全局独立牌盒 (千万别删这两行哦)
+window.spellDeck = {
+    categoryId: null,
+    cards: []
+};
+
 function startSpellMode() {
-    const limitInput = document.getElementById('study-limit');
-    const maxCards = limitInput ? parseInt(limitInput.value) || 20 : 20;
-    const now = new Date();
-    isFreePracticeMode = false; // 重置模式
+    // 1. 读取单次题量
+    const quantitySelect = document.getElementById('test-quantity-select');
+    const maxCards = quantitySelect ? parseInt(quantitySelect.value) || 20 : 20;
 
-    // 1. 获取目标文件夹 ID 集合 (包含子文件夹)
+    // 🌟 核心定调：拼写模式永远是“不计入科学进度的自由检测”！
+    isFreePracticeMode = true;
+
+    // 获取文件夹及黑名单 ID (逻辑保留，保护你的笔记文件夹)
     const targetCategoryIds = new Set([currentCategoryId]);
-    allCategories.forEach(cat => {
-        if (cat.parentId === currentCategoryId) targetCategoryIds.add(cat._id);
-    });
-
-    // 👇 新增隔离墙：构建【免默写】黑名单 (揪出类型为 'notes' 的文件夹及其子文件夹)
-    const immuneCategoryIds = new Set();
-    allCategories.forEach(cat => {
-        if (cat.type === 'notes') {
-            immuneCategoryIds.add(cat._id);
-            // 连坐机制：父级是笔记，子文件夹自动免考
-            allCategories.filter(child => child.parentId === cat._id).forEach(child => {
-                immuneCategoryIds.add(child._id);
-            });
-        }
-    });
-
-    // 2. 定义筛选函数（复用逻辑）
-    const getCards = (onlyDue) => {
-        return allCards.filter(card => {
-            const date = card.nextReviewDate ? new Date(card.nextReviewDate) : new Date(0);
-            const isDue = date <= now;
-            const isReadyForSpell = (card.stage || 0) >= 1; // 🌟 必须背过一次才能默写
-
-            const cardCatId = card.category ? (card.category._id || card.category) : card.categoryId;
-
-            // 🛡️ 核心隔离墙生效：如果这张卡属于 notes 文件夹，直接一脚踢出默写队伍！
-            if (immuneCategoryIds.has(cardCatId)) {
-                return false;
-            }
-
-            let isMatch = false;
-            if (currentCategoryId === 'all') {
-                isMatch = true;
-            } else if (currentCategoryId === 'uncategorized') {
-                const catValue = card.category || card.categoryId;
-                isMatch = !catValue || catValue === 'uncategorized';
-            } else {
-                isMatch = targetCategoryIds.has(cardCatId);
-            }
-
-            // 如果 onlyDue 为 true，则同时检查到期时间；否则只检查解锁状态
-            return isReadyForSpell && isMatch && (onlyDue ? isDue : true);
+    if (typeof allCategories !== 'undefined') {
+        allCategories.forEach(cat => {
+            if (cat.parentId === currentCategoryId) targetCategoryIds.add(cat._id);
         });
-    };
+    }
 
-    // 3. 尝试获取科学到期的卡片
-    let cards = getCards(true);
+    const immuneCategoryIds = new Set();
+    if (typeof allCategories !== 'undefined') {
+        allCategories.forEach(cat => {
+            if (cat.type === 'notes') {
+                immuneCategoryIds.add(cat._id);
+                allCategories.filter(child => child.parentId === cat._id).forEach(child => {
+                    immuneCategoryIds.add(child._id);
+                });
+            }
+        });
+    }
 
-    // 4. 如果没有到期的，询问是否开启自由练
-    if (cards.length === 0) {
-        const totalUnlocked = getCards(false).length;
-        if (totalUnlocked === 0) {
-            // 提示语里顺便提醒一下，免得以后忘了为什么有些词没出来
-            return alert('提示：当前分类没有[已解锁]的单词！\n\n1. 请先在[背诵模式]里点击“认识”来解锁默写功能。\n2. 注意：被设为“笔记/资料”类型的文件夹会自动免疫默写。');
+    // ==========================================
+    // 🌟 2. 极简过滤：只要是这个文件夹里的词，管它生熟，全拉出来！
+    // ==========================================
+    const eligibleCards = allCards.filter(card => {
+        const cardCatId = card.category ? (card.category._id || card.category) : card.categoryId;
+
+        // 免疫墙：笔记文件夹一律跳过
+        if (immuneCategoryIds.has(cardCatId)) return false;
+
+        let isMatch = false;
+        if (currentCategoryId === 'all') {
+            isMatch = true;
+        } else if (currentCategoryId === 'uncategorized') {
+            const catValue = card.category || card.categoryId;
+            isMatch = !catValue || catValue === 'uncategorized';
+        } else {
+            isMatch = targetCategoryIds.has(cardCatId);
         }
 
-        const confirmForced = confirm(`当前没有科学待复习的单词。\n是否开启“自由练习”？(包含该分类下已解锁的 ${totalUnlocked} 个单词)\n\n注：自由练习模式不增加单词等级。`);
-        if (confirmForced) {
-            isFreePracticeMode = true;
-            cards = getCards(false);
+        // 💡 只有文件夹匹配这一个条件，众生平等！
+        return isMatch;
+    });
 
-            // 🌟 核心改进：如果是自由模式，执行“彻底洗牌”
-            // 这种洗牌算法（Fisher-Yates）比 Math.random() 更科学，确保完全随机
-            for (let i = cards.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [cards[i], cards[j]] = [cards[j], cards[i]];
-            }
-        } else { return; }
+    if (eligibleCards.length === 0) {
+        return alert('提示：当前分类下没有单词！\n(请检查是否全为笔记类型，或尚未添加任何单词)');
     }
 
-    // 5. 排序与启动逻辑
-    if (!isFreePracticeMode) {
-        // 💡 只有科学复习模式，才按间隔排序（先排复习间隔大的，即快忘的）
-        cards.sort((a, b) => (b.interval || 0) - (a.interval || 0) || Math.random() - 0.5);
-    } else {
-        // 💡 自由模式已经在第 4 步洗过牌了，这里千万不要再调用 sort()！
-        // 直接保持洗牌后的结果即可
+    // ==========================================
+    // 🌟 3. 纯粹的发牌盒逻辑 (无放回抽样防重发)
+    // ==========================================
+    // 如果切了词库，或者牌盒被抽空了，重新装填全量单词并洗牌
+    if (window.spellDeck.categoryId !== currentCategoryId || window.spellDeck.cards.length === 0) {
+        console.log("🔄 牌盒为空或切换了词库，正在重新装填并完美洗牌...");
+        window.spellDeck.categoryId = currentCategoryId;
+        window.spellDeck.cards = [...eligibleCards]; // 把符合条件的词全部装入
+
+        // Fisher-Yates 完美洗牌
+        for (let i = window.spellDeck.cards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [window.spellDeck.cards[i], window.spellDeck.cards[j]] = [window.spellDeck.cards[j], window.spellDeck.cards[i]];
+        }
     }
 
-    // 统一截取数量并启动
-    spellCards = cards.slice(0, maxCards);
+    // 🔪 从牌盒顶部切走设定的数量 (切走就真没了，下次从剩下的抽)
+    spellCards = window.spellDeck.cards.splice(0, maxCards);
+
+    // ==========================================
+    // 🌟 4. 发车渲染
+    // ==========================================
     currentSpellIndex = 0;
-
     showMainView('spell-view');
     renderSpellCard();
-    console.log(`🚀 默写启动！模式：${isFreePracticeMode ? '自由练习' : '科学复习'}，数量：${spellCards.length}`);
+
+    console.log(`🚀 盲测启动！抽牌数量：${spellCards.length}`);
+    console.log(`📦 当前牌盒剩余库存：${window.spellDeck.cards.length} 词`);
+
+    // 🌟 核心修复 3：新开一局检测，清空历史错题账本！
+    window.spellErrorCount = 0;
+
+    currentSpellIndex = 0;
+    showMainView('spell-view');
+    renderSpellCard();
+
 }
+
+
 
 // 🌟 1. 每次渲染新卡片，把按钮“洗脑”回提交状态
 function renderSpellCard() {
@@ -1899,6 +2520,8 @@ function renderSpellCard() {
         submitBtn.style.background = '#3b82f6';
         submitBtn.onclick = checkSpelling; // 重新绑定为检查对错功能
     }
+    // 🌟 新增：记住这局真正抽了多少张牌
+    window.initialSpellCount = spellCards.length;
 }
 
 // 🚀 去掉了 async 和 await，不阻塞 UI！
@@ -1911,7 +2534,7 @@ function checkSpelling() {
     // ==========================================
     // 🌟 1. 智能分流器 (多状态路由)
     // ==========================================
-    
+
     // 状态 A：如果是“继续”，说明已经拼对了，切下一题
     if (submitBtn && submitBtn.innerText.includes('继续')) {
         console.log("➡️ 进入切换下一题逻辑");
@@ -1922,20 +2545,20 @@ function checkSpelling() {
     // 状态 B：如果是“再拼一次”，说明用户刚看完正确答案，需要【重置界面】！
     if (submitBtn && submitBtn.innerText.includes('再拼一次')) {
         console.log("🔄 确认错词，重置界面准备盲打...");
-        
+
         // 1. 核心诉求：清空底下显示的答案！
-        feedbackEl.innerHTML = ''; 
-        
+        feedbackEl.innerHTML = '';
+
         // 2. 按钮恢复原貌 (清除内联样式，交还给 CSS 控制)
-        submitBtn.style.background = ''; 
+        submitBtn.style.background = '';
         submitBtn.innerHTML = '提交校验 (Enter)';
-        
+
         // 3. 解锁输入框，拿回焦点，准备重打
         inputEl.disabled = false;
         inputEl.value = '';
         inputEl.dispatchEvent(new Event('input'));
         setTimeout(() => inputEl.focus(), 50);
-        
+
         return; // 🛑 拦截结束，等待用户面对干净的界面重新盲打！
     }
 
@@ -1969,7 +2592,7 @@ function checkSpelling() {
         console.log("执行错误展示动作...");
 
         // 🌟 核心改动：把输入框锁死！逼迫用户看完答案后，敲回车重置界面，不能直接看着答案抄！
-        inputEl.disabled = true; 
+        inputEl.disabled = true;
         inputEl.blur();
         inputEl.value = '';
         inputEl.dispatchEvent(new Event('input'));
@@ -1994,6 +2617,9 @@ function checkSpelling() {
         // 错题推入队列尾部重练
         if (typeof spellCards !== 'undefined' && !spellCards.slice(currentSpellIndex + 1).includes(card)) {
             spellCards.push(card);
+
+            // 🌟 核心修复 1：只要推入错题，就在全局记事本上精准 +1
+            window.spellErrorCount = (window.spellErrorCount || 0) + 1;
         }
     }
 
@@ -2011,36 +2637,77 @@ function nextSpellCard() {
     // 1. 核心基础逻辑：索引推进一步
     currentSpellIndex++;
 
-    // 2. 呼叫渲染函数，把新卡片画出来
+    /// ==========================================
+    // 🌟 核心拦截器：终点线判断 (精准算账版)
+    // ==========================================
+    if (currentSpellIndex >= spellCards.length) {
+
+        // 1. 提取我们刚才精准记录的错题数 (如果没有错，就是 0)
+        const errorCount = window.spellErrorCount || 0;
+
+        // 2. 真实搞定的词汇 = 膨胀后的总长度 - 错题增加的长度 (比如 13 - 3 = 10)
+        const realTotal = spellCards.length - errorCount;
+
+        // 3. 把真实数据印到面板上
+        const totalCountEl = document.getElementById('completion-total-count');
+        if (totalCountEl) totalCountEl.innerText = realTotal;
+
+        const errorCountEl = document.getElementById('completion-error-count');
+        if (errorCountEl) {
+            errorCountEl.innerText = errorCount;
+            // 如果出错了，用醒目的橙色警告，全对则是低调的灰色
+            errorCountEl.style.color = errorCount > 0 ? '#f59e0b' : '#94a3b8';
+        }
+
+        // 4. 弹出高级结算面板
+        const modal = document.getElementById('spell-completion-modal');
+        if (modal) modal.classList.remove('hidden');
+
+        return; // 🛑 核心：直接退出函数
+    }
+
+    // 2. 只有没到底，才会呼叫渲染函数，把新卡片画出来
     renderSpellCard();
 
-    // ==========================================
-    // 3. 🌟 核心修复：状态重置（一秒卸妆）
-    // ==========================================
-
-    // 抓取底部控制区的提交按钮
+    // 3. 状态重置（一秒卸妆）
     const submitBtn = document.querySelector('#spell-view .spell-check-btn') || document.querySelector('#spell-view .check-btn');
     if (submitBtn) {
-        // 【关键防御】：清空 JS 强加的内联样式，把外观控制权彻底交还给你的 style.css！绝不让 JS 和 CSS 打架！
         submitBtn.style.background = '';
-
-        // 恢复按钮的本来面目和灵魂
         submitBtn.innerHTML = '提交校验 (Enter)';
         submitBtn.onclick = checkSpelling;
     }
 
-    // 抓取隐藏的盲打输入框 (严格保持 ID 一致性)
     const inputEl = document.getElementById('spell-hidden-input');
     if (inputEl) {
-        // 解除上一题的封印，清空残留字迹
         inputEl.disabled = false;
         inputEl.value = '';
-
-        // 给浏览器 50 毫秒的喘息时间，等新卡片渲染稳了，瞬间把焦点抢回来！
         setTimeout(() => {
             inputEl.focus();
         }, 50);
     }
+}
+
+// ==========================================
+// 🌟 面板出口控制逻辑
+// ==========================================
+
+// 点击“再来一组”
+function restartSpellMode() {
+    document.getElementById('spell-completion-modal').classList.add('hidden');
+    // 直接复用咱们刚写好的那台 V8 引擎，无缝衔接下一波！
+    startSpellMode();
+}
+
+// 点击“返回主页”
+function exitSpellMode() {
+    document.getElementById('spell-completion-modal').classList.add('hidden');
+    // 清空输入框，防止下次进来有残留
+    const inputEl = document.getElementById('spell-hidden-input');
+    if (inputEl) inputEl.value = '';
+
+    // 退回主看板
+    showMainView('dashboard-view');
+    renderDashboard();
 }
 
 function handleSpellEnter(event) {
@@ -2056,9 +2723,14 @@ function handleSpellEnter(event) {
 document.addEventListener('keydown', function (event) {
     const activeTag = document.activeElement.tagName.toLowerCase();
     const isTyping = (activeTag === 'input' || activeTag === 'textarea');
-    const isSpellInput = (document.activeElement.id === 'spell-input');
+
+    // 💡 兼容你可能存在的两个 ID (spell-input 或 spell-hidden-input)
+    const isSpellInput = (document.activeElement.id === 'spell-input' || document.activeElement.id === 'spell-hidden-input');
+
     if (isTyping && !isSpellInput) return;
-    const studyArea = document.getElementById('study-view'); const spellArea = document.getElementById('spell-view');
+
+    const studyArea = document.getElementById('study-view');
+    const spellArea = document.getElementById('spell-view');
 
     if (studyArea && !studyArea.classList.contains('hidden')) {
         switch (event.code) {
@@ -2069,11 +2741,34 @@ document.addEventListener('keydown', function (event) {
             case 'Digit2': markAsKnown(); break;
         }
     }
+
     if (spellArea && !spellArea.classList.contains('hidden')) {
         switch (event.code) {
             case 'ArrowLeft': prevSpellCard(); break;
             case 'ArrowRight': nextSpellCard(); break;
-            case 'Enter': case 'NumpadEnter': const inputEl = document.getElementById('spell-input'); if (inputEl && inputEl.disabled) { event.preventDefault(); nextSpellCard(); } break;
+            case 'Enter':
+            case 'NumpadEnter':
+                const inputEl = document.getElementById('spell-input') || document.getElementById('spell-hidden-input');
+
+                // 1. 如果焦点还在输入框上，说明用户正在提交答案，全局监听器闭嘴！
+                if (event.target === inputEl) {
+                    return;
+                }
+
+                // 🌟 2. 核心修复：如果输入框被禁用了（说明已经判完卷了）
+                if (inputEl && inputEl.disabled) {
+                    event.preventDefault();
+
+                    // ❌ 删掉原本的无脑切题：nextSpellCard();
+
+                    // ✅ 找到底下的控制按钮，直接触发它的点击事件！
+                    // 这样就能完美走通 checkSpelling 里的“状态A(继续)”或“状态B(再拼一次)”逻辑！
+                    const submitBtn = document.querySelector('#spell-view .spell-check-btn') || document.querySelector('#spell-view .check-btn');
+                    if (submitBtn) {
+                        submitBtn.click();
+                    }
+                }
+                break;
         }
     }
 });
@@ -2172,25 +2867,72 @@ function toggleManageMode() {
     updateBatchActionBar();
 }
 
-// 替换原有的 exitManageMode 函数
 function exitManageMode() {
     isManageMode = false;
     selectedCards.clear();
-    const manageBtn = document.getElementById('btn-toggle-manage');
-    const selectAllBtn = document.getElementById('btn-select-all');
-    if (manageBtn) {
-        manageBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>`;
-        manageBtn.style.color = "#64748b";
-        manageBtn.style.background = "transparent";
-    }
-    if (selectAllBtn) selectAllBtn.style.display = "none";
-    if (typeof renderCards === 'function') renderCards();
-    updateBatchActionBar();
-}
 
+    // ==========================================
+    // 🧹 1. 隐藏“全选”按钮，并重置状态
+    // ==========================================
+    if (typeof isAllSelected !== 'undefined') {
+        isAllSelected = false;
+    }
+    const btnSelectAll = document.getElementById('btn-select-all');
+    if (btnSelectAll) {
+        btnSelectAll.style.display = 'none'; // 👈 退出时把它重新藏起来！
+        btnSelectAll.innerText = '全选';     // 重置文字
+    }
+
+
+    // ==========================================
+    // 🌟 2. 恢复“批量管理”按钮的四个小方块图标，并“换回原装衣服”
+    // ==========================================
+    const btnToggleManage = document.getElementById('btn-toggle-manage');
+    if (btnToggleManage) {
+        // 恢复图标
+        btnToggleManage.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+        `;
+
+        // 恢复颜色和背景
+        btnToggleManage.style.color = '#64748b';
+        btnToggleManage.style.background = '#f8fafc';
+        btnToggleManage.style.border = '1px solid #e2e8f0';
+        btnToggleManage.style.fontWeight = 'normal';
+
+        // 🌟 核心修复：把 38x38 的正方形三围尺寸强行加回来！
+        btnToggleManage.style.width = '38px';
+        btnToggleManage.style.height = '38px';
+        btnToggleManage.style.padding = '0';
+        btnToggleManage.style.display = 'inline-flex';
+        btnToggleManage.style.alignItems = 'center';
+        btnToggleManage.style.justifyContent = 'center';
+    }
+
+    // ==========================================
+    // 🧹 3. 重新渲染卡片并隐藏底栏
+    // ==========================================
+    if (typeof renderCards === 'function') renderCards(window.currentDisplayQueue);
+    if (typeof updateBatchActionBar === 'function') updateBatchActionBar();
+}
 // 替换原有的 toggleSelectAllCards 函数
 function toggleSelectAllCards() {
     if (!isManageMode) return;
+
+    // ==========================================
+    // 🛑 核心拦截：进货模式下，直接没收“全选”功能！
+    // ==========================================
+    const isPickMode = sessionStorage.getItem('pickNewCardsMode') === 'true';
+    if (isPickMode) {
+        alert("⚠️ 挑选新词模式下，请使用底部的【随机选词】或手动打勾哦！");
+        return; // 直接打断施法，绝不允许全选！
+    }
 
     const visibleCheckboxes = document.querySelectorAll('[id^="checkbox-wrap-"]');
     const visibleIds = Array.from(visibleCheckboxes).map(node => node.id.replace('checkbox-wrap-', ''));
@@ -2200,11 +2942,9 @@ function toggleSelectAllCards() {
 
     if (isAllSelected) {
         visibleIds.forEach(id => selectedCards.delete(id));
-        // 字数极简：取消
         document.getElementById('btn-select-all').innerHTML = `<span style="font-size: 0.9rem; font-weight: bold;">全选</span>`;
     } else {
         visibleIds.forEach(id => selectedCards.add(id));
-        // 字数极简：全选
         document.getElementById('btn-select-all').innerHTML = `<span style="font-size: 0.9rem; font-weight: bold;">取消</span>`;
     }
 
@@ -2221,23 +2961,33 @@ function toggleSelectAllCards() {
         if (cardItem) cardItem.style.borderColor = isChecked ? '#3b82f6' : '#f1f5f9';
     });
 
-    updateBatchActionBar();
+    if (typeof updateBatchActionBar === 'function') updateBatchActionBar();
 }
 
 // ==========================================
 // 👆 卡片点击分发中枢
-// ==========================================
 function handleCardClick(cardId) {
-    // 如果在批量管理模式，点击就是打勾选卡片
-    if (isManageMode) {
-        toggleCardSelection(cardId);
+    // 1. 获取当前是否处于“进货模式”
+    const isPickMode = sessionStorage.getItem('pickNewCardsMode') === 'true';
+
+    // 2. 安全获取“批量编辑模式”状态（防报错）
+    const safeIsManageMode = (typeof isManageMode !== 'undefined' && isManageMode === true);
+
+    // 🛑 拦截通道：只要是【进货】或【编辑】，点击卡片统统变成打勾！
+    if (isPickMode || safeIsManageMode) {
+        if (typeof toggleCardSelection === 'function') {
+            toggleCardSelection(cardId);
+        }
     }
-    // 否则，点击就是直接进入这张卡片的自由背诵模式
+    // 🟢 放行通道：普通状态下点击，直接开启“不留痕自由浏览”！
     else {
-        startFreeStudyFromCard(cardId);
+        if (typeof startFreeStudyFromCard === 'function') {
+            startFreeStudyFromCard(cardId);
+        } else {
+            console.error("找不到 startFreeStudyFromCard 函数！请检查是否被误删。");
+        }
     }
 }
-
 function startFreeStudyFromCard(cardId) {
     // 1. 开启“不留痕”护盾
     window.isFreePracticeMode = true;
@@ -2256,12 +3006,39 @@ function startFreeStudyFromCard(cardId) {
     console.log(`👻 截获单卡点击！开启自由模式，当前队列: ${studyCards.length}张，空降位置: ${currentStudyIndex + 1}`);
 }
 
+// ==========================================
+// ✅ 单选卡片拦截器 (防爆单版)
+// ==========================================
 function toggleCardSelection(cardId) {
-    if (!isManageMode) return;
+    const isPickMode = sessionStorage.getItem('pickNewCardsMode') === 'true';
 
-    if (selectedCards.has(cardId)) selectedCards.delete(cardId);
-    else selectedCards.add(cardId);
+    // 原来是 if (!isManageMode) return;
+    // 现在改为：只要不是这两个模式之一，就不响应点击
+    if (!isManageMode && !isPickMode) return;
 
+    // ... 后面的勾选逻辑保持不变 ...
+
+
+    if (selectedCards.has(cardId)) {
+        // 如果是取消打勾，随时放行！
+        selectedCards.delete(cardId);
+    } else {
+        // 🛑 如果是要新打勾，必须先过安检！
+        const isPickMode = sessionStorage.getItem('pickNewCardsMode') === 'true';
+        if (isPickMode) {
+            const quota = parseInt(sessionStorage.getItem('pickNewCardsQuota')) || 0;
+            if (selectedCards.size >= quota) {
+                // 报警并拦截
+                alert(`🎯 今天的 ${quota} 个新词配额已经满啦！\n贪多嚼不烂，快去点击底部【加入记忆】开始背词吧~`);
+                return; // ⛔ 极其关键：直接退出函数，绝对不执行下面的画勾和加数操作！
+            }
+        }
+
+        // 安检通过，允许加入
+        selectedCards.add(cardId);
+    }
+
+    // 更新卡片上的勾勾 UI
     const checkboxWrap = document.getElementById(`checkbox-wrap-${cardId}`);
     if (checkboxWrap) {
         if (selectedCards.has(cardId)) {
@@ -2270,27 +3047,265 @@ function toggleCardSelection(cardId) {
             checkboxWrap.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>`;
         }
     }
-    updateBatchActionBar();
+
+    // 更新底部栏状态
+    if (typeof updateBatchActionBar === 'function') updateBatchActionBar();
 }
 
+// ==========================================
+// 🛒 动态变身的底部操作栏
+// ==========================================
+// ==========================================
+// 🛒 动态变身的底部操作栏 (完美无损恢复版)
+// ==========================================
+// ==========================================
+// 🛒 动态变身的底部操作栏 (加入记忆 1/30 版)
+// ==========================================
 function updateBatchActionBar() {
     const bar = document.getElementById('batch-action-bar');
-    const countText = document.getElementById('selected-count-text');
-    if (isManageMode && selectedCards.size > 0) {
+    const mobileNav = document.getElementById('mobile-bottom-nav');
+    if (!bar) return;
+
+    // 🛡️ 安全获取状态，防止全局变量报错
+    const isPickMode = sessionStorage.getItem('pickNewCardsMode') === 'true';
+    const safeIsManageMode = (typeof isManageMode !== 'undefined' && isManageMode === true);
+    const isAnyMode = isPickMode || safeIsManageMode;
+    const isMobile = window.innerWidth <= 768;
+
+    if (isAnyMode) {
         bar.style.display = 'flex';
-        countText.textContent = `已选 ${selectedCards.size} 项`;
+
+        // 样式分配：手机替换底栏 vs 电脑悬浮胶囊
+        if (isMobile) {
+            if (mobileNav) mobileNav.style.setProperty('display', 'none', 'important');
+            bar.style.cssText = `
+                display: flex !important; position: fixed; bottom: 0; left: 0; right: 0; width: 100%;
+                background: #1e293b; padding: 12px 15px; z-index: 10000;
+                justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1);
+            `;
+        } else {
+            bar.style.cssText = `
+                display: flex !important; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+                background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(12px); color: white;
+                padding: 12px 24px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                z-index: 10000; align-items: center; gap: 20px; min-width: 450px;
+            `;
+        }
+
+        // 🛡️ 安全获取数据
+        const quota = parseInt(sessionStorage.getItem('pickNewCardsQuota')) || 0;
+        const selectedCount = (typeof selectedCards !== 'undefined') ? selectedCards.size : 0;
+
+        // 🧬 内嵌渲染内容：直接塞入 HTML，杜绝外部函数丢失
+        if (isPickMode) {
+            bar.innerHTML = `
+                <span style="font-weight: 500; color: #94a3b8;">挑选新词: ${selectedCount}/${quota}</span>
+                <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.2);"></div>
+                <button onclick="abortPickMode()" style="background:transparent; border:none; color:#cbd5e1; cursor:pointer;">放弃</button>
+                <button onclick="autoSelectNewCards()" style="background:transparent; border:none; color:black; cursor:pointer;font-weight:bold;">随机</button>
+                <button onclick="startSelectedNewCards()" style="background:#3b82f6; border:none; color:white; padding:6px 16px; border-radius:8px; cursor:pointer; font-weight:bold;">确认加入</button>
+            `;
+        } else {
+            bar.innerHTML = `
+                <span style="font-weight: 500; opacity: 0.9;">已选 ${selectedCount} 项</span>
+                <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.2);"></div>
+                <button onclick="exitManageMode()" style="background: transparent; border: none; color: #616365; cursor: pointer;">取消</button>
+                <button onclick="promptBatchMove()" style="background: transparent; border: none; color: white; cursor: pointer;">移动</button>
+                <button onclick="executeBatchDelete()" style="background: transparent; border: none; color: #f87171; cursor: pointer; font-weight: 500;">删除</button>
+                <button onclick="batchExportCards()" style="background: transparent; border: none; color: white ; cursor: pointer;">导出</button>
+            `;
+        }
     } else {
+        // 🏠 退出模式：全部还原
         bar.style.display = 'none';
+        if (mobileNav) mobileNav.style.setProperty('display', 'flex', 'important');
     }
 }
+
+function batchExportCards() {
+    // 1. 检查是否有勾选
+    if (typeof selectedCards === 'undefined' || selectedCards.size === 0) {
+        alert("⚠️ 请先勾选需要导出的卡片哦！");
+        return;
+    }
+
+    // 2. 提取选中的卡片数据
+    const cardsToExport = window.currentDisplayQueue.filter(card => selectedCards.has(card._id));
+
+    if (cardsToExport.length === 0) {
+        alert("没找到对应的卡片数据，请重新勾选！");
+        return;
+    }
+
+    try {
+        // 3. 定义 CSV 表头
+        const headers = ['题目(Question)', '答案(Answer)', '分类(Category)', '阶段(Stage)'];
+
+        // 4. 组装数据行（严格处理了卡片里的回车、换行和引号，防止把表格撑破）
+        const csvRows = cardsToExport.map(card => {
+            const q = `"${(card.question || '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
+            const a = `"${(card.answer || '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
+
+            // 获取分类名称，兼容你的数据结构
+            const catName = card.category && card.category.name ? card.category.name : '未分类';
+            const cat = `"${catName.replace(/"/g, '""')}"`;
+
+            const stage = card.stage || 0;
+
+            return [q, a, cat, stage].join(',');
+        });
+
+        // 5. 拼接表头和数据
+        const csvContent = headers.join(',') + '\n' + csvRows.join('\n');
+
+        // 6. 🌟 加上 \uFEFF (BOM头)，这是为了让微软 Excel 乖乖识别 UTF-8 中文，绝不乱码！
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+
+        // 7. 触发下载
+        const link = document.createElement('a');
+        link.href = url;
+        const dateStr = new Date().toLocaleDateString().replace(/\//g, '-');
+        link.download = `我的词汇导出_${dateStr}.csv`;
+
+        document.body.appendChild(link);
+        link.click();
+
+        // 8. 打扫战场
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        alert(`✅ 成功导出 ${cardsToExport.length} 张卡片为 CSV 格式！\n可以用 Excel 正常打开啦！`);
+
+        // (可选) 导出后退出编辑模式，让界面恢复清爽
+        if (typeof exitManageMode === 'function') {
+            exitManageMode();
+        }
+
+    } catch (error) {
+        console.error("CSV导出失败:", error);
+        alert("导出时发生了错误，请按 F12 查看控制台。");
+    }
+}
+
+// 辅助函数：专门负责塞入按钮，保持主逻辑整洁
+function renderBarContent(bar, isPickMode) {
+    const quota = parseInt(sessionStorage.getItem('pickNewCardsQuota')) || 0;
+
+    if (isPickMode) {
+        bar.innerHTML = `
+            <span style="font-weight: 500; color: #94a3b8;">挑选新词: ${selectedCards.size}/${quota}</span>
+            <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.2);"></div>
+            <button onclick="abortPickMode()" style="background:transparent; border:none; color:#cbd5e1; cursor:pointer;">放弃</button>
+            <button onclick="autoSelectNewCards()" style="background:transparent; border:none; color:white; cursor:pointer;">🎲 随机</button>
+            <button onclick="startSelectedNewCards()" style="background:#3b82f6; border:none; color:white; padding:6px 16px; border-radius:8px; cursor:pointer; font-weight:bold;">确认加入</button>
+        `;
+    } else {
+        bar.innerHTML = `
+            <span style="font-weight: 500; opacity: 0.9;">已选 ${selectedCards.size} 项</span>
+            <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.2);"></div>
+            <button onclick="exitManageMode()" style="background: transparent; border: none; color: #cbd5e1; cursor: pointer;">取消</button>
+            <button onclick="promptBatchMove()" style="background: transparent; border: none; color: white; cursor: pointer;">移动</button>
+            <button onclick="executeBatchDelete()" style="background: transparent; border: none; color: #f87171; cursor: pointer; font-weight: 500;">删除</button>
+            <button onclick="batchExportCards()" style="background: transparent; border: none; color: white; cursor: pointer;">导出</button>
+        `;
+    }
+}
+// ==========================================
+// ✨ 进货模式的四大核心魔法
+// ==========================================
+
+// 魔法 1：一键选中
+// ==========================================
+// 🎲 魔法 1：一键随机选词 (盲盒进货)
+// ==========================================
+function autoSelectNewCards() {
+    const quota = parseInt(sessionStorage.getItem('pickNewCardsQuota')) || 0;
+    const availableNewCards = window.currentDisplayQueue.filter(c => !(c.stage > 0));
+
+    if (availableNewCards.length === 0) {
+        alert("📦 当前文件夹没有新的生词啦，去其他文件夹看看吧！");
+        return;
+    }
+
+    // 🌟 核心魔法：把新词数组像洗扑克牌一样“随机打乱”
+    const shuffledCards = [...availableNewCards].sort(() => 0.5 - Math.random());
+
+    // 清空之前的选择，从打乱的牌堆里抽出需要的数量
+    selectedCards.clear();
+    const toSelect = shuffledCards.slice(0, quota);
+    toSelect.forEach(c => selectedCards.add(c._id));
+
+    if (toSelect.length < quota) {
+        alert(`📦 当前文件夹只有 ${toSelect.length} 个新词，已全部随机勾选！\n\n(如果还差额度，可以直接点击底部的【分类】去其他文件夹继续凑)`);
+    }
+
+    // 刷新屏幕，让打好的勾勾显示出来
+    if (typeof renderCards === 'function') renderCards(window.currentDisplayQueue);
+    if (typeof updateBatchActionBar === 'function') updateBatchActionBar();
+}
+
+// 魔法 2：带着选好的卡片，直接发车！
+function startSelectedNewCards() {
+    if (selectedCards.size === 0) {
+        alert("❌ 请至少选择 1 个新词再开始哦！");
+        return;
+    }
+    const newCardIds = Array.from(selectedCards);
+    studyCards = allCards.filter(c => newCardIds.includes(c._id));
+
+    exitPickMode(); // 发车后自然退出进货状态
+
+    spellCards = [];
+    currentStudyIndex = 0;
+    showMainView('study-view');
+    renderStudyCard();
+    console.log(`🚀 纯净新词主线启动: 本次发牌 ${studyCards.length} 张！`);
+}
+
+// 魔法 3：底层清理状态 (纯净退场)
+function exitPickMode() {
+    sessionStorage.removeItem('pickNewCardsMode');
+    sessionStorage.removeItem('pickNewCardsQuota');
+    selectedCards.clear();
+    if (isManageMode) {
+        isManageMode = false;
+        // 恢复正常卡片显示和操作栏
+        if (typeof renderCards === 'function') renderCards(window.currentDisplayQueue);
+        updateBatchActionBar();
+    }
+}
+
+// 🌟 魔法 4：【新增】带贴心提示的防误触中止
+function abortPickMode() {
+    const wantsToAbort = confirm("确定要放弃本次进货任务，返回主页吗？\n\n💡 提示：如果你只是想换个文件夹挑词，【不需要点退出】！直接点击屏幕底部的【分类】即可，选词状态会一直保持！");
+
+    if (wantsToAbort) {
+        exitPickMode();
+        // 乖乖送回主页
+        if (window.innerWidth <= 768 && typeof handleBottomNav === 'function') {
+            handleBottomNav('dashboard');
+        } else if (typeof showMainView === 'function') {
+            showMainView('dashboard-view');
+        }
+    }
+}
+
 
 async function executeBatchDelete() {
     if (selectedCards.size === 0) return;
     if (!confirm(`确定要删除选中的 ${selectedCards.size} 张卡片吗？此操作不可恢复。`)) return;
 
+    // 🌟 1. 获取元素
     const countText = document.getElementById('selected-count-text');
-    const originalText = countText.textContent;
-    countText.textContent = "删除中...";
+
+    // 🌟 2. 防弹衣：如果找到了这个元素，才去读它的文字，否则给个空字符串
+    const originalText = countText ? countText.textContent : "";
+
+    // 🌟 3. 防弹衣：如果找到了，才去改成“删除中...”
+    if (countText) {
+        countText.textContent = "删除中...";
+    }
 
     try {
         const deletePromises = Array.from(selectedCards).map(id => fetch(`/api/flashcards/${id}`, { method: 'DELETE' }));
@@ -2300,13 +3315,23 @@ async function executeBatchDelete() {
     } catch (error) {
         console.error("批量删除失败:", error);
         alert("网络连接异常，部分卡片可能未能清除。");
-        countText.textContent = originalText;
+
+        // 🌟 4. 防弹衣：失败了恢复原状时，也要确认元素还在
+        if (countText) {
+            countText.textContent = originalText;
+        }
     }
 }
 
 function promptBatchMove() {
+    console.log("🔥 纯净版移动函数已启动！绝对没有空目录字眼！");
+    
     if (selectedCards.size === 0) return;
-    document.getElementById('batch-move-text').innerText = `将已选的 ${selectedCards.size} 张卡片移动到：`;
+    
+    const textEl = document.getElementById('batch-move-text');
+    if (textEl) {
+        textEl.innerText = `将已选的 ${selectedCards.size} 张卡片移动到：`;
+    }
 
     const parents = allCategories.filter(c => !c.parentId);
     const children = allCategories.filter(c => c.parentId);
@@ -2314,16 +3339,15 @@ function promptBatchMove() {
     let optionsHtml = `<option value="uncategorized">未分类区</option>`;
 
     parents.forEach(p => {
+        // 让所有的大类（包括默认卡片夹）都变成可选的！绑定真实的 ID！
+        optionsHtml += `<option value="${p._id}" style="font-weight: bold; color: #4f46e5;">📁 ${p.name}</option>`;
+
         const myChildren = children.filter(c => c.parentId === p._id);
-        optionsHtml += `<optgroup label="── ${p.name} ──">`;
-        if (myChildren.length > 0) {
-            myChildren.forEach(c => {
-                optionsHtml += `<option value="${c._id}">  ${c.name}</option>`;
-            });
-        } else {
-            optionsHtml += `<option value="" disabled>  (空目录，不可放入卡片)</option>`;
-        }
-        optionsHtml += `</optgroup>`;
+        
+        // 子包正常显示，不再做任何多余的空目录判断！
+        myChildren.forEach(c => {
+            optionsHtml += `<option value="${c._id}" style="color: #1e293b;">&nbsp;&nbsp;&nbsp;&nbsp;↳ 📦 ${c.name}</option>`;
+        });
     });
 
     const moveSelect = document.getElementById('batch-move-select');
@@ -3227,3 +4251,374 @@ document.getElementById('spell-hidden-input')?.addEventListener('keydown', funct
         }
     }
 });
+
+// 🌐 核心功能：全网查词 + 自动一键入库（收件箱）
+async function searchWebForWord(word) {
+    if (!word) return;
+
+    // 1. 变身加载状态（给用户一个反馈）
+    const btn = event.currentTarget; // 抓取你刚才点击的那个按钮
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `⏳ 正在连线词典查询 "${word}"...`;
+    btn.style.opacity = '0.8';
+    btn.disabled = true;
+
+    try {
+        // 2. 📡 发起查词请求（使用 MyMemory 免费公共翻译 API 作为演示）
+        // 如果你以后有自己的后端查词接口，把这里换成你的接口即可
+        const fetchUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|zh-CN`;
+        const res = await fetch(fetchUrl);
+        const data = await res.json();
+
+        // 提取翻译结果 (MyMemory API 的数据结构)
+        let translation = "";
+        if (data.responseStatus === 200 && data.responseData.translatedText) {
+            translation = data.responseData.translatedText;
+        }
+
+        // 简单的防呆校验：如果翻译出来的还是原词，说明没查到
+        if (!translation || translation.toLowerCase() === word.toLowerCase()) {
+            alert(`🤔 哎呀，词典里没找到 "${word}" 的确切意思，可能是拼写有误？`);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            return;
+        }
+
+        // 3. 📦 组装卡片基础数据
+        const payload = {
+            question: word.trim(),
+            answer: translation.trim()
+        };
+
+        // 🌟 核心补全：就地智能收纳 + 收藏夹 VIP 通道
+        const catId = window.currentCategoryId;
+        let finalCategoryId = catId;
+        let targetFolderName = "默认卡片夹";
+
+        // 判断：如果是在"全部/主页/未分类"界面，强行分配/创建" 收藏夹"
+        if (!finalCategoryId || finalCategoryId === 'all' || finalCategoryId === 'dashboard' || finalCategoryId === 'uncategorized') {
+            let inboxCat = typeof allCategories !== 'undefined' ?
+                allCategories.find(c => c.name === '默认卡片夹') : null;
+
+            // 如果没有真实的收藏夹，当场建一个！
+            if (!inboxCat) {
+                try {
+                    const catRes = await fetch('/api/categories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: '默认卡片夹', type: 'vocabulary' })
+                    });
+                    if (catRes.ok) {
+                        if (typeof loadCategories === 'function') await loadCategories();
+                        inboxCat = allCategories.find(c => c.name === '默认卡片夹');
+                    }
+                } catch (err) {
+                    console.error("自动创建默认卡片夹失败:", err);
+                }
+            }
+
+            if (inboxCat && inboxCat._id) {
+                finalCategoryId = inboxCat._id;
+            } else {
+                alert("系统错误：无法获取或创建默认卡片夹，请先手动建一个！");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                return;
+            }
+        } else {
+            // 如果是在特定的卡包里查词，就放进当前卡包
+            if (typeof allCategories !== 'undefined') {
+                const currentCatObj = allCategories.find(c => c._id === catId);
+                if (currentCatObj) targetFolderName = `📁 ${currentCatObj.name}`;
+            }
+        }
+
+        // 把绝对合法的真实 ID 塞进包裹
+        payload.categoryId = finalCategoryId;
+
+        console.log(`🚀 准备发送给后端的卡片数据 (目标: ${targetFolderName}):`, payload);
+
+        // 4. 🚀 默默保存到你的数据库
+        const saveRes = await fetch('/api/flashcards', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!saveRes.ok) {
+            const errorText = await saveRes.text();
+            console.error("🔥 后端详细报错信息:", errorText);
+            throw new Error(`保存失败，状态码: ${saveRes.status}`);
+        }
+
+        // 5. 🎉 大功告成，处理 UI！
+        if (typeof loadFlashcards === 'function') {
+            await loadFlashcards();
+        }
+        if (typeof filterCards === 'function') {
+            filterCards(); // 强行刷新，让新卡片瞬间出现在当前列表！
+        }
+
+        // 恢复按钮状态，并提示成功
+        btn.innerHTML = `🎉 已收录至 ${targetFolderName}！`;
+        btn.style.background = '#10b981'; // 变绿色表示成功
+        btn.style.opacity = '1';
+
+        setTimeout(() => {
+            alert(`🎉 收录成功！\n\n单词：${word}\n释义：${translation}\n\n已智能收纳至【${targetFolderName}】啦！`);
+        }, 300);
+
+    } catch (error) {
+        console.error("查词建卡崩溃:", error);
+        alert('网络似乎开小差了，添加失败哦。');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+    }
+}
+
+// 🌐 市场搜索全局状态
+let currentMarketTab = 'word'; // 默认在“单词”页面
+
+// 🎯 切换 Tab 样式和逻辑
+function switchMarketTab(tab) {
+    currentMarketTab = tab;
+
+    // UI 样式切换
+    const wordTab = document.getElementById('tab-word');
+    const deckTab = document.getElementById('tab-deck');
+
+    if (tab === 'word') {
+        wordTab.style.color = '#10b981'; wordTab.style.borderColor = '#10b981'; wordTab.style.fontWeight = 'bold';
+        deckTab.style.color = '#94a3b8'; deckTab.style.borderColor = 'transparent'; deckTab.style.fontWeight = 'normal';
+    } else {
+        deckTab.style.color = '#10b981'; deckTab.style.borderColor = '#10b981'; deckTab.style.fontWeight = 'bold';
+        wordTab.style.color = '#94a3b8'; wordTab.style.borderColor = 'transparent'; wordTab.style.fontWeight = 'normal';
+    }
+
+    // 切换后重新过滤
+    filterMarket();
+}
+
+// 🧹 清空搜索框
+function clearMarketSearch() {
+    const input = document.getElementById('market-search-input');
+    if (input) input.value = '';
+    filterMarket();
+}
+
+// 🚀 核心搜索逻辑
+// 🚀 核心搜索逻辑 (单词联想 + 词书过滤 双管齐下)
+// 🌐 全局变量：保存当前查到的释义，供加号按钮直接使用
+let currentLiveTranslation = "";
+let searchTimeout = null; // 防抖定时器
+
+// 🚀 核心搜索逻辑 (加入实时查词)
+function filterMarket() {
+    const input = document.getElementById('market-search-input');
+    const searchTerm = input ? input.value.trim().toLowerCase() : '';
+    const resultsContainer = document.getElementById('market-search-results');
+
+    if (!searchTerm) {
+        // ... (清空搜索框时的历史记录和词书恢复逻辑，保持不变)
+        resultsContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #94a3b8;">暂无搜索记录</div>`;
+        const allDecks = document.querySelectorAll('.category-card, .market-item, .explore-card');
+        allDecks.forEach(card => card.style.display = '');
+        return;
+    }
+
+    // 🟢 【单词 Tab】实时查词逻辑
+    if (currentMarketTab === 'word') {
+        // 1. 先展示“正在查询”的状态，加号变灰不可点
+        resultsContainer.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 10px; border-bottom: 1px solid #f1f5f9;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 16px; color: #1e293b; font-weight: 500;">${searchTerm}</span>
+                    <span id="live-translation" style="font-size: 13px; color: #64748b;">🔍 正在联网查询释义...</span>
+                </div>
+                <button id="add-word-btn" disabled style="color: #cbd5e1; border: 1px solid #cbd5e1; background: transparent; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; transition: 0.2s;">
+                    +
+                </button>
+            </div>
+        `;
+
+        // 2. 防抖：用户停止打字 600 毫秒后，再发送网络请求
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            try {
+                // 🌟🌟🌟 这里是你昨天搞定的有道词典 API！ 🌟🌟🌟
+                // 假设你后端有一个接口专门调有道，或者前端直接发请求
+                // 请把你昨天的查词代码贴在这里，把结果赋给 transText 变量！
+                // (下面我先写一个模拟的后端接口调用作为示范)
+
+                let transText = "正在尝试获取词性..."; // 默认值
+
+                // 【请将下面这块 fetch 替换成你昨天的有道查词代码】
+                const res = await fetch(`/api/dict?word=${encodeURIComponent(searchTerm)}`);// 假设你有这个后端接口
+                if (res.ok) {
+                    const data = await res.json();
+                    transText = data.translation; // 假设返回的数据里有 "n. 苹果; 公司" 这种带词性的格式
+                } else {
+                    // 如果后端接口没写好，这里用个临时备用方案顶上
+                    const fallbackRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=en|zh-CN`);
+                    const fallbackData = await fallbackRes.json();
+                    transText = fallbackData.responseData.translatedText;
+                }
+                // 【替换结束】
+
+                // 3. 把查到的带词性的释义显示到屏幕上，并保存到全局变量
+                currentLiveTranslation = transText;
+                const transUI = document.getElementById('live-translation');
+                if (transUI) {
+                    transUI.innerText = transText;
+                    transUI.style.color = '#3b82f6'; // 变蓝色表示查到了
+                }
+
+                // 4. 激活加号按钮！
+                const btn = document.getElementById('add-word-btn');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.style.color = '#10b981';
+                    btn.style.borderColor = '#10b981';
+                    btn.style.cursor = 'pointer';
+                    btn.setAttribute('onclick', `quickAddMarketWord('${searchTerm}', this)`);
+                }
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('live-translation').innerText = "网络异常，未查到释义";
+                currentLiveTranslation = "";
+                // 即使没查到，也允许用户点加号添加（进去后再自己改）
+                const btn = document.getElementById('add-word-btn');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.style.color = '#10b981'; btn.style.borderColor = '#10b981'; btn.style.cursor = 'pointer';
+                    btn.setAttribute('onclick', `quickAddMarketWord('${searchTerm}', this)`);
+                }
+            }
+        }, 600); // 停顿 0.6 秒后执行
+
+    }
+    // 🔵 【词书 Tab】过滤逻辑保持不变
+    else {
+        // ... (保留你之前的过滤词书代码即可)
+        resultsContainer.innerHTML = `<div style="padding: 16px; text-align: center; color: #3b82f6; font-size: 14px; background: #eff6ff; border-radius: 8px; margin-top: 8px;">👇 已为您在下方过滤...</div>`;
+        const deckCards = document.querySelectorAll('.category-card, .market-item, .explore-card, .deck-card');
+        deckCards.forEach(card => {
+            card.style.display = card.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
+        });
+    }
+}
+
+// ➕ 核心魔法：直接把刚才显示在屏幕上的释义存进去！
+async function quickAddMarketWord(word, btnElement) {
+    if (!word) return;
+
+    btnElement.innerHTML = `<svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>`;
+    btnElement.disabled = true;
+    btnElement.style.opacity = '0.5';
+
+    try {
+        // 1. 拿收藏夹 ID
+        let inboxCat = typeof allCategories !== 'undefined' ?
+            allCategories.find(c => c.name.includes('默认卡片夹') || c.name.includes('收件箱') || c.name.includes('未分类')) : null;
+        if (!inboxCat) {
+            const catRes = await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: '默认卡片夹', type: 'vocabulary' }) });
+            if (catRes.ok) { if (typeof loadCategories === 'function') await loadCategories(); inboxCat = allCategories.find(c => c.name.includes('默认卡片夹')); }
+        }
+        let finalCategoryId = (inboxCat && inboxCat._id) ? inboxCat._id : "";
+        if (!finalCategoryId) throw new Error("无法获取分类ID");
+
+        // 🌟🌟🌟 2. 重点：直接使用刚才查好的、带词性的释义！不用再费时间查一遍了！
+        let finalTranslation = currentLiveTranslation || "未匹配到释义，请手动编辑";
+
+        // 3. 发送给后端保存
+        const saveRes = await fetch('/api/flashcards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: word, answer: finalTranslation, categoryId: finalCategoryId })
+        });
+
+        if (!saveRes.ok) throw new Error(`保存失败`);
+
+        // 4. 成功 UI 反馈
+        btnElement.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        btnElement.style.background = '#10b981'; btnElement.style.border = 'none'; btnElement.style.opacity = '1';
+
+        const transUI = document.getElementById('live-translation');
+        if (transUI) { transUI.innerText = `[已收藏] ${finalTranslation}`; transUI.style.color = '#10b981'; }
+
+        if (typeof loadFlashcards === 'function') loadFlashcards();
+        if (typeof filterCards === 'function') filterCards();
+
+    } catch (err) {
+        btnElement.innerHTML = `+`; btnElement.disabled = false; btnElement.style.opacity = '1';
+        alert("收藏失败，请重试！");
+    }
+}
+
+// 把这个函数放到 script.js 最底部
+async function showStarredCards(element) {
+    console.log("⭐ [Debug] 尝试进入星标收藏夹...");
+
+    try {
+        // 1. 设置专属的分类 ID
+        window.currentCategoryId = 'starred';
+
+        // 2. 退出管理模式 (复用你的安全逻辑，防误删)
+        if (typeof exitManageMode === 'function' && typeof isManageMode !== 'undefined' && isManageMode) {
+            exitManageMode();
+        }
+
+        // 3. 更改顶部标题 (使用你真实的 ID)
+        const titleEl = document.getElementById('current-view-title');
+        if (titleEl) titleEl.textContent = '🌟 星标收藏夹 (疑难词)';
+
+        // 4. 处理左侧菜单高亮
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        if (element) {
+            element.classList.add('active');
+        } else {
+            const starNav = document.querySelector('.starred-nav');
+            if (starNav) starNav.classList.add('active');
+        }
+
+        // 5. 隐藏右上角的“分类设置”按钮 (收藏夹不需要设置)
+        const settingsBtn = document.getElementById('category-settings-btn');
+        if (settingsBtn) settingsBtn.classList.add('hidden');
+
+        // 6. 🚀 核心修复：调用你真实的切屏函数！
+        if (typeof showMainView === 'function') {
+            showMainView('manage-view');
+        }
+
+        // 7. 同步手机端底栏状态 (复用你的逻辑)
+        if (window.innerWidth <= 768) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            const tabAll = document.getElementById('tab-all');
+            if (tabAll) tabAll.classList.add('active');
+        }
+
+        // 8. 获取数据并过滤
+        const response = await fetch('/api/flashcards'); 
+        const allCards = await response.json();
+        const starredCards = allCards.filter(card => card.isStarred === true);
+
+        console.log(`⭐ [Debug] 成功拿到 ${starredCards.length} 张星标卡片`);
+
+        // 9. 🚀 延迟渲染：防止被 showMainView 内部的 filterCards 覆盖
+        setTimeout(() => {
+            if (typeof renderCards === 'function') {
+                renderCards(starredCards);
+            }
+        }, 50); // 50毫秒的延迟，确保星星卡片最后渲染上屏
+
+    } catch (err) {
+        console.error("⭐ [Debug] 星标收藏夹加载出错:", err);
+    }
+}

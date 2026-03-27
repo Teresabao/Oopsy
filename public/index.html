@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 
 <head>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <style id="nuke-debug-style">
         /* ==========================================
        🌟 真正的全屏 App 布局：彻底锁死，禁止滑动
@@ -529,32 +530,44 @@
                         </div> -->
                     </div>
 
-                    <div class="main-task-hero" onclick="startStudyMode()"
-                        style="margin-top: 24px; margin-bottom: 32px; background: white; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                    <div class="main-task-hero"
+                        style="margin-top: 24px; margin-bottom: 32px; background: white; border-radius: 24px; padding: 28px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+
                         <div
-                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed #e2e8f0;">
                             <div>
-                                <h3 style="margin: 0; font-size: 1.25rem; color: #1e293b; font-weight: 700;">📋 今日复习任务
+                                <h3 style="margin: 0; font-size: 1.15rem; color: #1e293b; font-weight: 700;">📅 今日计划
                                 </h3>
-                                <p id="dash-mission-text"
-                                    style="margin: 6px 0 0 0; color: #64748b; font-size: 0.95rem;">加载中...</p>
+                                <p id="dash-plan-summary"
+                                    style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem;">每日目标 20 词，今天已学 0 词
+                                </p>
                             </div>
-                            <span id="study-progress-pill"
-                                style="padding: 4px 12px; background: #eff6ff; color: #4f46e5; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">待复习
-                                0</span>
+                            <button onclick="quickAdjustPlan()"
+                                style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: #f1f5f9; color: #475569; border: none; border-radius: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s;">
+                                ⚙️ 调整计划
+                            </button>
                         </div>
 
-                        <div id="dash-task-previews"
-                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                        <div
+                            style="display: flex; justify-content: space-around; text-align: center; margin-bottom: 32px;">
+                            <div style="flex: 1; border-right: 1px solid #f1f5f9;">
+                                <p style="margin: 0; color: #64748b; font-size: 0.9rem; margin-bottom: 8px;">需复习 (老词)
+                                </p>
+                                <div id="dash-review-count"
+                                    style="font-size: 2.5rem; font-weight: 800; color: #1e293b; line-height: 1;">0</div>
+                            </div>
+                            <div style="flex: 1;">
+                                <p style="margin: 0; color: #64748b; font-size: 0.9rem; margin-bottom: 8px;">需新学 (配额)
+                                </p>
+                                <div id="dash-new-count"
+                                    style="font-size: 2.5rem; font-weight: 800; color: #1e293b; line-height: 1;">0</div>
+                            </div>
                         </div>
 
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <button class="continue-btn"
-                                style="background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer;">继续科学复习
-                                →</button>
-                            <span onclick="event.stopPropagation(); startFreeStudy()"
-                                style="font-size: 0.85rem; color: #94a3b8; text-decoration: underline; cursor: pointer;"
-                                onmouseover="this.style.color='#94a3b8'">开启自由背诵 (不留痕)</span>
+                        <div style="margin-top: 20px; display: flex; justify-content: center;">
+                            <button id="btn-main-action" onclick="handleMainAction()"
+                                style="width: 100%; max-width: 800px; padding: 14px 20px; border-radius: 14px; font-size: 1.1rem; font-weight: 600; border: none; transition: all 0.2s ease;">
+                            </button>
                         </div>
                     </div>
 
@@ -678,13 +691,46 @@
                 <div id="explore-view" class="view hidden">
 
                     <div class="explore-header-section">
-                        <div class="explore-search-wrapper">
-                            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                            <input type="text" id="market-search" placeholder="搜索内置词书或公开词库..." onkeyup="filterMarket()">
+                        <div class="market-search-wrapper"
+                            style="background: #fff; border-radius: 12px; padding: 12px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f1f5f9;">
+
+                            <div class="ms-header" style="display: flex; gap: 12px; align-items: center;">
+                                <div
+                                    style="flex: 1; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; padding: 8px 12px; border: 1px solid #e2e8f0;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    <input type="text" id="market-search-input" placeholder="输入你想搜的单词或词书..."
+                                        onkeyup="filterMarket()"
+                                        style="flex: 1; border: none; background: transparent; outline: none; padding-left: 8px; font-size: 15px; color: #1e293b;">
+                                </div>
+                                <button onclick="clearMarketSearch()"
+                                    style="color: #94a3b8; border: none; background: transparent; font-size: 15px; cursor: pointer; padding: 0 4px; font-weight: 500;">取消</button>
+                            </div>
+
+                            <div class="ms-tabs"
+                                style="display: flex; margin-top: 16px; border-bottom: 1px solid #f1f5f9;">
+                                <div id="tab-word" onclick="switchMarketTab('word')" class="active"
+                                    style="flex: 1; text-align: center; padding-bottom: 10px; color: #3b82f6; border-bottom: 2px solid #3b82f6; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 15px;">
+                                    找单词</div>
+                                <div id="tab-deck" onclick="switchMarketTab('deck')"
+                                    style="flex: 1; text-align: center; padding-bottom: 10px; color: #94a3b8; border-bottom: 2px solid transparent; cursor: pointer; transition: 0.2s; font-size: 15px;">
+                                    找词书</div>
+                            </div>
+
+                            <div id="market-search-results"
+                                style="margin-top: 8px; max-height: 50vh; overflow-y: auto;">
+                                <div style="padding: 30px 10px; text-align: center; color: #cbd5e1; font-size: 14px;">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1.5" style="margin-bottom: 10px; opacity: 0.5;">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    <div>在上方输入内容开始搜索吧</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -870,42 +916,108 @@
                             <div id="progress-bar-fill"></div>
                         </div>
                     </div>
-
                     <div class="study-card-wrapper">
                         <div id="study-card" class="study-card" onclick="flipCard()">
                             <div id="card-inner" class="card-inner">
-                                <div class="card-front">
-                                    <div class="card-content-wrap">
-                                        <h3 id="study-question"></h3>
-                                        <button class="voice-btn"
+
+                                <div class="card-front" ;>
+                                    <div
+                                        style="position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10;">
+                                        <button
                                             onclick="speakWord(document.getElementById('study-question').innerText, event)"
-                                            title="朗读">
-                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2">
+                                            title="发音"
+                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                            onmouseover="this.style.color='#3b82f6'; this.style.background='#eff6ff'"
+                                            onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
                                                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                                                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07">
                                                 </path>
                                             </svg>
                                         </button>
+                                        <button class="study-star-btn" onclick="toggleStudyStar(event)" title="收藏"
+                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                            onmouseover="this.style.transform='scale(1.1)'"
+                                            onmouseout="this.style.transform='scale(1)'">
+                                            <svg class="study-star-icon" width="20" height="20" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <polygon
+                                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                                </polygon>
+                                            </svg>
+                                        </button>
+                                        <button onclick="openStudyEditModal(event)" title="编辑"
+                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                            onmouseover="this.style.color='#10b981'; this.style.background='#ecfdf5'"
+                                            onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                </path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="card-content-wrap">
+                                        <h3 id="study-question"></h3>
                                     </div>
                                     <p class="flip-hint">点击翻看答案 (或按空格)</p>
                                 </div>
-                                <div class="card-back">
-                                    <div class="card-content-wrap">
-                                        <h3 id="study-answer"></h3>
-                                        <button class="voice-btn"
+
+                                <div class="card-back" >
+                                    <div
+                                        style="position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10;">
+                                        <button
                                             onclick="speakWord(document.getElementById('study-answer').innerText, event)"
-                                            title="朗读">
-                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2">
+                                            title="发音"
+                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                            onmouseover="this.style.color='#3b82f6'; this.style.background='#eff6ff'"
+                                            onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
                                                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                                                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07">
                                                 </path>
                                             </svg>
                                         </button>
+                                        <button class="study-star-btn" onclick="toggleStudyStar(event)" title="收藏"
+                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                            onmouseover="this.style.transform='scale(1.1)'"
+                                            onmouseout="this.style.transform='scale(1)'">
+                                            <svg class="study-star-icon" width="20" height="20" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <polygon
+                                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                                </polygon>
+                                            </svg>
+                                        </button>
+                                        <button onclick="openStudyEditModal(event)" title="编辑"
+                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                            onmouseover="this.style.color='#10b981'; this.style.background='#ecfdf5'"
+                                            onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                </path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="card-content-wrap">
+                                        <h3 id="study-answer"></h3>
                                     </div>
                                     <p class="flip-hint">点击翻回问题</p>
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -1123,38 +1235,65 @@
         </div>
     </div>
 
-    <div id="batch-action-bar"
-        style="display: none; position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: white; padding: 12px 24px; border-radius: 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000; align-items: center; gap: 20px; font-size: 14px;">
+    <style>
+        /* 💻 电脑端：保持高颜值的悬浮药丸 */
+        .batch-bar-responsive {
+            left: calc(50% + 120px);
+            /* 避开左侧菜单 */
+            transform: translateX(-50%);
+            border-radius: 40px;
+            min-width: 480px;
+            /* 💻 给电脑端一个保底宽度，防止按钮挤压不见 */
+            justify-content: center;
+        }
+
+        /* 📱 手机端：变身极简原生底栏（修复溢出，完美贴合） */
+        @media (max-width: 768px) {
+            .batch-bar-responsive {
+                bottom: 0 !important;
+                left: 0 !important;
+                transform: none !important;
+                width: 100vw !important;
+                /* 强制等于屏幕宽度，绝不溢出 */
+                min-width: 0 !important;
+                /* 清除电脑端的 480px 限制 */
+                border-radius: 0 !important;
+                /* 取消圆角，变成平的底栏 */
+                /* 背景颜色如果想和主页完全一样，可以改成你主页底栏的颜色，比如 #ffffff 或 #f8fafc */
+                background: rgba(255, 255, 255, 0.95) !important;
+                color: #334155 !important;
+                /* 文字改成深色 */
+                padding: 10px 20px calc(10px + env(safe-area-inset-bottom)) !important;
+                box-sizing: border-box !important;
+                flex-direction: row !important;
+                /* 🌟 核心：保持在一行，不换行 */
+                box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.05) !important;
+                /* 顶部加一点淡淡的阴影分割线 */
+                z-index: 9999 !important;
+            }
+
+            #pick-mode-actions {
+                width: 100% !important;
+                justify-content: space-between !important;
+                /* 左右两边顶格，中间居中 */
+                margin: 0 !important;
+            }
+        }
+    </style>
+
+    <div id="batch-action-bar" class="batch-bar-responsive"
+        style="display: none; position: fixed; bottom: 40px; background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: white; padding: 12px 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000; align-items: center; gap: 20px; font-size: 14px;">
 
         <span id="selected-count-text" style="font-weight: 500; opacity: 0.9;">已选 0 项</span>
-
         <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.2);"></div>
-
         <button onclick="exitManageMode()"
             style="background: transparent; border: none; color: #cbd5e1; cursor: pointer; font-size: 14px; padding: 0;">取消</button>
-
         <button onclick="promptBatchMove()"
-            style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; display: flex; align-items: center; gap: 4px;">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-            </svg>
-            移动
-        </button>
-
+            style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; display: flex; align-items: center; gap: 4px;">移动</button>
         <button onclick="executeBatchDelete()"
-            style="background: transparent; border: none; color: #f87171; cursor: pointer; font-size: 14px; padding: 0; display: flex; align-items: center; gap: 4px; font-weight: 500;">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                </path>
-            </svg>
-            删除
-        </button>
-
-        <button onclick="batchExportCards()" class="你原有的按钮样式类名">
-            导出所选卡片
-        </button>
+            style="background: transparent; border: none; color: #f87171; cursor: pointer; font-size: 14px; padding: 0; display: flex; align-items: center; gap: 4px; font-weight: 500;">删除</button>
+        <button onclick="batchExportCards()"
+            style="background: transparent; border: none; color: white; cursor: pointer;">导出所选卡片</button>
     </div>
 
     <div id="test-selector-modal" class="hidden"
@@ -1243,6 +1382,36 @@
                 </div>
 
             </div>
+        </div>
+    </div>
+
+    <div id="spell-completion-modal" class="hidden"
+        style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+
+        <div class="completion-card">
+            <div class="completion-icon-wrapper">
+                <svg class="completion-check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+
+            <h2 class="completion-title">特训完成</h2>
+            <p class="completion-subtitle">每一次专注，都在积累跨越的力量</p>
+
+            <div class="completion-stats">
+                <div class="stat-box">
+                    <div class="stat-label">搞定词汇</div>
+                    <div class="stat-value" id="completion-total-count">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">本次重练</div>
+                    <div class="stat-value error-color" id="completion-error-count">0</div>
+                </div>
+            </div>
+
+            <button class="btn-primary-action" onclick="restartSpellMode()">再来一组</button>
+            <button class="btn-secondary-action" onclick="exitSpellMode()">返回主页</button>
         </div>
     </div>
 
