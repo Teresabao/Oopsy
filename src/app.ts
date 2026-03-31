@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import routes from './routes'; // 引入我们刚刚写好的新路由！
+import path from 'path';
 
 dotenv.config();
 
@@ -13,8 +14,8 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// 🌟 这一句非常关键：它告诉服务器前端页面在哪里！
-app.use(express.static('public')); 
+// 🌟 这一句非常关键：利用 path 模块精准定位根目录下的 public 文件夹
+app.use(express.static(path.join(__dirname, '../public')));
 
 // 连接 MongoDB 数据库 (Mongoose)
 mongoose.connect(process.env.MONGODB_URI as string)
@@ -52,11 +53,17 @@ app.get('/api/dict', async (req, res) => {
         res.status(500).json({ error: '后端网络异常' });
     }
 });
-export default app;
 
-// 使用我们写好的 Mongoose 路由接口
+// 1. 🌟 先让 app 把你写好的增删改查路由装载上（必须在 export 之前）
 app.use('/api', routes);
 
-app.listen(PORT, () => {
-  console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
-});
+// 2. 🌟 判断环境：只有在你自己的电脑上运行（本地开发）时，才监听端口
+// Vercel 云端在运行时，会自动提供它自己的环境，不需要我们 listen
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 本地 Oopsy 服务器运行在 http://localhost:${PORT}`);
+  });
+}
+
+// 3. 🌟 终极大招：把所有装备都穿好后的 app，正式交给 Vercel！（必须在最后一行）
+export default app;
