@@ -52,7 +52,7 @@ app.get('/api/dict', async (req, res) => {
         res.status(500).json({ error: '后端网络异常' });
     }
 });
-
+export default app;
 
 // 使用我们写好的 Mongoose 路由接口
 app.use('/api', routes);

@@ -16,3 +16,5 @@ build/
 # 数据库文件（如果以后用SQLite）
 *.db
 *.sqlite
+
+test-mongodb.ts
