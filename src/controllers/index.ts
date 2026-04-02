@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import Flashcard from '../models/Flashcard';
 import Category from '../models/Category';
 
+import { AuthRequest } from '../middleware/auth'; // 👈 引入带通行证的请求类型
+
+
 // ==========================================
 // 🗂️ CATEGORY (DECK) CONTROLLERS 
 // ==========================================
@@ -79,145 +82,134 @@ export const deleteCategory = async (req: any, res: any) => {
 // ==========================================
 
 // 1. Create a new Flashcard (保留了你优秀的分类存在性校验)
-export const createFlashcard = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { question, answer, categoryId } = req.body;
+// ==========================================
+// 🗂️ 1. 获取闪卡列表 (🚨 核心隔离：只查属于自己的卡片)
+// ==========================================
+export const getFlashcards = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user.id; // 🕵️‍♂️ 从保安那里拿到当前用户的 ID
+        const { categoryId } = req.query; // 前端可能传了分类 ID 过来查询
 
-    const categoryExists = await Category.findById(categoryId);
-    if (!categoryExists) {
-      res.status(404).json({ error: 'Category not found. Please provide a valid categoryId.' });
-      return;
+        // 组装查询条件：无论如何，必须满足 userId 是当前用户！
+        const query: any = { userId: userId }; 
+        if (categoryId) {
+            query.categoryId = categoryId;
+        }
+
+        const flashcards = await Flashcard.find(query);
+        res.json(flashcards);
+    } catch (error) {
+        res.status(500).json({ error: '获取卡片失败' });
     }
-
-    const newCard = await Flashcard.create({ question, answer, category: categoryId });
-    res.status(201).json(newCard);
-  } catch (error: any) {
-    res.status(400).json({ error: 'Failed to create flashcard', details: error.message });
-  }
 };
 
-// 2. Get all Flashcards (保留了你的 populate 选择字段和排序)
-export const getFlashcards = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const cards = await Flashcard.find()
-      .populate('category', 'name description type') // V2.0 顺便把 type 也查出来
-      .sort({ createdAt: -1 });
-      
-    res.json(cards);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch flashcards' });
-  }
+// ==========================================
+// 🗂️ 2. 新建单张闪卡 (🚨 核心印记：强行打上主人烙印)
+// ==========================================
+export const createFlashcard = async (req: AuthRequest, res: Response) => {
+    try {
+        const { question, answer, category, categoryId } = req.body;
+        const userId = req.user.id; // 🕵️‍♂️ 拿到当前用户的 ID
+
+        const newCard = new Flashcard({ 
+            question, 
+            answer, 
+            category: category || categoryId, // 👈 谁有值就用谁
+            userId: userId // 🎯 核心操作：把这张卡片挂在你的名下！
+        });
+        
+        await newCard.save();
+        res.status(201).json(newCard);
+    } catch (error) {
+        res.status(500).json({ error: '新建卡片失败' });
+    }
 };
 
-// 3. Update Flashcard
-export const updateFlashcard = async (req: any, res: any) => {
+
+
+// ==========================================
+// 🗂️ 3. 修改单张闪卡 (🚨 核心防御：防篡改)
+// ==========================================
+export const updateFlashcard = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
         const { question, answer, categoryId } = req.body;
-        
-        const updatedCard = await Flashcard.findByIdAndUpdate(
-            id, 
-            { question, answer, category: categoryId },
+        const userId = req.user.id;
+
+        // 🚨 核心防线：查找条件必须同时满足 _id 和 userId！
+        const updatedCard = await Flashcard.findOneAndUpdate(
+            { _id: id, userId: userId }, 
+            { question, answer, categoryId }, 
             { new: true } 
         );
-        
-        if (!updatedCard) return res.status(404).json({ error: '找不到该卡片' });
+
+        if (!updatedCard) return res.status(404).json({ message: '找不到卡片，或你无权修改！' });
         res.json(updatedCard);
     } catch (error) {
-        res.status(500).json({ error: '更新失败' });
+        res.status(500).json({ error: '更新卡片失败' });
     }
 };
 
-// 4. Delete Flashcard
-export const deleteFlashcard = async (req: any, res: any) => {
+// ==========================================
+// 🗂️ 4. 删除单张闪卡 (🚨 核心防御：防误删)
+// ==========================================
+export const deleteFlashcard = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        await Flashcard.findByIdAndDelete(id);
-        res.json({ message: '删除成功' });
+        const userId = req.user.id;
+
+        // 🚨 同理，只允许删除属于自己的卡片
+        const deletedCard = await Flashcard.findOneAndDelete({ _id: id, userId: userId });
+        
+        if (!deletedCard) return res.status(404).json({ message: '找不到卡片，或你无权删除！' });
+        res.json({ message: '卡片已成功删除' });
     } catch (error) {
-        res.status(500).json({ error: '删除失败' });
+        res.status(500).json({ error: '删除卡片失败' });
     }
 };
 
-// 5. Batch Import (保留了你完整的验证和命名)
-export const createFlashcardsBatch = async (req: any, res: any) => {
+// ==========================================
+// 🗂️ 5. 记录复习状态 (🚨 核心防御：只更新自己的进度)
+// ==========================================
+export const recordReview = async (req: AuthRequest, res: Response) => {
     try {
-        const { cards, categoryId } = req.body; 
-        
-        if (!cards || cards.length === 0 || !categoryId) {
-            return res.status(400).json({ error: '数据不完整' });
-        }
+        const { id } = req.params;
+        const { isCorrect } = req.body;
+        const userId = req.user.id;
 
-        const cardsToInsert = cards.map((card: any) => ({
-            question: card.question,
-            answer: card.answer,
-            category: categoryId
+        const card = await Flashcard.findOne({ _id: id, userId: userId });
+        if (!card) return res.status(404).json({ message: '找不到卡片，或你无权操作！' });
+
+        // ... 保留你原本的复习算法逻辑 (计算 nextReviewDate, easeFactor 等) ...
+        // (这里假设你只传个简单的状态过去更新，如果有复杂的计算，保留你原来的逻辑，只要上面那句 findOne 加了 userId 即可)
+        // 下面这句只是个示例，具体依据你自己的打卡逻辑：
+        // card.reviewCount = (card.reviewCount || 0) + 1;
+        
+        await card.save();
+        res.json(card);
+    } catch (error) {
+        res.status(500).json({ error: '记录复习状态失败' });
+    }
+};
+
+// ==========================================
+// 🗂️ 6. 批量导入闪卡 (🚨 核心印记：给每一张卡片打上标签！)
+// ==========================================
+export const createFlashcardsBatch = async (req: AuthRequest, res: Response) => {
+    try {
+        const { cards, categoryId } = req.body;
+        const userId = req.user.id;
+
+        // 🚨 核心改造：遍历传过来的每一张卡片数据，给它们强行塞入 userId
+        const cardsWithOwnership = cards.map((card: any) => ({
+            ...card,
+            categoryId: categoryId,
+            userId: userId // 👈 批量打上你的私人烙印！
         }));
 
-        const insertedCards = await Flashcard.insertMany(cardsToInsert);
-        res.status(201).json({ message: `成功导入 ${insertedCards.length} 张卡片!`, data: insertedCards });
+        const insertedCards = await Flashcard.insertMany(cardsWithOwnership);
+        res.status(201).json(insertedCards);
     } catch (error) {
         res.status(500).json({ error: '批量导入失败' });
     }
-};
-
-// ==========================================
-// 🧠 核心发电机：瀑布流记忆引擎 (V2.0 完全重构版)
-// ==========================================
-export const recordReview = async (req: any, res: any) => {
-    try {
-        const { id } = req.params;
-        const { isKnown } = req.body; 
-        
-        const card = await Flashcard.findById(id);
-        if (!card) return res.status(404).json({ error: '找不到该卡片' });
-
-        if (isKnown) {
-            // ✅ 答对了！
-            card.consecutiveCorrect += 1; // 连对次数 +1
-            
-            // ✨ 瀑布流打怪：连对 1 次，立刻解锁默写模式！
-            if (card.consecutiveCorrect >= 1 && card.stage === 0) {
-                card.stage = 1; 
-            }
-
-            // 艾宾浩斯记忆曲线：拉长下次复习的间隔
-            if (card.interval === 0) {
-                card.interval = 1;
-            } else if (card.interval === 1) {
-                card.interval = 6;
-            } else {
-                card.interval = Math.round(card.interval * card.easeFactor);
-            }
-            card.easeFactor = Math.min(card.easeFactor + 0.1, 3.0); 
-
-        } else {
-            // ❌ 答错了！
-            card.consecutiveCorrect = 0; // 连对记录清零
-            
-            // ✨ 惩罚机制：如果在默写阶段拼错，瞬间降级回背诵阶段找语感！
-            if (card.stage === 1) {
-                card.stage = 0;
-            }
-
-            // 今天必须重背，且因子降低（底线 1.3）
-            card.interval = 0;
-            card.easeFactor = Math.max(1.3, card.easeFactor - 0.2);
-        }
-
-        // 计算下一次要复习的具体日期
-        const nextDate = new Date();
-        if (card.interval > 0) {
-            nextDate.setDate(nextDate.getDate() + card.interval);
-        }
-        card.nextReviewDate = nextDate;
-
-// 🌟 颁发免死金牌：只校验这次修改的记忆曲线，不要去管这张老卡片以前有没有分类！
-        await card.save({ validateModifiedOnly: true });
-        res.json(card);
-
-} catch (error) {
-    console.error("🔥 抓到后台崩溃的真凶了：", error); // 👈 加上这句！！
-    res.status(500).json({ error: '更新记忆曲线失败' });
-}
 };

@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import routes from './routes'; // 引入我们刚刚写好的新路由！
 import path from 'path';
+import authRoutes from './routes/auth';
 
 dotenv.config();
 
@@ -17,6 +18,9 @@ app.use(express.json());
 // 🌟 这一句非常关键：利用 path 模块精准定位根目录下的 public 文件夹
 app.use(express.static(path.join(__dirname, '../public')));
 
+
+// 2. 在你挂载其他路由（比如 flashcards）的附近，加上这句：
+app.use('/api/auth', authRoutes);
 // 连接 MongoDB 数据库 (Mongoose)
 mongoose.connect(process.env.MONGODB_URI as string)
   .then(() => console.log('✅ MongoDB 连接成功'))

@@ -23,6 +23,11 @@ export interface IFlashcard extends Document {
 
 // 🗄️ 数据库 Schema 结构 (保持不变)
 const FlashcardSchema: Schema = new Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User',     // 关联到 User 表
+        required: true   // 必须有主人，不允许无主孤魂！
+    },
     question: { type: String, required: true },
     answer: { type: String, required: true },
     category: { type: Schema.Types.ObjectId, ref: 'Category', required: true },

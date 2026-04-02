@@ -3,14 +3,9 @@
 
 <head>
     <link rel="icon" href="/oopsee.png" type="image/png">
-    
+
     <style id="nuke-debug-style">
-        /* ==========================================
-       🌟 真正的全屏 App 布局：彻底锁死，禁止滑动
-       ========================================== */
-        /* ==========================================
-       🌟 7. 抢救顶部导航栏：防止文件夹名称被挤没
-       ========================================== */
+        /* 保持你原本的所有 CSS 样式不变... */
         .main-header {
             display: flex !important;
             align-items: center !important;
@@ -24,43 +19,32 @@
             align-items: center !important;
             gap: 12px !important;
             flex: 1 !important;
-            /* 🌟 核心：赋予它霸道特权，强行占满左侧剩余空间 */
             min-width: 0 !important;
-            /* 🌟 核心：防止文字超长撑破布局 */
         }
 
         #current-view-title {
             display: block !important;
             visibility: visible !important;
             white-space: nowrap !important;
-            /* 不许换行 */
             overflow: hidden !important;
-            /* 超出部分隐藏 */
             text-overflow: ellipsis !important;
-            /* 名字太长自动变成... */
         }
 
         .header-actions {
             flex-shrink: 0 !important;
-            /* 警告右侧按钮：绝不许缩小，但也不能无限变大去挤左边 */
         }
 
         #study-view:not(.hidden),
         #spell-view:not(.hidden) {
             width: 100% !important;
             height: calc(100vh - 60px) !important;
-            /* 电脑端默认占据整个屏幕高度 */
             display: flex !important;
             flex-direction: column !important;
             background: #ffffff !important;
             overflow: hidden !important;
-            /* ⛔ 核心：绝对禁止整个页面上下滑动 */
             box-sizing: border-box !important;
         }
 
-        /* 📱 手机端专属：精准扣除底部导航栏 (65px)，解决按钮偏下/被吞 */
-        /* 📱 手机端专属：精准扣除底部导航栏，强行垫高底部控制区 */
-        /* 📱 手机端专属：精准扣除底部导航栏，强行垫高底部控制区 */
         @media (max-width: 768px) {
 
             #study-view:not(.hidden),
@@ -69,42 +53,26 @@
                 height: calc(100vh - 60px);
                 padding-top: env(safe-area-inset-top) !important;
                 padding-bottom: 10px !important;
-                /* 给整个 View 底部塞垫子 */
             }
 
             #spell-view:not(.hidden) {
                 overflow-y: auto !important;
-                /* 解除死锁，允许纵向滑动 */
                 -webkit-overflow-scrolling: touch;
-                /* 🍎 苹果 iOS 专属的丝滑滚动特效 */
             }
 
-            /* ========================================== */
-            /* 🌟 核心修复：把 Spell 界面的按钮也强行拉进“增高保护名单” */
-            /* ========================================== */
             .study-controls,
             .study-control,
             #spell-next-control,
             #spell-view .spell-check-btn,
-            /* 🎯 直接瞄准默写界面的提交按钮 */
             #spell-view .check-btn {
-                /* 🎯 兼容你可能用的另一个类名 */
-
-                /* 强行把它往上顶！如果 20px 不够，直接加到 40px！ */
                 margin-bottom: 20px !important;
-
-                /* 绝对防御：防止被别的元素盖住 */
                 position: relative;
                 z-index: 999;
             }
         }
 
-
-
-        /* --- 第一段：顶部导航 (高度焊死) --- */
         .study-nav-bar {
             flex: 0 0 auto !important;
-            /* ⛔ 核心：不允许压缩 */
             padding: 20px !important;
             display: flex !important;
             align-items: center !important;
@@ -125,7 +93,6 @@
 
         .study-progress-container {
             flex: 0 0 auto !important;
-            /* ⛔ 不允许压缩 */
             padding: 0 20px !important;
             margin-bottom: 20px !important;
         }
@@ -143,69 +110,40 @@
             border-radius: 3px !important;
         }
 
-
-        /* ========================================== */
-        /* 🌟 1. 爸爸 (wrapper)：撑满 rooms，挤出四周 20px 禁区 */
-        /* ========================================== */
         .study-card-wrapper,
         .spell-card-wrapper {
             flex: 1;
-            /* 吃掉 View 剩余的所有高度 */
             width: 100%;
             padding: 20px !important;
-            /* 🎯 你的核心诉求：四周永远保持 20px 精致间距 */
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            /* 确立弹性方向从上到下 */
             align-items: center;
-            /* 让儿子在水平方向居中（配合 max-width 保护电脑端） */
             justify-content: center;
-            /* ❌ 核心修复：移除垂直居中！它不应该在 wrapper 内部居中 */
             min-height: 0 !important;
-            /* 移除 min-height */
         }
 
-        /* ========================================== */
-        /* 🌟 2. 儿子 (study-card)：传递弹性指令 */
-        /* ========================================== */
         .study-card {
             flex: 1;
-            /* 继续往下撑满高度 */
             width: 100%;
-
-            /* ❌ 核心修复：移除宽度限购令！ */
             max-width: none !important;
-
             background: transparent !important;
             box-shadow: none !important;
             display: flex;
             flex-direction: column;
-            /* 把弹性指令传递给重孙 */
             align-items: center;
-            /* 让真卡片水平居中 */
         }
 
-        /* ========================================== */
-        /* 🌟 3. 孙子 (flashcard 真卡片)：沉浸式巨无霸！彻底展开！ */
-        /* ========================================== */
         .study-card .flashcard,
         .spell-card {
             flex: 1;
-            /* 🚀 核心魔法：自动拉伸填满高度！移除 calc() */
             width: 100%;
-
-            /* ⭐ 核心修复：在大屏幕上展开得更多，提供一个更大的上限，保护视觉 */
             max-width: 1200px !important;
-
             background: #ffffff;
             border-radius: 20px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-            /* 高级悬浮投影 */
             padding: 30px 24px;
             box-sizing: border-box;
-
-            /* 保证卡片里面的文字和按钮始终保持在正中间 */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -222,10 +160,8 @@
             flex-direction: column !important;
             justify-content: center !important;
             overflow-y: auto !important;
-            /* 单词太长只在卡片白板内部滚动 */
         }
 
-        /* 内部文字排版锁死 */
         .card-content-wrap {
             display: flex !important;
             flex-direction: row !important;
@@ -257,28 +193,21 @@
             justify-content: center !important;
         }
 
-        /* --- 第三段：底部控制栏 (高度焊死) --- */
         .study-controls {
             flex-shrink: 0;
-            /* 核心：告诉它“保持你自己的真实身高，不要被挤压，但也绝不准多占一丝空间！” */
             width: 100%;
             max-width: 600px;
-            /* 配合卡片的宽度 */
             margin: 0 auto !important;
-            /* 杀掉所有多余的外边距 */
             padding: 15px 20px 25px 20px !important;
-            /* 顶部留小缝，底部留一点给手机的“全面屏手势横条” */
             box-sizing: border-box;
             display: flex;
             justify-content: center;
             gap: 15px;
-            /* 按钮之间的间距 */
         }
 
         @media (max-width: 768px) {
             .study-controls {
                 padding-bottom: 100px !important;
-                /* 手机端本身高度已经扣除了底栏，这里正常留白即可 */
             }
         }
 
@@ -304,9 +233,6 @@
             text-align: center !important;
         }
 
-        /* ==========================================
-       🌟 卡片列表页防重叠保护 (保留你的胜利果实)
-       ========================================== */
         .cards-grid {
             display: flex !important;
             flex-direction: column !important;
@@ -321,19 +247,12 @@
             margin-bottom: 0 !important;
         }
 
-        /* ==========================================
-           🌟 9. 纯白无界化设计 (Seamless White UI)
-           ========================================== */
-
-        /* 1. 抹平顶栏分割线，确保顶栏本身也是纯白 */
         .main-header {
             border-bottom: none !important;
             box-shadow: none !important;
-            /* 确保存没有任何阴影 */
             background: #ffffff !important;
         }
 
-        /* 2. 铲除所有界面的“底层灰”，全部刷成纯净白 */
         body,
         html,
         #app-container,
@@ -347,12 +266,41 @@
             background-color: #ffffff !important;
         }
 
-        /* 3. 给卡片本身稍微加一点点极弱的阴影或边框，防止它们在白底上完全消失（如果需要的话） */
         .card-item {
             border: 1px solid #f1f5f9 !important;
-            /* 非常浅的边框勾勒轮廓 */
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
-            /* 几乎看不见的阴影，增加一点立体感 */
+        }
+
+        .batch-bar-responsive {
+            left: calc(50% + 120px);
+            transform: translateX(-50%);
+            border-radius: 40px;
+            min-width: 480px;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .batch-bar-responsive {
+                bottom: 0 !important;
+                left: 0 !important;
+                transform: none !important;
+                width: 100vw !important;
+                min-width: 0 !important;
+                border-radius: 0 !important;
+                background: rgba(255, 255, 255, 0.95) !important;
+                color: #334155 !important;
+                padding: 10px 20px calc(10px + env(safe-area-inset-bottom)) !important;
+                box-sizing: border-box !important;
+                flex-direction: row !important;
+                box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.05) !important;
+                z-index: 9999 !important;
+            }
+
+            #pick-mode-actions {
+                width: 100% !important;
+                justify-content: space-between !important;
+                margin: 0 !important;
+            }
         }
     </style>
 
@@ -363,1133 +311,1048 @@
 </head>
 
 <body>
-    <div class="app-layout">
 
-        <div id="mobile-overlay" onclick="toggleMobileSidebar()"
-            style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.4); z-index:1500; backdrop-filter: blur(2px);">
+    <div id="oopsy-landing-page" class="landing-container">
+
+        <div class="landing-brand">
+            <div class="brand-content">
+                <img src="/oopsee.png" alt="Oopsy Logo" class="brand-logo">
+                <h1 class="brand-title">欢迎来到 0opsy～～</h1>
+                <p class="brand-subtitle">别担心遗忘，Oopsy 帮你打包记忆宇宙。<br>每天 15 分钟，轻松构建终身知识库。</p>
+            </div>
         </div>
 
-        <aside class="sidebar">
-            <div class="sidebar-logo"
-                style="display: flex; align-items: center; gap: 10px; padding: 20px 24px; border-bottom: 1px solid #edf2f7; margin-bottom: 10px;">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="9" y1="21" x2="9" y2="9"></line>
-                </svg>
-                <span
-                    style="font-size: 1.5rem; font-weight: 800; color: #1e293b; letter-spacing: -0.5px;">Ooopsy!</span>
-            </div>
-            <ul class="nav-menu" id="sidebar-menu">
-            </ul>
-        </aside>
+        <div class="landing-auth">
+            <div class="auth-content">
+                <div class="auth-header">
+                    <h2 id="auth-title">登录 Oopsy</h2>
+                    <p id="auth-subtitle">欢迎回来，继续你的记忆之旅 🚀</p>
+                </div>
 
-        <main class="main-content">
-            <header class="main-header"
-                style="display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; flex-wrap: wrap; gap: 10px;">
-
-                <div class="header-left"
-                    style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; flex-wrap: wrap;">
-
-                    <div id="mobile-menu-btn" onclick="toggleMobileSidebar()"
-                        style="display: none; cursor: pointer; color: #475569;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5" stroke-linecap="round">
-                            <line x1="3" y1="12" x2="21" y2="12"></line>
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <line x1="3" y1="18" x2="21" y2="18"></line>
-                        </svg>
+                <div id="auth-form">
+                    <div class="input-group">
+                        <label for="auth-username">专属账号</label>
+                        <input type="text" id="auth-username" placeholder="请输入你的账号名称" autocomplete="off">
                     </div>
 
-                    <span id="current-view-title"
-                        style="font-size: 1.5rem; color: #1a202c; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;"></span>
+                    <div class="input-group">
+                        <label for="auth-password">安全密码</label>
+                        <input type="password" id="auth-password" placeholder="请输入密码">
+                    </div>
 
-                    <button id="category-settings-btn" onclick="openCategorySettingsModal()" class="hidden"
-                        style="background: transparent; border: none; cursor: pointer; transition: 0.2s; color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; padding: 6px; border-radius: 6px;"
-                        title="文件夹设置" onmouseover="this.style.backgroundColor='#f1f5f9'; this.style.color='#475569'"
-                        onmouseout="this.style.backgroundColor='transparent'; this.style.color='#94a3b8'">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path
-                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                            </path>
-                        </svg>
-                    </button>
+                    <button type="button" id="btn-auth-submit" onclick="handleAuthSubmit(event)">立即登录</button>
+                </div>
 
-                    <div style="display: flex; align-items: center; gap: 10px; margin-left: 10px;">
-                        <button onclick="showClearConfirmModal()" id="btn-clear-uncategorized" title="清空未分类"
-                            style="display: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; cursor: pointer; padding: 0;">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                <div class="auth-footer">
+                    <span id="auth-switch-text">还没有账号？</span>
+                    <span id="btn-toggle-auth" onclick="toggleAuthMode()">免费注册</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="oopsy-main-app" style="display: none;">
+
+        <div class="app-layout">
+
+            <div id="mobile-overlay" onclick="toggleMobileSidebar()"
+                style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.4); z-index:1500; backdrop-filter: blur(2px);">
+            </div>
+
+            <aside class="sidebar">
+                <div class="sidebar-logo"
+                    style="display: flex; align-items: center; gap: 10px; padding: 20px 24px; border-bottom: 1px solid #edf2f7; margin-bottom: 10px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffa500" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                    </svg>
+                    <span
+                        style="font-size: 1.5rem; font-weight: 800; color: #1e293b; letter-spacing: -0.5px;">Ooopsy!</span>
+                </div>
+                <ul class="nav-menu" id="sidebar-menu">
+                </ul>
+            </aside>
+
+            <main class="main-content">
+                <header class="main-header"
+                    style="display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; flex-wrap: wrap; gap: 10px;">
+
+                    <div class="header-left"
+                        style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; flex-wrap: wrap;">
+
+                        <div id="mobile-menu-btn" onclick="toggleMobileSidebar()"
+                            style="display: none; cursor: pointer; color: #475569;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round">
+                                <line x1="3" y1="12" x2="21" y2="12"></line>
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="18" x2="21" y2="18"></line>
+                            </svg>
+                        </div>
+
+                        <span id="current-view-title"
+                            style="font-size: 1.5rem; color: #1a202c; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;"></span>
+
+                        <button id="category-settings-btn" onclick="openCategorySettingsModal()" class="hidden"
+                            style="background: transparent; border: none; cursor: pointer; transition: 0.2s; color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; padding: 6px; border-radius: 6px;"
+                            title="文件夹设置" onmouseover="this.style.backgroundColor='#f1f5f9'; this.style.color='#475569'"
+                            onmouseout="this.style.backgroundColor='transparent'; this.style.color='#94a3b8'">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path
+                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
                                 </path>
                             </svg>
                         </button>
-                        <button id="btn-select-all" onclick="toggleSelectAllCards()"
-                            style="display: none; background: transparent; border: none; color: #3b82f6; font-size: 14px; font-weight: 600; cursor: pointer; padding: 0 4px;">全选</button>
 
-                        <button onclick="toggleManageMode()" id="btn-toggle-manage" title="批量管理"
-                            style="background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-                                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-                                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-                                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-                            </svg>
-                        </button>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-left: 10px;">
+                            <button onclick="showClearConfirmModal()" id="btn-clear-uncategorized" title="清空未分类"
+                                style="display: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; cursor: pointer; padding: 0;">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                    </path>
+                                </svg>
+                            </button>
+                            <button id="btn-select-all" onclick="toggleSelectAllCards()"
+                                style="display: none; background: transparent; border: none; color: black; font-size: 14px; font-weight: 600; cursor: pointer; padding: 0 4px;">全选</button>
 
-                        <button id="btn-add-card" title="添加卡片"
-                            style="background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: 0.2s;">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                        </button>
-                        <button onclick="openTestSelectorModal()" id="btn-test-mode" title="检测模式"
-                            style="background: #eff6ff; color: #3b82f6; border: none; width: 38px; height: 38px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 20h9"></path>
-                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                            </svg>
-                        </button>
-                        <!-- <button onclick="startStudyMode()" title="背诵模式"
-                            style="background: #ecfdf5; color: #10b981; border: none; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                            </svg>
-                        </button> -->
-                        <!-- <button onclick="startSpellMode()" title="默写模式"
-                            style="background: #eff6ff; color: #3b82f6; border: none; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 20h9"></path>
-                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                            </svg>
-                        </button> -->
-                    </div>
-                </div>
+                            <button onclick="toggleManageMode()" id="btn-toggle-manage" title="批量管理"
+                                style="background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                                    <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                                    <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                                </svg>
+                            </button>
 
-                <div class="header-right" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                    <button id="btn-desktop-explore" class="desktop-sys-btn" onclick="showExploreView()" title="发现词库"
-                        style="background: transparent; color: #64748b; border: 1px solid #e2e8f0; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: 0.2s;"
-                        onmouseover="this.style.backgroundColor='#f8fafc'; this.style.color='#3b82f6'"
-                        onmouseout="this.style.backgroundColor='transparent'; this.style.color='#64748b'">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    </button>
-                    <button id="btn-desktop-profile" class="desktop-sys-btn" onclick="showProfileView()" title="我的设置"
-                        style="background: transparent; color: #64748b; border: 1px solid #e2e8f0; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: 0.2s;"
-                        onmouseover="this.style.backgroundColor='#f8fafc'; this.style.color='#3b82f6'"
-                        onmouseout="this.style.backgroundColor='transparent'; this.style.color='#64748b'">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                    </button>
-                </div>
-
-            </header>
-
-            <div class="content-area">
-
-                <div id="dashboard-view" class="content-area hidden" style="background: #ffffff; ">
-
-                    <div class="dash-header"
-                        style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; flex-wrap: wrap; gap: 16px;">
-                        <div>
-                            <h2
-                                style="margin: 0; font-size: 1.8rem; color: #0f172a; letter-spacing: -0.5px; font-weight: 700;">
-                                欢迎回来</h2>
-                            <p style="margin: 6px 0 0 0; color: #64748b; font-size: 0.95rem;">基于艾宾浩斯记忆曲线，为你规划了今日任务。</p>
-                        </div>
-                        <!-- <div class="dash-quick-actions" style="display: flex; gap: 10px;">
-                            <button onclick="openQuickCategoryModal()" class="dash-pill-btn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            <button id="btn-add-card" title="添加卡片"
+                                style="background: #eef2ff; color: #ffa500; border: 1px solid #e0e7ff; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: 0.2s;">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <line x1="12" y1="5" x2="12" y2="19"></line>
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
-                                极速建档
                             </button>
-                            <button onclick="openBatchModal()" class="dash-pill-btn">
+                            <button onclick="openTestSelectorModal()" id="btn-test-mode" title="检测模式"
+                                style="background: #eff6ff; color: #07080b; border: none; width: 38px; height: 38px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="header-right" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                        <button id="btn-desktop-explore" class="desktop-sys-btn" onclick="showExploreView()"
+                            title="发现词库"
+                            style="background: transparent; color: #64748b; border: 1px solid #e2e8f0; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: 0.2s;"
+                            onmouseover="this.style.backgroundColor='#f8fafc'; this.style.color='black'"
+                            onmouseout="this.style.backgroundColor='transparent'; this.style.color='#64748b'">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </button>
+                        <button id="btn-desktop-profile" class="desktop-sys-btn" onclick="showProfileView()"
+                            title="我的设置"
+                            style="background: transparent; color: #64748b; border: 1px solid #e2e8f0; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: 0.2s;"
+                            onmouseover="this.style.backgroundColor='#f8fafc'; this.style.color='black'"
+                            onmouseout="this.style.backgroundColor='transparent'; this.style.color='#64748b'">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </button>
+                    </div>
+
+                </header>
+
+                <div class="content-area">
+
+                    <div id="dashboard-view" class="content-area hidden" style="background: #ffffff; ">
+
+                        <div class="dash-header"
+                            style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; flex-wrap: wrap; gap: 16px;">
+                            <div>
+                                <h2 id="dash-greeting"
+                                    style="margin: 0; font-size: 1.8rem; color: #0f172a; letter-spacing: -0.5px; font-weight: 700;">
+                                    欢迎回来</h2>
+                                <p style="margin: 6px 0 0 0; color: #64748b; font-size: 0.95rem;">基于艾宾浩斯记忆曲线，为你规划了今日任务。
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="main-task-hero"
+                            style="margin-top: 24px; margin-bottom: 32px; background: white; border-radius: 24px; padding: 28px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed #e2e8f0;">
+                                <div style="flex: 1; min-width: 0; padding-right: 12px;">
+                                    <h3 style="margin: 0; font-size: 1.15rem; color: #1e293b; font-weight: 700;">📅 今日计划
+                                    </h3>
+                                    <p id="dash-plan-summary"
+                                        style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem; line-height: 1.4;">
+                                        每日目标 20 词，今天已学 0 词</p>
+                                </div>
+
+                                <button onclick="quickAdjustPlan()"
+                                    style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: #f1f5f9; color: #475569; border: none; border-radius: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; flex-shrink: 0;">
+                                    ⚙️ 调整计划
+                                </button>
+                            </div>
+
+                            <div
+                                style="display: flex; justify-content: space-around; text-align: center; margin-bottom: 32px;">
+                                <div style="flex: 1; border-right: 1px solid #f1f5f9;">
+                                    <p style="margin: 0; color: #64748b; font-size: 0.9rem; margin-bottom: 8px;">需复习
+                                        (老词)
+                                    </p>
+                                    <div id="dash-review-count"
+                                        style="font-size: 2.5rem; font-weight: 800; color: #1e293b; line-height: 1;">0
+                                    </div>
+                                </div>
+                                <div style="flex: 1;">
+                                    <p style="margin: 0; color: #64748b; font-size: 0.9rem; margin-bottom: 8px;">需新学
+                                        (配额)
+                                    </p>
+                                    <div id="dash-new-count"
+                                        style="font-size: 2.5rem; font-weight: 800; color: #1e293b; line-height: 1;">0
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 20px; display: flex; justify-content: center;">
+                                <button id="btn-main-action" onclick="handleMainAction()"
+                                    style="width: 100%; max-width: 800px; padding: 14px 20px; border-radius: 14px; font-size: 1.1rem; font-weight: 600; border: none; transition: all 0.2s ease;">
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="dash-metrics-grid">
+                            <div class="dash-stat-card">
+                                <div class="stat-icon" style="background: #fff7ed; color: #f97316;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path
+                                            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">连续学习 (天)</span>
+                                    <strong class="stat-value" id="dash-streak-days" style="color: #f97316;">0</strong>
+                                </div>
+                            </div>
+
+                            <div class="dash-stat-card" onclick="goToHardCards()"
+                                style="cursor: pointer; transition: transform 0.2s;"
+                                onmouseover="this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.transform='translateY(0)'">
+                                <div class="stat-icon" style="background: #fff1f2; color: #f43f5e;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path
+                                            d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z">
+                                        </path>
+                                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                    </svg>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-label">困难卡片</div>
+                                    <div class="stat-value" id="hard-cards-count">0</div>
+                                </div>
+                            </div>
+
+                            <div class="dash-stat-card" onclick="goToMasteredCards()"
+                                style="cursor: pointer; transition: transform 0.2s;"
+                                onmouseover="this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.transform='translateY(0)'">
+                                <div class="stat-icon" style="background: #ecfdf5; color: #10b981;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">熟练掌握</span>
+                                    <strong class="stat-value" id="dash-mastered-cards">0</strong>
+                                </div>
+                            </div>
+
+                            <div class="dash-stat-card" onclick="goToAllCards()"
+                                style="cursor: pointer; transition: transform 0.2s;"
+                                onmouseover="this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.transform='translateY(0)'">
+                                <div class="stat-icon" style="background: #eff6ff; color: black;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                                    </svg>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">知识库总览</span>
+                                    <strong class="stat-value" id="dash-total-cards">0</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 48px;">
+                            <h3
+                                style="margin: 0 0 20px 0; font-size: 1.1rem; color: #1e293b; display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                紧急复习任务
+                            </h3>
+
+                            <div id="dash-urgent-tasks" class="dash-tasks-grid">
+                                <div style="color: #94a3b8; font-size: 0.9rem; padding: 20px 0;">正在分析记忆曲线...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="manage-view" class="view">
+                        <div class="toolbar" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <div style="position: relative; flex: 1;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a0aec0"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                    style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%);">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <input type="text" id="search-input" placeholder="搜索当前列表中的问题或答案..."
+                                    onkeyup="filterCards()"
+                                    style="width: 100%; padding: 12px 12px 12px 40px; border-radius: 10px; border: 1px solid #e2e8f0; box-sizing: border-box;">
+                            </div>
+                            <button onclick="openBatchModal()"
+                                style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: none; background: #eef2ff; color: black; border: 1px solid #e0e7ff; font-weight: 600; cursor: pointer; transition: 0.2s;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                 </svg>
                                 批量导入
                             </button>
-                        </div> -->
+                        </div>
+                        <div id="flashcards-list" class="cards-grid"></div>
                     </div>
 
-                    <div class="main-task-hero"
-                        style="margin-top: 24px; margin-bottom: 32px; background: white; border-radius: 24px; padding: 28px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                    <div id="explore-view" class="view hidden">
+                        <div class="explore-header-section">
+                            <div class="market-search-wrapper"
+                                style="background: #fff; border-radius: 12px; padding: 12px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f1f5f9;">
 
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed #e2e8f0;">
-                            <div>
-                                <h3 style="margin: 0; font-size: 1.15rem; color: #1e293b; font-weight: 700;">📅 今日计划
-                                </h3>
-                                <p id="dash-plan-summary"
-                                    style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem;">每日目标 20 词，今天已学 0 词
-                                </p>
-                            </div>
-                            <button onclick="quickAdjustPlan()"
-                                style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: #f1f5f9; color: #475569; border: none; border-radius: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s;">
-                                ⚙️ 调整计划
-                            </button>
-                        </div>
-
-                        <div
-                            style="display: flex; justify-content: space-around; text-align: center; margin-bottom: 32px;">
-                            <div style="flex: 1; border-right: 1px solid #f1f5f9;">
-                                <p style="margin: 0; color: #64748b; font-size: 0.9rem; margin-bottom: 8px;">需复习 (老词)
-                                </p>
-                                <div id="dash-review-count"
-                                    style="font-size: 2.5rem; font-weight: 800; color: #1e293b; line-height: 1;">0</div>
-                            </div>
-                            <div style="flex: 1;">
-                                <p style="margin: 0; color: #64748b; font-size: 0.9rem; margin-bottom: 8px;">需新学 (配额)
-                                </p>
-                                <div id="dash-new-count"
-                                    style="font-size: 2.5rem; font-weight: 800; color: #1e293b; line-height: 1;">0</div>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 20px; display: flex; justify-content: center;">
-                            <button id="btn-main-action" onclick="handleMainAction()"
-                                style="width: 100%; max-width: 800px; padding: 14px 20px; border-radius: 14px; font-size: 1.1rem; font-weight: 600; border: none; transition: all 0.2s ease;">
-                            </button>
-                        </div>
-                    </div>
-
-
-
-                    <div class="dash-metrics-grid">
-                        <div class="dash-stat-card">
-                            <div class="stat-icon" style="background: #fff7ed; color: #f97316;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path
-                                        d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z">
-                                    </path>
-                                </svg>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-label">连续学习 (天)</span>
-                                <strong class="stat-value" id="dash-streak-days" style="color: #f97316;">0</strong>
-                            </div>
-                        </div>
-
-                        <div class="dash-stat-card" onclick="goToHardCards()"
-                            style="cursor: pointer; transition: transform 0.2s;"
-                            onmouseover="this.style.transform='translateY(-2px)'"
-                            onmouseout="this.style.transform='translateY(0)'">
-                            <div class="stat-icon" style="background: #fff1f2; color: #f43f5e;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z">
-                                    </path>
-                                    <line x1="12" y1="9" x2="12" y2="13"></line>
-                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                                </svg>
-                            </div>
-                            <div class="stat-info">
-                                <div class="stat-label">困难卡片</div>
-                                <div class="stat-value" id="hard-cards-count">0</div>
-                            </div>
-                        </div>
-
-                        <div class="dash-stat-card" onclick="goToMasteredCards()"
-                            style="cursor: pointer; transition: transform 0.2s;"
-                            onmouseover="this.style.transform='translateY(-2px)'"
-                            onmouseout="this.style.transform='translateY(0)'">
-                            <div class="stat-icon" style="background: #ecfdf5; color: #10b981;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-label">熟练掌握</span>
-                                <strong class="stat-value" id="dash-mastered-cards">0</strong>
-                            </div>
-                        </div>
-
-                        <div class="dash-stat-card" onclick="goToAllCards()"
-                            style="cursor: pointer; transition: transform 0.2s;"
-                            onmouseover="this.style.transform='translateY(-2px)'"
-                            onmouseout="this.style.transform='translateY(0)'">
-                            <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                                </svg>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-label">知识库总览</span>
-                                <strong class="stat-value" id="dash-total-cards">0</strong>
-                            </div>
-                        </div>
-                    </div>
-
-
-
-                    <div style="margin-top: 48px;">
-                        <h3
-                            style="margin: 0 0 20px 0; font-size: 1.1rem; color: #1e293b; display: flex; align-items: center; gap: 8px; font-weight: 600;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 16 14"></polyline>
-                            </svg>
-                            紧急复习任务
-                        </h3>
-
-                        <div id="dash-urgent-tasks" class="dash-tasks-grid">
-                            <div style="color: #94a3b8; font-size: 0.9rem; padding: 20px 0;">正在分析记忆曲线...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="manage-view" class="view">
-                    <div class="toolbar" style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <div style="position: relative; flex: 1;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a0aec0"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%);">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                            <input type="text" id="search-input" placeholder="搜索当前列表中的问题或答案..." onkeyup="filterCards()"
-                                style="width: 100%; padding: 12px 12px 12px 40px; border-radius: 10px; border: 1px solid #e2e8f0; box-sizing: border-box;">
-                        </div>
-                        <button onclick="openBatchModal()"
-                            style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: none; background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; font-weight: 600; cursor: pointer; transition: 0.2s;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                            </svg>
-                            批量导入
-                        </button>
-                    </div>
-                    <div id="flashcards-list" class="cards-grid"></div>
-                </div>
-
-                <div id="explore-view" class="view hidden">
-
-                    <div class="explore-header-section">
-                        <div class="market-search-wrapper"
-                            style="background: #fff; border-radius: 12px; padding: 12px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f1f5f9;">
-
-                            <div class="ms-header" style="display: flex; gap: 12px; align-items: center;">
-                                <div
-                                    style="flex: 1; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; padding: 8px 12px; border: 1px solid #e2e8f0;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
-                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="11" cy="11" r="8"></circle>
-                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                    </svg>
-                                    <input type="text" id="market-search-input" placeholder="输入你想搜的单词或词书..."
-                                        onkeyup="filterMarket()"
-                                        style="flex: 1; border: none; background: transparent; outline: none; padding-left: 8px; font-size: 15px; color: #1e293b;">
-                                </div>
-                                <button onclick="clearMarketSearch()"
-                                    style="color: #94a3b8; border: none; background: transparent; font-size: 15px; cursor: pointer; padding: 0 4px; font-weight: 500;">取消</button>
-                            </div>
-
-                            <div class="ms-tabs"
-                                style="display: flex; margin-top: 16px; border-bottom: 1px solid #f1f5f9;">
-                                <div id="tab-word" onclick="switchMarketTab('word')" class="active"
-                                    style="flex: 1; text-align: center; padding-bottom: 10px; color: #3b82f6; border-bottom: 2px solid #3b82f6; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 15px;">
-                                    找单词</div>
-                                <div id="tab-deck" onclick="switchMarketTab('deck')"
-                                    style="flex: 1; text-align: center; padding-bottom: 10px; color: #94a3b8; border-bottom: 2px solid transparent; cursor: pointer; transition: 0.2s; font-size: 15px;">
-                                    找词书</div>
-                            </div>
-
-                            <div id="market-search-results"
-                                style="margin-top: 8px; max-height: 50vh; overflow-y: auto;">
-                                <div style="padding: 30px 10px; text-align: center; color: #cbd5e1; font-size: 14px;">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="1.5" style="margin-bottom: 10px; opacity: 0.5;">
-                                        <circle cx="11" cy="11" r="8"></circle>
-                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                    </svg>
-                                    <div>在上方输入内容开始搜索吧</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="explore-tools-list">
-                        <div class="explore-action-row" onclick="openBatchModal()">
-                            <div class="row-left">
-                                <div class="row-icon-box">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1"
-                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="17 8 12 3 7 8"></polyline>
-                                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                                    </svg>
-                                </div>
-                                <div class="row-text">
-                                    <span class="row-title">本地批量导入单词本</span>
-                                    <span class="row-subtitle">上传 Excel / CSV 文件快速入库</span>
-                                </div>
-                            </div>
-                            <div class="row-right">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1"
-                                    stroke-width="2.5">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="explore-tabs-scroll">
-                        <div class="explore-tabs-content">
-                            <button class="tab-item active" onclick="switchMarketTab('all')">全部</button>
-                            <button class="tab-item" onclick="switchMarketTab('build')">建筑工程</button>
-                            <button class="tab-item" onclick="switchMarketTab('english')">外语学习</button>
-                            <button class="tab-item" onclick="switchMarketTab('exam')">职业资格</button>
-                            <button class="tab-item" onclick="switchMarketTab('other')">其他分类</button>
-                        </div>
-                    </div>
-
-                    <div class="explore-market-list">
-                        <div class="list-section-label">精选推荐</div>
-                        <div id="market-list-container">
-                        </div>
-                    </div>
-                </div>
-
-                <div id="profile-view" class="view hidden"
-                    style="background: #f1f5f9; min-height: 100vh; padding-bottom: 80px;">
-
-                    <div
-                        style="background: white; padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div
-                                style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold;">
-                                建
-                            </div>
-                            <div>
-                                <h4 style="margin: 0; color: #1e293b; font-size: 1.1rem; font-weight: 700;">建造师小包</h4>
-                                <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.8rem;">已坚持打卡 12 天 | <span
-                                        style="color: #f59e0b; font-weight: 600;">PRO</span></p>
-                            </div>
-                        </div>
-                        <button
-                            style="background: transparent; color: #3b82f6; border: 1px solid #3b82f6; padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">切换账号</button>
-                    </div>
-
-                    <div style="background: white;">
-                        <div style="padding: 8px 16px; background: #f1f5f9; font-size: 0.8rem; color: #64748b;">学习与发音
-                        </div>
-
-                        <div
-                            style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 0.5px solid #f1f5f9;">
-                            <span style="color: #1e293b; font-size: 0.95rem;">每日复习上限</span>
-                            <div style="display: flex; align-items: center;">
-                                <input type="number" id="setting-daily-limit" value="20" min="1" max="500"
-                                    style="width: 45px; background: transparent; border: none; text-align: right; font-weight: 500; color: #3b82f6; outline: none; font-size: 0.95rem; padding: 0;">
-                                <span style="font-size: 0.9rem; color: #64748b; margin-left: 2px;">张</span>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1"
-                                    stroke-width="2" style="margin-left: 6px;">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </div>
-                        </div>
-
-                        <div
-                            style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 0.5px solid #f1f5f9;">
-                            <span style="color: #1e293b; font-size: 0.95rem;">自动朗读卡片</span>
-                            <div
-                                style="width: 44px; height: 24px; background: #3b82f6; border-radius: 12px; position: relative;">
-                                <div
-                                    style="width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute; top: 2px; right: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2);">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style="padding: 8px 16px; background: #f1f5f9; font-size: 0.8rem; color: #64748b;">系统与数据
-                        </div>
-
-                        <div
-                            style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px;">
-                            <span style="color: #1e293b; font-size: 0.95rem;">清除本地缓存</span>
-                            <div style="display: flex; align-items: center;">
-                                <span style="color: #94a3b8; font-size: 0.9rem;">12.4 MB</span>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1"
-                                    stroke-width="2" style="margin-left: 6px;">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div
-                        style="margin-top: 12px; background: white; padding: 14px 16px; text-align: center; color: #ef4444; font-size: 0.95rem; cursor: pointer; border-bottom: 0.5px solid #f1f5f9; border-top: 0.5px solid #f1f5f9;">
-                        退出当前账号
-                    </div>
-
-                </div>
-
-                <div id="clear-confirm-modal"
-                    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center;">
-                    <div
-                        style="background: white; padding: 24px; border-radius: 16px; width: 90%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center;">
-                        <div
-                            style="width: 48px; height: 48px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
-                            <svg width="24" height="24" style="color: #ef4444;" fill="none" stroke="currentColor"
-                                stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
-                                </path>
-                            </svg>
-                        </div>
-                        <h3 style="margin: 0 0 8px; color: #1e293b; font-size: 18px;">确认清空未分类？</h3>
-                        <p id="clear-confirm-text"
-                            style="margin: 0 0 24px; color: #64748b; font-size: 14px; line-height: 1.5;">
-                            此操作将永久删除该区域的所有卡片，一旦删除无法恢复。</p>
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="document.getElementById('clear-confirm-modal').style.display='none'"
-                                style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #f1f5f9; color: #475569; cursor: pointer; font-weight: bold; font-size: 14px;">取消</button>
-                            <button id="confirm-clear-btn" onclick="executeClearUncategorized()"
-                                style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #ef4444; color: white; cursor: pointer; font-weight: bold; font-size: 14px;">确认清空</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="batch-move-modal"
-                    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center;">
-                    <div
-                        style="background: white; padding: 24px; border-radius: 16px; width: 90%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-
-                        <h3 style="margin: 0 0 16px; color: #1e293b; font-size: 18px;">移动至文件夹</h3>
-                        <p id="batch-move-text"
-                            style="margin: 0 0 16px; color: #64748b; font-size: 14px; line-height: 1.5;">将已选的卡片移动到：</p>
-
-                        <select id="batch-move-select"
-                            style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px; color: #1e293b; font-size: 14px; outline: none; background: #f8fafc; cursor: pointer;">
-                        </select>
-
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="document.getElementById('batch-move-modal').style.display='none'"
-                                style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #f1f5f9; color: #475569; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s;">取消</button>
-                            <button id="confirm-move-btn" onclick="executeBatchMove()"
-                                style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #3b82f6; color: white; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s;">确认移动</button>
-                        </div>
-                    </div>
-                </div>
-
-
-                <div id="study-view" class="view hidden">
-
-                    <div class="study-nav-bar">
-                        <button class="study-back-btn" onclick="showMainView('manage-view')">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            <span>返回卡片列表</span>
-                        </button>
-                    </div>
-
-                    <div class="study-progress-container">
-                        <span id="study-progress-text"></span>
-                        <div class="progress-bar-bg">
-                            <div id="progress-bar-fill"></div>
-                        </div>
-                    </div>
-                    <div class="study-card-wrapper">
-                        <div id="study-card" class="study-card" onclick="flipCard()">
-                            <div id="card-inner" class="card-inner">
-
-                                <div class="card-front" ;>
+                                <div class="ms-header" style="display: flex; gap: 12px; align-items: center;">
                                     <div
-                                        style="position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10;">
-                                        <button
-                                            onclick="speakWord(document.getElementById('study-question').innerText, event)"
-                                            title="发音"
-                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
-                                            onmouseover="this.style.color='#3b82f6'; this.style.background='#eff6ff'"
-                                            onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07">
-                                                </path>
-                                            </svg>
-                                        </button>
-                                        <button class="study-star-btn" onclick="toggleStudyStar(event)" title="收藏"
-                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
-                                            onmouseover="this.style.transform='scale(1.1)'"
-                                            onmouseout="this.style.transform='scale(1)'">
-                                            <svg class="study-star-icon" width="20" height="20" viewBox="0 0 24 24"
-                                                fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round">
-                                                <polygon
-                                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                                                </polygon>
-                                            </svg>
-                                        </button>
-                                        <button onclick="openStudyEditModal(event)" title="编辑"
-                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
-                                            onmouseover="this.style.color='#10b981'; this.style.background='#ecfdf5'"
-                                            onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
-                                                </path>
-                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
-                                                </path>
-                                            </svg>
-                                        </button>
+                                        style="flex: 1; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; padding: 8px 12px; border: 1px solid #e2e8f0;">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+                                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        <input type="text" id="market-search-input" placeholder="输入你想搜的单词或词书..."
+                                            onkeyup="filterMarket()"
+                                            style="flex: 1; border: none; background: transparent; outline: none; padding-left: 8px; font-size: 15px; color: #1e293b;">
                                     </div>
-                                    <div class="card-content-wrap">
-                                        <h3 id="study-question"></h3>
-                                    </div>
-                                    <p class="flip-hint">点击翻看答案 (或按空格)</p>
+                                    <button onclick="clearMarketSearch()"
+                                        style="color: #94a3b8; border: none; background: transparent; font-size: 15px; cursor: pointer; padding: 0 4px; font-weight: 500;">取消</button>
                                 </div>
 
-                                <div class="card-back" >
+                                <div class="ms-tabs"
+                                    style="display: flex; margin-top: 16px; border-bottom: 1px solid #f1f5f9;">
+                                    <div id="tab-word" onclick="switchMarketTab('word')" class="active"
+                                        style="flex: 1; text-align: center; padding-bottom: 10px; color: black; border-bottom: 2px solid black; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 15px;">
+                                        找单词</div>
+                                    <div id="tab-deck" onclick="switchMarketTab('deck')"
+                                        style="flex: 1; text-align: center; padding-bottom: 10px; color: #94a3b8; border-bottom: 2px solid transparent; cursor: pointer; transition: 0.2s; font-size: 15px;">
+                                        找词书</div>
+                                </div>
+
+                                <div id="market-search-results"
+                                    style="margin-top: 8px; max-height: 50vh; overflow-y: auto;">
                                     <div
-                                        style="position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10;">
-                                        <button
-                                            onclick="speakWord(document.getElementById('study-answer').innerText, event)"
-                                            title="发音"
-                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
-                                            onmouseover="this.style.color='#3b82f6'; this.style.background='#eff6ff'"
-                                            onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07">
-                                                </path>
-                                            </svg>
-                                        </button>
-                                        <button class="study-star-btn" onclick="toggleStudyStar(event)" title="收藏"
-                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
-                                            onmouseover="this.style.transform='scale(1.1)'"
-                                            onmouseout="this.style.transform='scale(1)'">
-                                            <svg class="study-star-icon" width="20" height="20" viewBox="0 0 24 24"
-                                                fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round">
-                                                <polygon
-                                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                                                </polygon>
-                                            </svg>
-                                        </button>
-                                        <button onclick="openStudyEditModal(event)" title="编辑"
-                                            style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
-                                            onmouseover="this.style.color='#10b981'; this.style.background='#ecfdf5'"
-                                            onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
-                                                </path>
-                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
-                                                </path>
-                                            </svg>
-                                        </button>
+                                        style="padding: 30px 10px; text-align: center; color: #cbd5e1; font-size: 14px;">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="1.5"
+                                            style="margin-bottom: 10px; opacity: 0.5;">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        <div>在上方输入内容开始搜索吧</div>
                                     </div>
-                                    <div class="card-content-wrap">
-                                        <h3 id="study-answer"></h3>
-                                    </div>
-                                    <p class="flip-hint">点击翻回问题</p>
                                 </div>
+                            </div>
+                        </div>
 
+                        <div class="explore-tools-list">
+                            <div class="explore-action-row" onclick="openBatchModal()">
+                                <div class="row-left">
+                                    <div class="row-icon-box">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1"
+                                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                    </div>
+                                    <div class="row-text">
+                                        <span class="row-title">本地批量导入单词本</span>
+                                        <span class="row-subtitle">上传 Excel / CSV 文件快速入库</span>
+                                    </div>
+                                </div>
+                                <div class="row-right">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1"
+                                        stroke-width="2.5">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="explore-tabs-scroll">
+                            <div class="explore-tabs-content">
+                                <button class="tab-item active" onclick="switchMarketTab('all')">全部</button>
+                                <button class="tab-item" onclick="switchMarketTab('build')">建筑工程</button>
+                                <button class="tab-item" onclick="switchMarketTab('english')">外语学习</button>
+                                <button class="tab-item" onclick="switchMarketTab('exam')">职业资格</button>
+                                <button class="tab-item" onclick="switchMarketTab('other')">其他分类</button>
+                            </div>
+                        </div>
+
+                        <div class="explore-market-list">
+                            <div class="list-section-label">精选推荐</div>
+                            <div id="market-list-container">
                             </div>
                         </div>
                     </div>
 
-                    <div class="study-controls">
-                        <button class="ctrl-btn btn-no" onclick="markAsReview()" title="需复习 (1)">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c05621"
-                                stroke-width="2.5">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
+                    <div id="profile-view" class="view hidden"
+                        style="background: #f1f5f9; min-height: 100vh; padding-bottom: 80px;">
 
-                        <span id="study-progress-center">-- / --</span>
-
-                        <button class="ctrl-btn btn-yes" onclick="markAsKnown()" title="已掌握 (2)">
-                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38a169"
-                                stroke-width="2.5">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <div id="spell-view" class="view hidden">
-                    <div class="study-nav-bar">
-                        <button class="study-back-btn" onclick="showMainView('manage-view')">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            <span>返回卡片列表</span>
-                        </button>
-                    </div>
-
-                    <div class="spell-card-wrapper">
-                        <div class="spell-card">
-                            <div class="spell-question-wrap">
-                                <h3 id="spell-question"></h3>
-                                <button class="voice-btn"
-                                    onclick="speakWord(document.getElementById('spell-question').innerText, event)"
-                                    title="朗读">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <div class="spell-input-container"
-                                onclick="document.getElementById('spell-hidden-input').focus()">
-
-                                <input type="text" id="spell-hidden-input" autocomplete="off" autocorrect="off"
-                                    autocapitalize="off" spellcheck="false">
-
-                                <div id="spell-display-area" class="spell-display-area">
+                        <div
+                            style="background: white; padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div id="profile-avatar"
+                                    style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #e6e693 0%, #ffa500 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold;">
+                                    建
                                 </div>
+                                <div>
+                                    <h4 id="profile-username"
+                                        style="margin: 0; color: #1e293b; font-size: 1.1rem; font-weight: 700;">建造师小包
+                                    </h4>
+                                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.8rem;">已坚持打卡 12 天 | <span
+                                            style="color: #f59e0b; font-weight: 600;">PRO</span></p>
+                                </div>
+                            </div>
+                            <button
+                                style="background: transparent; color: black; border: 1px solid black; padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">切换账号</button>
+                        </div>
 
+                        <div style="background: white;">
+                            <div style="padding: 8px 16px; background: #f1f5f9; font-size: 0.8rem; color: #64748b;">
+                                学习与发音
                             </div>
 
-                            <button onclick="checkSpelling()" class="spell-check-btn">
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 0.5px solid #f1f5f9;">
+                                <span style="color: #1e293b; font-size: 0.95rem;">每日复习上限</span>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="number" id="setting-daily-limit" value="20" min="1" max="500"
+                                        style="width: 45px; background: transparent; border: none; text-align: right; font-weight: 500; color: black; outline: none; font-size: 0.95rem; padding: 0;">
+                                    <span style="font-size: 0.9rem; color: #64748b; margin-left: 2px;">张</span>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1"
+                                        stroke-width="2" style="margin-left: 6px;">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 0.5px solid #f1f5f9;">
+                                <span style="color: #1e293b; font-size: 0.95rem;">自动朗读卡片</span>
+                                <div
+                                    style="width: 44px; height: 24px; background: black; border-radius: 12px; position: relative;">
+                                    <div
+                                        style="width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute; top: 2px; right: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2);">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="padding: 8px 16px; background: #f1f5f9; font-size: 0.8rem; color: #64748b;">
+                                系统与数据
+                            </div>
+
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px;">
+                                <span style="color: #1e293b; font-size: 0.95rem;">清除本地缓存</span>
+                                <div style="display: flex; align-items: center;">
+                                    <span style="color: #94a3b8; font-size: 0.9rem;">12.4 MB</span>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1"
+                                        stroke-width="2" style="margin-left: 6px;">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div onclick="logout()"
+                            style="margin-top: 12px; background: white; padding: 14px 16px; text-align: center; color: #ef4444; font-size: 0.95rem; cursor: pointer; border-bottom: 0.5px solid #f1f5f9; border-top: 0.5px solid #f1f5f9;">
+                            退出当前账号
+                        </div>
+
+                    </div>
+
+                    <div id="study-view" class="view hidden">
+
+                        <div class="study-nav-bar">
+                            <button class="study-back-btn" onclick="showMainView('manage-view')">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                                    <polyline points="12 19 5 12 12 5"></polyline>
+                                </svg>
+                                <span>返回卡片列表</span>
+                            </button>
+                        </div>
+
+                        <div class="study-progress-container">
+                            <span id="study-progress-text"></span>
+                            <div class="progress-bar-bg">
+                                <div id="progress-bar-fill"></div>
+                            </div>
+                        </div>
+                        <div class="study-card-wrapper">
+                            <div id="study-card" class="study-card" onclick="flipCard()">
+                                <div id="card-inner" class="card-inner">
+
+                                    <div class="card-front">
+                                        <div
+                                            style="position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10;">
+                                            <button
+                                                onclick="speakWord(document.getElementById('study-question').innerText, event)"
+                                                title="发音"
+                                                style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                                onmouseover="this.style.color='black'; this.style.background='#eff6ff'"
+                                                onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                                    <path
+                                                        d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                            <button class="study-star-btn" onclick="toggleStudyStar(event)" title="收藏"
+                                                style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                                onmouseover="this.style.transform='scale(1.1)'"
+                                                onmouseout="this.style.transform='scale(1)'">
+                                                <svg class="study-star-icon" width="20" height="20" viewBox="0 0 24 24"
+                                                    fill="none" stroke="currentColor" stroke-width="2"
+                                                    stroke-linecap="round" stroke-linejoin="round">
+                                                    <polygon
+                                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                                    </polygon>
+                                                </svg>
+                                            </button>
+                                            <button onclick="openStudyEditModal(event)" title="编辑"
+                                                style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                                onmouseover="this.style.color='#10b981'; this.style.background='#ecfdf5'"
+                                                onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path
+                                                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                    </path>
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="card-content-wrap">
+                                            <h3 id="study-question"></h3>
+                                        </div>
+                                        <p class="flip-hint">点击翻看答案 (或按空格)</p>
+                                    </div>
+
+                                    <div class="card-back">
+                                        <div
+                                            style="position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10;">
+                                            <button
+                                                onclick="speakWord(document.getElementById('study-answer').innerText, event)"
+                                                title="发音"
+                                                style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                                onmouseover="this.style.color='black'; this.style.background='#eff6ff'"
+                                                onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                                    <path
+                                                        d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                            <button class="study-star-btn" onclick="toggleStudyStar(event)" title="收藏"
+                                                style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                                onmouseover="this.style.transform='scale(1.1)'"
+                                                onmouseout="this.style.transform='scale(1)'">
+                                                <svg class="study-star-icon" width="20" height="20" viewBox="0 0 24 24"
+                                                    fill="none" stroke="currentColor" stroke-width="2"
+                                                    stroke-linecap="round" stroke-linejoin="round">
+                                                    <polygon
+                                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                                    </polygon>
+                                                </svg>
+                                            </button>
+                                            <button onclick="openStudyEditModal(event)" title="编辑"
+                                                style="background: transparent; border: none; padding: 6px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 8px;"
+                                                onmouseover="this.style.color='#10b981'; this.style.background='#ecfdf5'"
+                                                onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path
+                                                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                    </path>
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="card-content-wrap">
+                                            <h3 id="study-answer"></h3>
+                                        </div>
+                                        <p class="flip-hint">点击翻回问题</p>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="study-controls">
+                            <button class="ctrl-btn btn-no" onclick="markAsReview()" title="需复习 (1)">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c05621"
+                                    stroke-width="2.5">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+
+                            <span id="study-progress-center">-- / --</span>
+
+                            <button class="ctrl-btn btn-yes" onclick="markAsKnown()" title="已掌握 (2)">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38a169"
+                                    stroke-width="2.5">
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
-                                <span>提交检验 (Enter)</span>
                             </button>
+                        </div>
+                    </div>
 
-                            <div id="spell-feedback" class="feedback-text"></div>
+                    <div id="spell-view" class="view hidden">
+                        <div class="study-nav-bar">
+                            <button class="study-back-btn" onclick="showMainView('manage-view')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                                    <polyline points="12 19 5 12 12 5"></polyline>
+                                </svg>
+                                <span>返回卡片列表</span>
+                            </button>
+                        </div>
 
-                            <div id="spell-next-control" class="hidden">
-                                <button class="spell-continue-btn" onclick="nextSpellCard()">
-                                    <span>继续下一张</span>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2.5">
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                        <polyline points="12 5 19 12 12 19"></polyline>
+                        <div class="spell-card-wrapper">
+                            <div class="spell-card">
+                                <div class="spell-question-wrap">
+                                    <h3 id="spell-question"></h3>
+                                    <button class="voice-btn"
+                                        onclick="speakWord(document.getElementById('spell-question').innerText, event)"
+                                        title="朗读">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div class="spell-input-container"
+                                    onclick="document.getElementById('spell-hidden-input').focus()">
+
+                                    <input type="text" id="spell-hidden-input" autocomplete="off" autocorrect="off"
+                                        autocapitalize="off" spellcheck="false">
+
+                                    <div id="spell-display-area" class="spell-display-area">
+                                    </div>
+
+                                </div>
+
+                                <button onclick="checkSpelling()" class="spell-check-btn">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
                                     </svg>
+                                    <span>提交检验 (Enter)</span>
                                 </button>
+
+                                <div id="spell-feedback" class="feedback-text"></div>
+
+                                <div id="spell-next-control" class="hidden">
+                                    <button class="spell-continue-btn" onclick="nextSpellCard()">
+                                        <span>继续下一张</span>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2.5">
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                            <polyline points="12 5 19 12 12 19"></polyline>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
 
-            </div>
 
+                <div id="floating-add-btn" class="mobile-only-fab" onclick="openAddCardModal()">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </div>
+            </main>
+        </div>
 
-            <div id="floating-add-btn" class="mobile-only-fab" onclick="openAddCardModal()">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"
+        <div id="modal-overlay" class="modal-overlay" onclick="closeAllModals()"></div>
+
+        <div id="add-card-modal" class="pro-modal">
+            <h3 style="display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                     stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-            </div>
-        </main>
-    </div>
-
-    <div id="modal-overlay" class="modal-overlay" onclick="closeAllModals()"></div>
-
-    <div id="add-card-modal" class="pro-modal">
-        <h3 style="display: flex; align-items: center; gap: 8px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>添加新卡片
-        </h3>
-        <select id="modal-category-select" class="form-control"></select>
-        <input type="text" id="modal-question" class="form-control" placeholder="输入问题 (如: Apple)">
-        <textarea id="modal-answer" class="form-control" placeholder="输入答案 (如: 苹果)" rows="3"></textarea>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button onclick="closeAllModals()"
-                style="flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: #e2e8f0; font-weight: bold;">取消</button>
-            <button onclick="createFlashcardFromModal()"
-                style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: #3182ce; color: white; cursor: pointer; font-weight: bold;">保存卡片</button>
-        </div>
-    </div>
-
-    <div id="edit-card-modal" class="pro-modal">
-        <h3 style="display: flex; align-items: center; gap: 8px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 20h9"></path>
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-            </svg>编辑卡片
-        </h3>
-        <select id="edit-category-select" class="form-control"></select>
-        <input type="text" id="edit-question" class="form-control" placeholder="输入问题">
-        <textarea id="edit-answer" class="form-control" placeholder="输入答案" rows="3"></textarea>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button onclick="closeAllModals()"
-                style="flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: #e2e8f0; font-weight: bold;">取消</button>
-            <button onclick="updateCard()"
-                style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: #3182ce; color: white; cursor: pointer; font-weight: bold;">保存修改</button>
-        </div>
-    </div>
-
-    <div id="category-modal" class="pro-modal">
-        <h3 style="display: flex; align-items: center; gap: 8px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-            </svg>新建分类 / 文件夹
-        </h3>
-        <input type="text" id="new-category-input" class="form-control" placeholder="输入名称 (如: 雅思阅读)">
-        <select id="parent-category-select" class="form-control" style="margin-top: 10px;">
-            <option value="">(无) 作为顶级文件夹</option>
-        </select>
-        <select id="category-type-select" class="form-control" style="margin-top: 10px;">
-            <option value="vocabulary">词汇卡包 (打怪升级，支持默写)</option>
-            <option value="notes">笔记知识库 (仅支持背诵模式)</option>
-        </select>
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button onclick="closeAllModals()"
-                style="flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: #e2e8f0; font-weight: bold;">取消</button>
-            <button onclick="confirmCategory()"
-                style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: #3182ce; color: white; cursor: pointer; font-weight: bold;">确定新建</button>
-        </div>
-    </div>
-
-    <div id="batch-modal" class="pro-modal">
-        <h3 style="display: flex; align-items: center; gap: 8px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-            </svg>批量导入卡片
-        </h3>
-        <select id="batch-category-select" class="form-control"></select>
-        <textarea id="batch-input" class="form-control" rows="5"
-            placeholder="格式支持:&#10;问题 | 答案&#10;Apple | 苹果"></textarea>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button onclick="closeAllModals()"
-                style="flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: #e2e8f0; font-weight: bold;">取消</button>
-            <button id="btn-batch-submit" onclick="confirmBatchImport()"
-                style="flex: 1; padding: 12px; border-radius: 12px; border: none; background: #4f46e5; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
-                开始导入
-            </button>
-        </div>
-    </div>
-
-    <div id="category-settings-modal" class="pro-modal">
-        <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path
-                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                </path>
-            </svg>
-            文件夹设置
-        </h3>
-        <label
-            style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #4a5568; font-weight: bold; margin-bottom: 8px;">重命名</label>
-        <input type="text" id="edit-cat-name" class="form-control" style="margin-bottom: 15px;">
-        <label
-            style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #4a5568; font-weight: bold; margin-bottom: 8px;">移动位置
-            (所属父级)</label>
-        <select id="edit-cat-parent" class="form-control" style="margin-bottom: 15px;"></select>
-        <label
-            style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #4a5568; font-weight: bold; margin-bottom: 8px;">知识库类型</label>
-        <select id="edit-cat-type" class="form-control" style="margin-bottom: 25px;">
-            <option value="vocabulary">词汇卡包 (支持打怪升级与默写)</option>
-            <option value="notes">笔记知识库 (隐藏默写，仅供背诵)</option>
-        </select>
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <button onclick="closeAllModals()"
-                style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e0; background: white; cursor: pointer; font-weight: bold;">取消</button>
-            <button onclick="submitCategorySettings()"
-                style="flex: 2; padding: 10px; border-radius: 8px; border: none; background: #3182ce; color: white; cursor: pointer; font-weight: bold;">保存修改</button>
-        </div>
-        <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center;">
-            <p style="font-size: 0.8rem; color: #a0aec0; margin-bottom: 8px;">删除此分类，其中的卡片将自动移至“未分类区”中保护</p>
-            <button onclick="deleteCurrentCategory()"
-                style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #fc8181; background: #fff5f5; color: #e53e3e; cursor: pointer; font-weight: bold; transition: 0.2s;"
-                onmouseover="this.style.backgroundColor='#fed7d7'"
-                onmouseout="this.style.backgroundColor='#fff5f5'">危险：删除此文件夹</button>
-        </div>
-    </div>
-
-    <style>
-        /* 💻 电脑端：保持高颜值的悬浮药丸 */
-        .batch-bar-responsive {
-            left: calc(50% + 120px);
-            /* 避开左侧菜单 */
-            transform: translateX(-50%);
-            border-radius: 40px;
-            min-width: 480px;
-            /* 💻 给电脑端一个保底宽度，防止按钮挤压不见 */
-            justify-content: center;
-        }
-
-        /* 📱 手机端：变身极简原生底栏（修复溢出，完美贴合） */
-        @media (max-width: 768px) {
-            .batch-bar-responsive {
-                bottom: 0 !important;
-                left: 0 !important;
-                transform: none !important;
-                width: 100vw !important;
-                /* 强制等于屏幕宽度，绝不溢出 */
-                min-width: 0 !important;
-                /* 清除电脑端的 480px 限制 */
-                border-radius: 0 !important;
-                /* 取消圆角，变成平的底栏 */
-                /* 背景颜色如果想和主页完全一样，可以改成你主页底栏的颜色，比如 #ffffff 或 #f8fafc */
-                background: rgba(255, 255, 255, 0.95) !important;
-                color: #334155 !important;
-                /* 文字改成深色 */
-                padding: 10px 20px calc(10px + env(safe-area-inset-bottom)) !important;
-                box-sizing: border-box !important;
-                flex-direction: row !important;
-                /* 🌟 核心：保持在一行，不换行 */
-                box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.05) !important;
-                /* 顶部加一点淡淡的阴影分割线 */
-                z-index: 9999 !important;
-            }
-
-            #pick-mode-actions {
-                width: 100% !important;
-                justify-content: space-between !important;
-                /* 左右两边顶格，中间居中 */
-                margin: 0 !important;
-            }
-        }
-    </style>
-
-    <div id="batch-action-bar" class="batch-bar-responsive"
-        style="display: none; position: fixed; bottom: 40px; background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: white; padding: 12px 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000; align-items: center; gap: 20px; font-size: 14px;">
-
-        <span id="selected-count-text" style="font-weight: 500; opacity: 0.9;">已选 0 项</span>
-        <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.2);"></div>
-        <button onclick="exitManageMode()"
-            style="background: transparent; border: none; color: #cbd5e1; cursor: pointer; font-size: 14px; padding: 0;">取消</button>
-        <button onclick="promptBatchMove()"
-            style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; display: flex; align-items: center; gap: 4px;">移动</button>
-        <button onclick="executeBatchDelete()"
-            style="background: transparent; border: none; color: #f87171; cursor: pointer; font-size: 14px; padding: 0; display: flex; align-items: center; gap: 4px; font-weight: 500;">删除</button>
-        <button onclick="batchExportCards()"
-            style="background: transparent; border: none; color: white; cursor: pointer;">导出所选卡片</button>
-    </div>
-
-    <div id="test-selector-modal" class="hidden"
-        style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-        <div
-            style="background: white; width: 90%; max-width: 400px; border-radius: 24px; padding: 24px; box-sizing: border-box; box-shadow: 0 20px 40px rgba(0,0,0,0.15); transform: translateY(0); transition: all 0.3s ease;">
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3 style="margin: 0; font-size: 1.3rem; color: #1e293b; font-weight: 800;">选择检测方式</h3>
-                <button onclick="closeTestSelectorModal()"
-                    style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
-            </div>
-
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 14px 18px; border-radius: 16px; margin-bottom: 20px; border: 2px solid #f1f5f9;">
-                <div
-                    style="font-weight: 800; color: #475569; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 1.2rem;">🎯</span> 单次题量
-                </div>
-                <select id="test-quantity-select" class="test-quantity-dropdown">
-                    <option value="10">10 词 / 速测</option>
-                    <option value="20" selected>20 词 / 推荐</option>
-                    <option value="50">50 词 / 挑战</option>
-                    <option value="9999">全部梭哈</option>
-                </select>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-
-                <div onclick="startSpellMode(); closeTestSelectorModal();"
-                    style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px; width: 100%; padding: 16px; border: 2px solid #eff6ff; border-radius: 16px; background: #ffffff; cursor: pointer; text-align: left; transition: 0.2s; box-sizing: border-box;"
-                    onmouseover="this.style.borderColor='#3b82f6'; this.style.background='#f8fafc'"
-                    onmouseout="this.style.borderColor='#eff6ff'; this.style.background='#ffffff'">
-                    <div
-                        style="width: 48px; height: 48px; border-radius: 12px; background: #eff6ff; color: #3b82f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 20h9"></path>
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                        </svg>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 800; color: #1e293b; font-size: 1.1rem; line-height: 1.2;">拼写检测</div>
-                        <div style="color: #64748b; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">
-                            根据中文释义，拼写出完整英文单词</div>
-                    </div>
-                </div>
-
-                <div style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px; width: 100%; padding: 16px; border: 2px solid #f0fdf4; border-radius: 16px; background: #ffffff; cursor: pointer; text-align: left; transition: 0.2s; box-sizing: border-box;"
-                    onmouseover="this.style.borderColor='#10b981'; this.style.background='#f8fafc'"
-                    onmouseout="this.style.borderColor='#f0fdf4'; this.style.background='#ffffff'">
-                    <div
-                        style="width: 48px; height: 48px; border-radius: 12px; background: #f0fdf4; color: #10b981; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="9 11 12 14 22 4"></polyline>
-                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                        </svg>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 800; color: #1e293b; font-size: 1.1rem; line-height: 1.2;">选择题测试</div>
-                        <div style="color: #64748b; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">
-                            四选一挑战，快速检测词义掌握情况</div>
-                    </div>
-                </div>
-
-                <div
-                    style="position: relative; display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px; width: 100%; padding: 16px; border: 2px dashed #e2e8f0; border-radius: 16px; background: #f8fafc; cursor: default; text-align: left; box-sizing: border-box;">
-                    <div
-                        style="position: absolute; top: -10px; right: -10px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; font-weight: 800; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); border: 2px solid white; z-index: 10;">
-                        进阶规划中 🚀
-                    </div>
-                    <div
-                        style="width: 48px; height: 48px; border-radius: 12px; background: #fffbeb; color: #f59e0b; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                        </svg>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 800; color: #64748b; font-size: 1.1rem; line-height: 1.2;">听音辨意</div>
-                        <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">
-                            听英文语境句子，理解并选择中文释义</div>
-                    </div>
-                </div>
-
+                </svg>添加新卡片
+            </h3>
+            <select id="modal-category-select" class="form-control"></select>
+            <input type="text" id="modal-question" class="form-control" placeholder="输入问题 (如: Apple)">
+            <textarea id="modal-answer" class="form-control" placeholder="输入答案 (如: 苹果)" rows="3"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="closeAllModals()"
+                    style="flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: #e2e8f0; font-weight: bold;">取消</button>
+                <button onclick="createFlashcardFromModal()"
+                    style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: black; color: white; cursor: pointer; font-weight: bold;">保存卡片</button>
             </div>
         </div>
-    </div>
 
-    <div id="spell-completion-modal" class="hidden"
-        style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
-
-        <div class="completion-card">
-            <div class="completion-icon-wrapper">
-                <svg class="completion-check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-            </div>
-
-            <h2 class="completion-title">特训完成</h2>
-            <p class="completion-subtitle">每一次专注，都在积累跨越的力量</p>
-
-            <div class="completion-stats">
-                <div class="stat-box">
-                    <div class="stat-label">搞定词汇</div>
-                    <div class="stat-value" id="completion-total-count">0</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label">本次重练</div>
-                    <div class="stat-value error-color" id="completion-error-count">0</div>
-                </div>
-            </div>
-
-            <button class="btn-primary-action" onclick="restartSpellMode()">再来一组</button>
-            <button class="btn-secondary-action" onclick="exitSpellMode()">返回主页</button>
-        </div>
-    </div>
-
-    <button onclick="closeTestSelectorModal()"
-        style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
-    </div>
-
-    <div style="display: flex; flex-direction: column; gap: 16px;">
-
-        <div onclick="startSpellMode(); closeTestSelectorModal();"
-            style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px; width: 100%; padding: 16px; border: 2px solid #eff6ff; border-radius: 16px; background: #ffffff; cursor: pointer; text-align: left; transition: 0.2s; box-sizing: border-box;"
-            onmouseover="this.style.borderColor='#3b82f6'; this.style.background='#f8fafc'"
-            onmouseout="this.style.borderColor='#eff6ff'; this.style.background='#ffffff'">
-            <div
-                style="width: 48px; height: 48px; border-radius: 12px; background: #eff6ff; color: #3b82f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
+        <div id="edit-card-modal" class="pro-modal">
+            <h3 style="display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 20h9"></path>
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                </svg>
-            </div>
-            <div style="flex: 1;">
-                <div style="font-weight: 800; color: #1e293b; font-size: 1.1rem; line-height: 1.2;">拼写检测
-                </div>
-                <div style="color: #64748b; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">
-                    根据中文释义，拼写出完整英文单词</div>
-            </div>
-        </div>
-
-        <div style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px; width: 100%; padding: 16px; border: 2px solid #f0fdf4; border-radius: 16px; background: #ffffff; cursor: pointer; text-align: left; transition: 0.2s; box-sizing: border-box;"
-            onmouseover="this.style.borderColor='#10b981'; this.style.background='#f8fafc'"
-            onmouseout="this.style.borderColor='#f0fdf4'; this.style.background='#ffffff'">
-            <div
-                style="width: 48px; height: 48px; border-radius: 12px; background: #f0fdf4; color: #10b981; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                </svg>
-            </div>
-            <div style="flex: 1;">
-                <div style="font-weight: 800; color: #1e293b; font-size: 1.1rem; line-height: 1.2;">选择题测试
-                </div>
-                <div style="color: #64748b; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">
-                    四选一挑战，快速检测词义掌握情况</div>
+                </svg>编辑卡片
+            </h3>
+            <select id="edit-category-select" class="form-control"></select>
+            <input type="text" id="edit-question" class="form-control" placeholder="输入问题">
+            <textarea id="edit-answer" class="form-control" placeholder="输入答案" rows="3"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="closeAllModals()"
+                    style="flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: #e2e8f0; font-weight: bold;">取消</button>
+                <button onclick="updateCard()"
+                    style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: black; color: white; cursor: pointer; font-weight: bold;">保存修改</button>
             </div>
         </div>
 
-        <div
-            style="position: relative; display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px; width: 100%; padding: 16px; border: 2px dashed #e2e8f0; border-radius: 16px; background: #f8fafc; cursor: default; text-align: left; box-sizing: border-box;">
-            <div
-                style="position: absolute; top: -10px; right: -10px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; font-weight: 800; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); border: 2px solid white; z-index: 10;">
-                进阶规划中 🚀
+        <div id="category-modal" class="pro-modal hidden"
+            style="flex-direction: column; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; width: 90%; max-width: 400px; padding: 24px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 999999; box-sizing: border-box;">
+            <h3 style="display: flex; align-items: center; gap: 8px; margin-top: 0; margin-bottom: 15px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>新建分类 / 文件夹
+            </h3>
+            <input type="text" id="new-category-input" class="form-control" placeholder="输入名称 (如: 雅思阅读)"
+                style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 10px;">
+            <select id="parent-category-select" class="form-control"
+                style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 10px;">
+                <option value="">(无) 作为顶级文件夹</option>
+            </select>
+            <select id="category-type-select" class="form-control"
+                style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 20px;">
+                <option value="vocabulary">词汇卡包 (打怪升级，支持默写)</option>
+                <option value="notes">笔记知识库 (仅支持背诵模式)</option>
+            </select>
+            <div style="display: flex; gap: 10px;">
+                <button
+                    onclick="if(typeof closeAllModals === 'function') closeAllModals(); document.getElementById('category-modal').style.display='none'; document.getElementById('category-modal').classList.add('hidden');"
+                    style="flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: #e2e8f0; font-weight: bold;">取消</button>
+                <button onclick="confirmCategory()"
+                    style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: black; color: white; cursor: pointer; font-weight: bold;">确定新建</button>
             </div>
-            <div
-                style="width: 48px; height: 48px; border-radius: 12px; background: #fffbeb; color: #f59e0b; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </div>
+
+        <div id="batch-modal" class="pro-modal">
+            <h3 style="display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>批量导入卡片
+            </h3>
+            <select id="batch-category-select" class="form-control"></select>
+            <textarea id="batch-input" class="form-control" rows="5"
+                placeholder="格式支持:&#10;问题 | 答案&#10;Apple | 苹果"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="closeAllModals()"
+                    style="flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: #e2e8f0; font-weight: bold;">取消</button>
+                <button id="btn-batch-submit" onclick="confirmBatchImport()"
+                    style="flex: 1; padding: 12px; border-radius: 12px; border: none; background: #ffa500; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
+                    开始导入
+                </button>
+            </div>
+        </div>
+
+        <div id="category-settings-modal" class="pro-modal">
+            <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
                 </svg>
+                文件夹设置
+            </h3>
+            <label
+                style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #4a5568; font-weight: bold; margin-bottom: 8px;">重命名</label>
+            <input type="text" id="edit-cat-name" class="form-control" style="margin-bottom: 15px;">
+            <label
+                style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #4a5568; font-weight: bold; margin-bottom: 8px;">移动位置
+                (所属父级)</label>
+            <select id="edit-cat-parent" class="form-control" style="margin-bottom: 15px;"></select>
+            <label
+                style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #4a5568; font-weight: bold; margin-bottom: 8px;">知识库类型</label>
+            <select id="edit-cat-type" class="form-control" style="margin-bottom: 25px;">
+                <option value="vocabulary">词汇卡包 (支持打怪升级与默写)</option>
+                <option value="notes">笔记知识库 (隐藏默写，仅供背诵)</option>
+            </select>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button onclick="closeAllModals()"
+                    style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e0; background: white; cursor: pointer; font-weight: bold;">取消</button>
+                <button onclick="submitCategorySettings()"
+                    style="flex: 2; padding: 10px; border-radius: 8px; border: none; background: black; color: white; cursor: pointer; font-weight: bold;">保存修改</button>
             </div>
-            <div style="flex: 1;">
-                <div style="font-weight: 800; color: #64748b; font-size: 1.1rem; line-height: 1.2;">听音辨意
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center;">
+                <p style="font-size: 0.8rem; color: #a0aec0; margin-bottom: 8px;">删除此分类，其中的卡片将自动移至“未分类区”中保护</p>
+                <button onclick="deleteCurrentCategory()"
+                    style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #fc8181; background: #fff5f5; color: #e53e3e; cursor: pointer; font-weight: bold; transition: 0.2s;"
+                    onmouseover="this.style.backgroundColor='#fed7d7'"
+                    onmouseout="this.style.backgroundColor='#fff5f5'">危险：删除此文件夹</button>
+            </div>
+        </div>
+
+        <div id="batch-action-bar" class="batch-bar-responsive"
+            style="display: none; position: fixed; bottom: 40px; background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: white; padding: 12px 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000; align-items: center; gap: 20px; font-size: 14px;">
+
+            <span id="selected-count-text" style="font-weight: 500; opacity: 0.9;">已选 0 项</span>
+            <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.2);"></div>
+            <button onclick="exitManageMode()"
+                style="background: transparent; border: none; color: #cbd5e1; cursor: pointer; font-size: 14px; padding: 0;">取消</button>
+            <button onclick="promptBatchMove()"
+                style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; display: flex; align-items: center; gap: 4px;">移动</button>
+            <button onclick="executeBatchDelete()"
+                style="background: transparent; border: none; color: #f87171; cursor: pointer; font-size: 14px; padding: 0; display: flex; align-items: center; gap: 4px; font-weight: 500;">删除</button>
+            <button onclick="batchExportCards()"
+                style="background: transparent; border: none; color: white; cursor: pointer;">导出所选卡片</button>
+        </div>
+
+        <div id="clear-confirm-modal"
+            style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center;">
+            <div
+                style="background: white; padding: 24px; border-radius: 16px; width: 90%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center;">
+                <div
+                    style="width: 48px; height: 48px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                    <svg width="24" height="24" style="color: #ef4444;" fill="none" stroke="currentColor"
+                        stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                        </path>
+                    </svg>
                 </div>
-                <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">
-                    听英文语境句子，理解并选择中文释义</div>
+                <h3 style="margin: 0 0 8px; color: #1e293b; font-size: 18px;">确认清空未分类？</h3>
+                <p id="clear-confirm-text" style="margin: 0 0 24px; color: #64748b; font-size: 14px; line-height: 1.5;">
+                    此操作将永久删除该区域的所有卡片，一旦删除无法恢复。</p>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="document.getElementById('clear-confirm-modal').style.display='none'"
+                        style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #f1f5f9; color: #475569; cursor: pointer; font-weight: bold; font-size: 14px;">取消</button>
+                    <button id="confirm-clear-btn" onclick="executeClearUncategorized()"
+                        style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #ef4444; color: white; cursor: pointer; font-weight: bold; font-size: 14px;">确认清空</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="batch-move-modal"
+            style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center;">
+            <div
+                style="background: white; padding: 24px; border-radius: 16px; width: 90%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+
+                <h3 style="margin: 0 0 16px; color: #1e293b; font-size: 18px;">移动至文件夹</h3>
+                <p id="batch-move-text" style="margin: 0 0 16px; color: #64748b; font-size: 14px; line-height: 1.5;">
+                    将已选的卡片移动到：</p>
+
+                <select id="batch-move-select"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px; color: #1e293b; font-size: 14px; outline: none; background: #f8fafc; cursor: pointer;">
+                </select>
+
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="document.getElementById('batch-move-modal').style.display='none'"
+                        style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #f1f5f9; color: #475569; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s;">取消</button>
+                    <button id="confirm-move-btn" onclick="executeBatchMove()"
+                        style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: black; color: white; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s;">确认移动</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="test-selector-modal" class="hidden"
+            style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+            <div
+                style="background: white; width: 90%; max-width: 400px; border-radius: 24px; padding: 24px; box-sizing: border-box; box-shadow: 0 20px 40px rgba(0,0,0,0.15); transform: translateY(0); transition: all 0.3s ease;">
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h3 style="margin: 0; font-size: 1.3rem; color: #1e293b; font-weight: 800;">选择检测方式</h3>
+                    <button onclick="closeTestSelectorModal()"
+                        style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+                </div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 14px 18px; border-radius: 16px; margin-bottom: 20px; border: 2px solid #f1f5f9;">
+                    <div
+                        style="font-weight: 800; color: #475569; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.2rem;">🎯</span> 单次题量
+                    </div>
+                    <select id="test-quantity-select" class="test-quantity-dropdown">
+                        <option value="10">10 词 / 速测</option>
+                        <option value="20" selected>20 词 / 推荐</option>
+                        <option value="50">50 词 / 挑战</option>
+                        <option value="9999">全部梭哈</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+
+                    <div onclick="startSpellMode(); closeTestSelectorModal();"
+                        style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px; width: 100%; padding: 16px; border: 2px solid #eff6ff; border-radius: 16px; background: #ffffff; cursor: pointer; text-align: left; transition: 0.2s; box-sizing: border-box;"
+                        onmouseover="this.style.borderColor='black'; this.style.background='#f8fafc'"
+                        onmouseout="this.style.borderColor='#eff6ff'; this.style.background='#ffffff'">
+                        <div
+                            style="width: 48px; height: 48px; border-radius: 12px; background: #eff6ff; color: black; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            </svg>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 800; color: #1e293b; font-size: 1.1rem; line-height: 1.2;">拼写检测
+                            </div>
+                            <div style="color: #64748b; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">
+                                根据中文释义，拼写出完整英文单词</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px; width: 100%; padding: 16px; border: 2px solid #f0fdf4; border-radius: 16px; background: #ffffff; cursor: pointer; text-align: left; transition: 0.2s; box-sizing: border-box;"
+                        onmouseover="this.style.borderColor='#10b981'; this.style.background='#f8fafc'"
+                        onmouseout="this.style.borderColor='#f0fdf4'; this.style.background='#ffffff'">
+                        <div
+                            style="width: 48px; height: 48px; border-radius: 12px; background: #f0fdf4; color: #10b981; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 11 12 14 22 4"></polyline>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 800; color: #1e293b; font-size: 1.1rem; line-height: 1.2;">选择题测试
+                            </div>
+                            <div style="color: #64748b; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">
+                                四选一挑战，快速检测词义掌握情况</div>
+                        </div>
+                    </div>
+
+                    <div
+                        style="position: relative; display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px; width: 100%; padding: 16px; border: 2px dashed #e2e8f0; border-radius: 16px; background: #f8fafc; cursor: default; text-align: left; box-sizing: border-box;">
+                        <div
+                            style="position: absolute; top: -10px; right: -10px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; font-weight: 800; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); border: 2px solid white; z-index: 10;">
+                            进阶规划中 🚀
+                        </div>
+                        <div
+                            style="width: 48px; height: 48px; border-radius: 12px; background: #fffbeb; color: #f59e0b; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 800; color: #64748b; font-size: 1.1rem; line-height: 1.2;">听音辨意
+                            </div>
+                            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">
+                                听英文语境句子，理解并选择中文释义</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div id="spell-completion-modal" class="hidden"
+            style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+
+            <div class="completion-card">
+                <div class="completion-icon-wrapper">
+                    <svg class="completion-check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+
+                <h2 class="completion-title">特训完成</h2>
+                <p class="completion-subtitle">每一次专注，都在积累跨越的力量</p>
+
+                <div class="completion-stats">
+                    <div class="stat-box">
+                        <div class="stat-label">搞定词汇</div>
+                        <div class="stat-value" id="completion-total-count">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">本次重练</div>
+                        <div class="stat-value error-color" id="completion-error-count">0</div>
+                    </div>
+                </div>
+
+                <button class="btn-primary-action" onclick="restartSpellMode()">再来一组</button>
+                <button class="btn-secondary-action" onclick="exitSpellMode()">返回主页</button>
             </div>
         </div>
 
     </div>
-
-
-
-    </div>
-    </div>
-
     <script src="script.js?v=1002"></script>
 </body>
 

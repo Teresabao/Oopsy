@@ -1,3 +1,8 @@
+
+/* 🚨 杀掉安卓专属的蓝色点击高亮 */
+* {
+    -webkit-tap-highlight-color: transparent !important;
+}
 /* ==========================================
    🏛️ Flashcard Pro - 核心样式库 (终极重构版)
    ========================================== */
@@ -9,6 +14,7 @@ body {
     height: 100vh;
     overflow: hidden;
 }
+
 
 /* --- 1. 左右分栏布局 --- */
 .app-layout {
@@ -380,7 +386,7 @@ body {
     border-radius: 12px !important;
     font-weight: 600 !important;
     background: #f1f4ff !important;
-    color: #4f46e5 !important;
+    color: #ffa500!important;
     border: 1.5px solid #e0e7ff !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -447,7 +453,7 @@ body {
 
 .nav-item.active {
     background-color: #eef2ff !important;
-    color: #4f46e5 !important;
+    color: #ffa500!important;
     border-left: 3px solid #4f46e5;
     border-radius: 0 8px 8px 0;
     font-weight: 600;
@@ -509,7 +515,7 @@ body {
 
 .folder-actions:hover {
     background-color: #e2e8f0;
-    color: #3b82f6;
+    color: black;
 }
 
 /* --- 面板统计数据 --- */
@@ -598,7 +604,7 @@ body {
 }
 
 .dash-task-card:hover {
-    border-color: #3b82f6;
+    border-color: black;
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
 }
 
@@ -630,7 +636,7 @@ body {
     position: absolute;
     right: 20px;
     bottom: 20px;
-    color: #3b82f6;
+    color: black;
     opacity: 0;
     transition: 0.2s;
 }
@@ -653,7 +659,7 @@ body {
 
 .main-task-hero:hover {
     transform: translateY(-4px);
-    border-color: #3b82f6;
+    border-color: black;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
 }
 
@@ -1070,7 +1076,7 @@ button[onclick*="openBatchModal"]:hover {
     width: 56px;
     /* 稍微缩小一点，更精致 */
     height: 56px;
-    background: #6366f1;
+    background: #ffa500;
     /* 纯色或渐变均可 */
     border-radius: 50%;
 
@@ -1856,7 +1862,7 @@ body,
     padding: 6px 12px;
     font-size: 0.95rem;
     font-weight: 800;
-    color: #3b82f6;
+    color: black;
     /* 统一的品牌蓝 */
     cursor: pointer;
     outline: none;
@@ -1867,7 +1873,7 @@ body,
 /* 点击和悬浮时的微光特效 */
 .test-quantity-dropdown:focus,
 .test-quantity-dropdown:hover {
-    border-color: #3b82f6;
+    border-color: black;
     background-color: #eff6ff;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
@@ -1962,7 +1968,7 @@ body,
 /* 按钮样式 */
 .btn-primary-action {
     width: 100%;
-    background: #3b82f6;
+    background: black;
     color: white;
     border: none;
     border-radius: 14px;
@@ -1997,3 +2003,370 @@ body,
 }
 
 
+/* ========================================== */
+/* 🔐 身份验证弹窗专属样式 */
+/* ========================================== */
+/* 🔐 身份验证弹窗专属样式 (纯净跟班版) */
+/* ========================================== */
+.auth-content {
+    max-width: 340px;
+    padding: 36px 28px;
+    border-radius: 24px;
+    text-align: center;
+    background: #ffffff;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    
+    /* 🚨 核心修复：彻底扒掉原来的 position: fixed 和 top/left/transform！ */
+    /* 换成 relative，让它乖乖待在右侧 Flexbox 容器里 */
+    position: relative; 
+    margin: 0 auto; 
+}
+.auth-header {
+    margin-bottom: 28px;
+}
+
+.auth-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+    color: #1e293b;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.auth-header p {
+    margin: 8px 0 0 0;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.auth-content .input-group {
+    margin-bottom: 18px;
+    text-align: left;
+}
+
+.auth-content .input-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: #475569;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.auth-content input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 1rem;
+    color: #1e293b;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+}
+
+.auth-content input:focus {
+    border-color: black;
+    background: #ffffff;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.auth-content #btn-auth-submit {
+    width: 100%;
+    padding: 14px;
+    margin-top: 12px;
+    background: linear-gradient(135deg, black 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.auth-content #btn-auth-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+
+.auth-footer {
+    margin-top: 24px;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.auth-footer #btn-toggle-auth {
+    color: black;
+    font-weight: 700;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: color 0.2s;
+}
+
+.auth-footer #btn-toggle-auth:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+/* ========================================== */
+/* 🚀 Oopsy 独立落地页 (元气破晓风) */
+/* ========================================== */
+.landing-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background: #ffffff; 
+    overflow: hidden;
+    
+    /* 🚨 核心修复 1：超级霸道全屏覆盖，踩死所有底部导航栏！ */
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999999;
+}
+
+/* 🌟 左侧：品牌情感区 (元气网格渐变) */
+.landing-brand {
+    flex: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 破晓晨曦渐变：桃粉 -> 浅橙 -> 暖黄 */
+    background: linear-gradient(135deg, #ffe4e6 0%, #ffedd5 50%, #fef3c7 100%);
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 给左侧背景加两个柔和的光晕，增加呼吸感 */
+.landing-brand::before {
+    content: '';
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(253, 164, 175, 0.4) 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    z-index: 0;
+}
+.landing-brand::after {
+    content: '';
+    position: absolute;
+    bottom: -5%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(253, 186, 116, 0.4) 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.brand-content {
+    text-align: center;
+    max-width: 480px;
+    z-index: 1; /* 保证文字和Logo在光晕上面 */
+}
+
+.brand-logo {
+    width: 140px; /* 尺寸调得更精致 */
+    height: auto;
+    margin-bottom: 28px;
+    border-radius: 32px;
+    box-shadow: 0 20px 40px -10px rgba(251, 146, 60, 0.3); /* 换成配套的橙色发光阴影 */
+    animation: floatLogo 6s ease-in-out infinite;
+}
+
+@keyframes floatLogo {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
+    100% { transform: translateY(0px); }
+}
+
+.brand-title {
+    font-size: 2.2rem;
+    color: #1e293b; /* 深灰蓝色，对比度极高 */
+    font-weight: 800;
+    margin: 0 0 16px 0;
+    letter-spacing: -1px;
+}
+
+.brand-subtitle {
+    font-size: 1.1rem;
+    color: #475569;
+    line-height: 1.6;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* 🌟 右侧：无边界登录操作区 */
+.landing-auth {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+}
+
+/* 🚨 核心去油腻：砸掉“悬浮卡片”，完全融入白底 */
+.auth-content {
+    width: 100%;
+    max-width: 380px;
+    padding: 40px;
+    border-radius: 0; 
+    background: transparent; 
+    box-shadow: none !important; /* 彻底消灭阴影！ */
+    text-align: left; /* 文字居左，更像现代 SaaS 软件 */
+}
+
+.auth-header {
+    margin-bottom: 32px;
+}
+
+.auth-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #0f172a;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.auth-header p {
+    margin: 8px 0 0 0;
+    font-size: 0.95rem;
+    color: #64748b;
+}
+
+.auth-content .input-group {
+    margin-bottom: 20px;
+}
+
+.auth-content .input-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: #475569;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+/* 极简风输入框 */
+.auth-content input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #f1f5f9; /* 极浅的边框 */
+    border-radius: 12px;
+    font-size: 1rem;
+    color: #1e293b;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+}
+
+/* 聚焦时变成元气橙色边框 */
+.auth-content input:focus {
+    border-color: #fb923c; 
+    background: #ffffff;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.1);
+}
+
+/* 🌟 究极高级感：复古陶土橙专属核心按钮 */
+.auth-content #btn-auth-submit {
+    width: 100%;
+    padding: 15px;
+    margin-top: 12px;
+    /* 🚨 核心修改：砸掉鲜艳渐变，换成单色、质感高级的复古陶土橙 */
+    background: #ffa500; 
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* 降低阴影的存在感，更显稳重 */
+    box-shadow: 0 5px 15px rgba(224, 122, 95, 0.2); 
+}
+
+.auth-content #btn-auth-submit:hover {
+    transform: translateY(-1px); /* 悬浮也只做微小的位移，更显克制 */
+    background: #ffa500; /* 悬浮时变成深一度的复古橙 */
+    box-shadow: 0 8px 20px rgba(224, 122, 95, 0.3);
+}
+
+.auth-footer {
+    margin-top: 24px;
+    font-size: 0.9rem;
+    color: #64748b;
+    text-align: center; /* 底部文字依然居中好看 */
+}
+
+.auth-footer #btn-toggle-auth {
+    color: #f97316; /* 橙色文字 */
+    font-weight: 700;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: color 0.2s;
+}
+
+.auth-footer #btn-toggle-auth:hover {
+    color: #c2410c;
+    text-decoration: underline;
+}
+
+/* 📱 手机端适配 (保持上下结构的优雅) */
+/* 📱 手机端适配 (究极极简无痕版) */
+@media (max-width: 900px) {
+    .landing-container {
+        flex-direction: column;
+        overflow-y: auto;
+        /* 从天到地的丝滑渐变 */
+        background: linear-gradient(to bottom, #ffe4e6 0%, #ffedd5 25%, #ffffff 50%, #ffffff 100%);
+    }
+
+    .landing-brand {
+        flex: none;
+        padding: 50px 20px 0 20px; /* 减小底部的留白，让 Logo 贴近表单 */
+        background: transparent; 
+    }
+
+    .landing-brand::before, 
+    .landing-brand::after {
+        display: none;
+    }
+
+    .brand-logo {
+        width: 90px; /* Logo 再稍微收敛一点，显得更精致 */
+        margin-bottom: 0; /* 删掉下边距 */
+    }
+
+    /* 🚨 核心绝杀：在手机端直接把抢镜的顶部文案藏起来！一山不容二虎！ */
+    .brand-title, 
+    .brand-subtitle {
+        display: none; 
+    }
+
+    .landing-auth {
+        flex: 1; 
+        align-items: flex-start;
+        padding-bottom: 60px;
+        background: transparent; 
+    }
+
+    .auth-content {
+        padding: 24px 24px 30px 24px; /* 顶部的空隙稍微缩紧 */
+    }
+
+    /* 让剩下的唯一主角“登录 Oopsy”在手机端居中，撑起牌面 */
+    .auth-header {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+    
+    .auth-header h2 {
+        font-size: 1.65rem; /* 字号稍微调秀气一点 */
+    }
+}

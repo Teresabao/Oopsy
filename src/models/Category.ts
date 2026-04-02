@@ -11,6 +11,13 @@ export interface ICategory extends Document {
 
 // 2. Define the Mongoose Schema
 const CategorySchema: Schema = new Schema({
+
+    // 👇 核心新增：这个文件夹属于哪个用户！
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
     name: { type: String, required: true },
     
     // 如果没有 parentId，说明它是一个独立的大文件夹（比如“雅思”）

@@ -70,11 +70,14 @@ This project is licensed under the MIT License.
 3. `git push`
 
 git add .
-git commit -m "feat(Oopsy): 即将开始接入检测界面分量练习以及完成检测的🎉闯关界面"
-git push 
+git commit -m "feat(Oopsy): 建立登录页以及用户登录窗口"
+git push origin main
 
 ## 其它
 - 启动服务器：`npm run dev` 或 `node server.ts`
 - 数据库：MongoDB
 
 PORT=3000
+
+#4f46e5 好看的靛蓝色
+#ffa500

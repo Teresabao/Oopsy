@@ -2,15 +2,62 @@
 // 🔌 Flashcard Pro V2.0 终极UI修复版 (极简丝滑+手势引擎)
 // ==========================================
 
-// 🛡️ [终极防线]：通过 JS 强行注入移动端抽屉样式，彻底解决侧边栏挤压卡片的问题！
-// 🛡️ [终极防线]：通过 JS 强行注入苹果原生级底部导航栏与上拉菜单！
 // ==========================================
-// 🔌 Flashcard Pro V2.0 终极UI修复版 (极简丝滑+手势引擎)
+// 🚀 Oopsy 专属网络快递员 (带 Token 自动验证)
 // ==========================================
+// 【直接替换你 script.js 原有的 oopsyFetch 函数】
+async function oopsyFetch(url, options = {}) {
+    const token = localStorage.getItem('oopsy_token');
 
-// 🛡️ 1. 注入绝对不会错位的 CSS (修复 Z-index 穿透和大按钮排版)
+    // 🌟 白名单机制：登录和注册接口不需要检查 Token，直接放行
+    const isAuthRoute = url.includes('/api/auth/login') || url.includes('/api/auth/register');
 
-// 🛡️ [终极防线]：修复层级穿透、恢复顶部加号，并加入手机端专属分类页样式
+    // 🌟 安检门：如果不是白名单，且兜里没票 (即 token 是 null、undefined 或空字符串)
+    if (!isAuthRoute && (!token || token === 'undefined')) {
+        console.warn(`🛑 拦截无票请求: ${url}`);
+
+        // 撕毁废票
+        localStorage.clear();
+
+        // 骗过前端：返回一个模拟的空数据 response，让后面的代码不会报 TypeError 或 500
+        return {
+            ok: false,
+            status: 401,
+            json: async () => {
+                if (url.includes('categories') || url.includes('flashcards')) {
+                    return []; // 如果请求分类或卡片，给个空数组
+                }
+                return { message: "拦截成功，未登录" };
+            }
+        };
+    }
+
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+
+    if (token && token !== 'undefined') {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+        ...options,
+        headers: headers
+    });
+
+    if (response.status === 401) {
+        console.error("身份认证失败，Token 可能已过期");
+        // 遇到真实的 401，也只返回一个模拟响应，不抛出 throw new Error，避免控制台血红一片
+        return {
+            ok: false,
+            status: 401,
+            json: async () => []
+        };
+    }
+
+    return response;
+}
 
 
 
@@ -57,7 +104,7 @@
                 </div>
                 
                 <div style="padding: 16px; text-align: center;">
-                    <button onclick="createNewFolder()" style="background: transparent; color: #3b82f6; border: none; font-size: 0.95rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <button onclick="var m = document.getElementById('category-modal'); if(m){ m.classList.remove('hidden'); m.style.display='flex'; m.style.zIndex='99999'; } else { alert('找不到弹窗'); }" style="position: relative; z-index: 9999; background: transparent; color: #3b82f6; border: none; font-size: 0.95rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         新建词库分类
                     </button>
@@ -154,7 +201,137 @@ let rootCollapsed = false;
 let isFreePracticeMode = false; // 🌟 记得在函数外部定义这个变量
 
 
+// ==========================================
+// 🔐 身份验证 (Auth) 引擎
+// ==========================================
+let isLoginMode = true; // 默认显示登录模式
+
+// 🔄 切换：登录 <=> 注册
+function toggleAuthMode() {
+    isLoginMode = !isLoginMode;
+    const title = document.getElementById('auth-title');
+    const subtitle = document.getElementById('auth-subtitle');
+    const submitBtn = document.getElementById('btn-auth-submit');
+    const switchText = document.getElementById('auth-switch-text');
+    const toggleBtn = document.getElementById('btn-toggle-auth');
+
+    if (isLoginMode) {
+        title.innerText = '登录 Oopsy';
+        subtitle.innerText = '欢迎回来，继续你的记忆之旅 🚀';
+        submitBtn.innerText = '立即登录';
+        switchText.innerText = '还没有账号？';
+        toggleBtn.innerText = '免费注册';
+    } else {
+        title.innerText = '注册 Oopsy';
+        subtitle.innerText = '开启你的专属云端记忆宇宙 🌌';
+        submitBtn.innerText = '创建账号';
+        switchText.innerText = '已经有账号了？';
+        toggleBtn.innerText = '直接登录';
+    }
+}
+
+// 🚀 提交表单：发请求给后端
+// 🚀 提交表单：发请求给后端
+async function handleAuthSubmit(event) {
+    event.preventDefault();
+
+    const usernameInput = document.getElementById('auth-username').value.trim();
+    const passwordInput = document.getElementById('auth-password').value.trim();
+    const submitBtn = document.getElementById('btn-auth-submit');
+    const originalBtnText = submitBtn.innerText;
+
+    if (!usernameInput || !passwordInput) return alert("请填写完整的账号和密码哦！");
+
+    submitBtn.innerText = '请稍候...';
+    submitBtn.disabled = true;
+
+    const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
+
+    try {
+        const response = await oopsyFetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: usernameInput, password: passwordInput })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || '网络请求失败');
+        }
+
+        // --- 核心共用：存票、存名 ---
+        localStorage.setItem('oopsy_token', data.token);
+        const finalUsername = (data.user && data.user.username) ? data.user.username : usernameInput;
+        localStorage.setItem('oopsy_username', finalUsername);
+
+        if (isLoginMode) {
+            // 登录特有字段存储
+            if (data.user.dailyStudyLimit) localStorage.setItem('dailyStudyLimit', data.user.dailyStudyLimit);
+            if (data.user.streakDays) localStorage.setItem('oopsy_streak_days', data.user.streakDays);
+        } else {
+            alert('🎉 注册成功！欢迎来到 Oopsy 宇宙，这就带你进去！');
+        }
+
+        // --- 核心切换：展示主应用 ---
+        document.getElementById('oopsy-landing-page').style.display = 'none';
+        document.getElementById('oopsy-main-app').style.display = 'block';
+
+        // --- 核心渲染：初始化 UI ---
+        renderUserInfo();
+
+        // 🚨 关键修复：不管是登录还是注册，都要走一遍数据同步和侧栏重绘
+        try {
+            // 1. 先去后端拿数据（哪怕新号拿回来是空的，也要拿一次）
+            await Promise.all([
+                typeof loadCategories === 'function' ? loadCategories() : Promise.resolve(),
+                typeof loadFlashcards === 'function' ? loadFlashcards() : Promise.resolve()
+            ]);
+
+            // 2. 🚨 重点：强制要求侧栏重新画一遍！
+            // 哪怕 categories 是空的，也要让 renderSidebar 运行，把侧栏框架画出来
+            if (typeof renderSidebar === 'function') {
+                console.log("🛠️ 正在为新用户初始化侧栏...");
+                renderSidebar();
+            }
+        } catch (loadErr) {
+            console.warn("数据初始化波动:", loadErr);
+        }
+
+        // 清空输入框
+        document.getElementById('auth-username').value = '';
+        document.getElementById('auth-password').value = '';
+
+    } catch (error) {
+        console.error('认证报错:', error);
+        alert(`❌ 哎呀出错啦：${error.message}`);
+    } finally {
+        submitBtn.innerText = originalBtnText;
+        submitBtn.disabled = false;
+    }
+}
+
+// 🛑 核心拦截器：页面一加载就查票
+function checkAuthOnLoad() {
+    const token = localStorage.getItem('oopsy_token');
+    if (!token) {
+        // 没票：留在落地页，藏起主应用
+        document.getElementById('oopsy-landing-page').style.display = 'flex';
+        document.getElementById('oopsy-main-app').style.display = 'none';
+    } else {
+        // 有票：直接进主应用，藏起落地页
+        document.getElementById('oopsy-landing-page').style.display = 'none';
+        document.getElementById('oopsy-main-app').style.display = 'block';
+        // 👇 加在这里：查票通过后，立刻把名字挂上！
+        renderUserInfo();
+    }
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
+
+    // 👇 加在这里：一上来就先查票！没票直接拦截！
+    checkAuthOnLoad();
     // 1. ⚡ 开启骨架屏护盾
     window.isDataLoading = true;
     showMainView('dashboard-view');
@@ -362,8 +539,9 @@ function clearAllGhostStates() {
 // --- 2. 侧边栏与文件夹管理 (双路渲染引擎) ---
 async function loadCategories() {
     try {
-        const response = await fetch('/api/categories');
-        allCategories = await response.json();
+        const response = await oopsyFetch('/api/categories');
+        // 🚨 这里的空数组兜底很重要
+        allCategories = await response.json() || [];
 
         let desktopHtml = '';
         let mobileHtml = '';
@@ -379,7 +557,7 @@ async function loadCategories() {
             rightChevron: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>`
         };
 
-        // ==== 1. 组装电脑端左侧菜单 ====
+        // ==== 1. 组装电脑端固定菜单 ====
         desktopHtml = `
             <li class="nav-item ${currentCategoryId === 'dashboard' ? 'active' : ''}" onclick="selectDashboard(this)">
                 ${icons.dashboard} <span>学习数据</span>
@@ -390,13 +568,10 @@ async function loadCategories() {
             </li>
             
             <div style="height: 1px; background: #e2e8f0; margin: 10px 0;"></div>
-        `;
 
-        const rootArrow = rootCollapsed ? icons.arrowRight : icons.arrowDown;
-        desktopHtml += `
             <li class="nav-item root-nav ${currentCategoryId === 'all' ? 'active' : ''}" style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 8px; flex: 1;" onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', this.parentElement)">
-                    <div class="toggle-arrow" onclick="toggleRoot(event)">${rootArrow}</div>
+                    <div class="toggle-arrow" onclick="toggleRoot(event)">${rootCollapsed ? icons.arrowRight : icons.arrowDown}</div>
                     ${icons.allIcon} <span>所有卡片</span>
                 </div>
                 <div class="folder-actions" onclick="quickCreateSubCategory(event, '')" title="新建顶级文件夹">
@@ -406,16 +581,15 @@ async function loadCategories() {
             <div id="user-folders-container" style="display: ${rootCollapsed ? 'none' : 'block'}; padding-left: 14px;">
         `;
 
-        // ==== 2. 组装手机端原生全宽列表 UI ====
+        // ==== 2. 组装手机端固定菜单 ====
         mobileHtml = `
             <li onclick="selectSidebarItem('all', '所有卡片', 'vocabulary', null)">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="color: #4f46e5; display: flex; align-items: center;">${icons.allIcon}</div>
+                    <div style="color: #ffa500; display: flex; align-items: center;">${icons.allIcon}</div>
                     <span style="color:#1e293b; font-size:1rem; font-weight:500;">所有卡片</span>
                 </div>
                 ${icons.rightChevron}
             </li>
-
             <li onclick="showStarredCards(null)" style="background: #fefce8;" class="starred-nav">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <div style="color: #eab308; display: flex; align-items: center;">
@@ -425,122 +599,66 @@ async function loadCategories() {
                 </div>
                 ${icons.rightChevron}
             </li>
-            
-            <li onclick="selectSidebarItem('uncategorized', '未分类区', 'vocabulary', null)">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="color: #64748b; display: flex; align-items: center;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                    </div>
-                    <span style="color:#475569; font-size:1rem; font-weight:500;">未分类区</span>
-                </div>
-                ${icons.rightChevron}
-            </li>
         `;
 
+        // ==== 3. 循环渲染动态文件夹 ====
         const parents = allCategories.filter(c => !c.parentId);
         const children = allCategories.filter(c => c.parentId);
 
-        parents.forEach(p => {
-            const hasChildren = children.some(c => c.parentId === p._id);
-            const isCollapsed = collapsedFolders.has(p._id);
-            const arrow = isCollapsed ? icons.arrowRight : icons.arrowDown;
-            const icon = p.type === 'notes' ? icons.doc : icons.folder;
-            const isActive = currentCategoryId === p._id ? 'active' : '';
+        if (parents.length === 0) {
+            // 💡 新账号保底提示
+            desktopHtml += `<div style="padding: 15px; color: #94a3b8; font-size: 0.8rem; text-align: center;">点击右上角 + 创建文件夹</div>`;
+            mobileHtml += `<li style="padding: 20px; text-align: center; color: #94a3b8;">还没有分类，快去创建吧 🚀</li>`;
+        } else {
+            parents.forEach(p => {
+                const hasChildren = children.some(c => c.parentId === p._id);
+                const isCollapsed = collapsedFolders.has(p._id);
+                const arrow = isCollapsed ? icons.arrowRight : icons.arrowDown;
+                const icon = p.type === 'notes' ? icons.doc : icons.folder;
+                const isActive = currentCategoryId === p._id ? 'active' : '';
 
-        // ================= 1. 电脑端父级拼接 (加固版) =================
-            desktopHtml += `
-                <li class="nav-item parent-nav ${isActive}" 
-                    data-id="${p._id}" 
-                    data-name="${p.name}"
-                    style="display: flex; justify-content: space-between; align-items: center;">
-                    
-                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;" 
-                         onclick="handleParentClick(event, '${p._id}', '${p.name}', '${p.type}', this.parentElement)">
-                        <div class="toggle-arrow" style="visibility: ${hasChildren ? 'visible' : 'hidden'}">${arrow}</div>
-                        ${icon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${p.name}</span>
-                    </div>
-                    
-                    <div class="folder-actions" onclick="quickCreateSubCategory(event, '${p._id}')" title="在此文件夹下新建" 
-                         style="cursor: pointer; padding: 4px; color: #cbd5e1; transition: 0.2s;" 
-                         onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#cbd5e1'">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    </div>
-                </li>
-                <div id="children-of-${p._id}" style="display: ${isCollapsed ? 'none' : 'block'}; padding-left: 28px;">
-            `;
-
-            // ================= 2. 手机端父级拼接 =================
-            const sleekChevron = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
-            let rightArrowHtml = '';
-
-            if (hasChildren) {
-                let rotation = isCollapsed ? '0deg' : '90deg';
-                rightArrowHtml = `
-                    <div onclick="toggleMobileFolder(event, '${p._id}')" style="padding: 10px; margin: -10px; display: flex; align-items: center; justify-content: center;">
-                        <svg id="m-arrow-${p._id}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" style="transition: transform 0.3s; transform: rotate(${rotation});"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                    </div>`;
-            } else {
-                rightArrowHtml = `<div style="display: flex; align-items: center;">${sleekChevron}</div>`;
-            }
-
-            mobileHtml += `
-                <li style="display: flex; flex-direction: column; padding: 0; border-bottom: 0.5px solid #f1f5f9; background: white; width: 100%; box-sizing: border-box;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 16px; box-sizing: border-box;">
-                        <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;" onclick="selectSidebarItem('${p._id}', '${p.name}', '${p.type}', null)">
-                            <div style="color: #3b82f6; display: flex; align-items: center;">${icon}</div>
-                            <span style="color:#1e293b; font-size:1rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</span>
+                desktopHtml += `
+                    <li class="nav-item parent-nav ${isActive}" data-id="${p._id}" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;" onclick="handleParentClick(event, '${p._id}', '${p.name}', '${p.type}', this.parentElement)">
+                            <div class="toggle-arrow" style="visibility: ${hasChildren ? 'visible' : 'hidden'}">${arrow}</div>
+                            ${icon} <span class="truncate-text">${p.name}</span>
                         </div>
-                        ${rightArrowHtml}
-                    </div>
-                    <ul id="m-children-${p._id}" style="display: ${isCollapsed ? 'none' : 'block'}; margin: 0; padding: 0; list-style: none; background: #f8fafc; width: 100%; box-sizing: border-box;">
-            `;
-
-            // ================= 3. 循环插入子文件夹 =================
-            children.filter(c => c.parentId === p._id).forEach(child => {
-                const cIcon = icons.doc;
-                const cActive = currentCategoryId === child._id ? 'active' : '';
-
-                // 电脑端插入子项
-                desktopHtml += `<li class="nav-item is-child ${cActive}" onclick="selectSidebarItem('${child._id}', '${child.name}', '${child.type}', this)">${cIcon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${child.name}</span></li>`;
-
-                // 手机端插入子项
-                mobileHtml += `
-                    <li onclick="selectSidebarItem('${child._id}', '${child.name}', '${child.type}', null)" style="padding: 14px 16px 14px 48px; border-bottom: 0.5px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="color: #94a3b8; display: flex; align-items: center;">${cIcon}</div>
-                            <span style="color:#475569; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${child.name}</span>
+                        <div class="folder-actions" onclick="quickCreateSubCategory(event, '${p._id}')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </div>
-                        <div style="display: flex; align-items: center;">${sleekChevron}</div>
                     </li>
+                    <div id="children-of-${p._id}" style="display: ${isCollapsed ? 'none' : 'block'}; padding-left: 28px;">
                 `;
+
+                children.filter(c => c.parentId === p._id).forEach(child => {
+                    desktopHtml += `<li class="nav-item is-child ${currentCategoryId === child._id ? 'active' : ''}" onclick="selectSidebarItem('${child._id}', '${child.name}', '${child.type}', this)">${icons.doc} <span class="truncate-text">${child.name}</span></li>`;
+                });
+
+                desktopHtml += `</div>`; // 闭合当前父文件夹的子级容器
+
+                // 手机端拼接 (简化展示)
+                mobileHtml += `<li onclick="selectSidebarItem('${p._id}', '${p.name}', '${p.type}', null)">
+                    <div style="display: flex; align-items: center; gap: 12px;">${icon} <span>${p.name}</span></div>
+                    ${icons.rightChevron}
+                </li>`;
             });
+        }
 
-            // ================= 4. ⚠️ 最关键的闭合标签 ⚠️ =================
-            // 给当前这个父文件夹的子级容器“关门”
-            desktopHtml += `</div>`;
-            mobileHtml += `</ul></li>`;
-        });
-
-        // 电脑端整个用户词库区域闭合
+        // ==== 4. ⚠️ 终极闭合：确保容器完整 ====
         desktopHtml += `</div>`;
 
-        // ==== 3. 渲染到 DOM ====
+        // ==== 5. 渲染到页面 ====
         const sidebarMenu = document.getElementById('sidebar-menu');
         if (sidebarMenu) sidebarMenu.innerHTML = desktopHtml;
 
-        // 🎯 核心修复：精准投喂，只替换菜单列表的内容，不炸掉标题和底部按钮
         const mobileFoldersMenu = document.getElementById('mobile-folders-menu');
-        if (mobileFoldersMenu) {
-            mobileFoldersMenu.innerHTML = mobileHtml;
-        } else {
-            // 如果找不到列表，作为备用方案退化渲染
-            const foldersView = document.getElementById('folders-view');
-            if (foldersView) foldersView.innerHTML = `<ul class="nav-menu" id="mobile-folders-menu" style="margin: 0; padding: 0; list-style: none;">${mobileHtml}</ul>`;
-        }
+        if (mobileFoldersMenu) mobileFoldersMenu.innerHTML = mobileHtml;
 
         refreshSelectOptions();
 
-    } catch (error) { console.error('加载分类失败:', error); }
+    } catch (error) {
+        console.error('加载分类失败:', error);
+    }
 }
 
 // 📱 手机端专属的手风琴折叠函数 (完全独立，不影响电脑端)
@@ -566,7 +684,7 @@ window.toggleMobileFolder = function (event, folderId) {
 function refreshSelectOptions() {
     // 包含你所有弹窗里的下拉菜单 ID
     const selects = ['modal-category-select', 'batch-category-select', 'edit-category-select'];
-    
+
     // 默认的未分类选项
     let optionsHtml = '<option value="">未分类区</option>';
 
@@ -578,7 +696,7 @@ function refreshSelectOptions() {
     parents.forEach(p => {
         // 🚀 解除封印！把 value 设置为它真实的 _id，并且【绝对不要】加 disabled！
         // 这样“默认卡片夹”就变成了一个可以选中的正常选项
-        optionsHtml += `<option value="${p._id}" style="font-weight: bold; color: #4f46e5;">📁 ${p.name}</option>`;
+        optionsHtml += `<option value="${p._id}" style="font-weight: bold; color: #ffa500;">📁 ${p.name}</option>`;
 
         // 把这个大类下面的子卡包也列出来
         const myChildren = children.filter(c => c.parentId === p._id);
@@ -636,20 +754,22 @@ function selectSidebarItem(id, title, type, element) {
         if (titleEl) titleEl.textContent = title;
 
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        if (element) {
-            element.classList.add('active');
+
+        // 🌟 核心修复：检查 element 是不是真实的 DOM 节点。如果不是，就通过 id 去页面上抓
+        let targetEl = element;
+        if (!targetEl || typeof targetEl.classList === 'undefined') {
+            // 假设你的侧边栏 <li> 都有 id="category-xxx" 或者带有 data-id="xxx"
+            // 如果你的命名规则不同，这里可以适应你的规则
+            targetEl = document.getElementById(`category-${id}`) || document.querySelector(`li[onclick*="${id}"]`);
+        }
+
+        // 穿上防弹衣：找到了真实的节点再去加 active
+        if (targetEl && targetEl.classList) {
+            targetEl.classList.add('active');
         } else {
             const root = document.querySelector('.root-nav');
             if (root) root.classList.add('active');
-        }
-
-        const settingsBtn = document.getElementById('category-settings-btn');
-        if (settingsBtn) {
-            if (id !== 'all' && id !== 'uncategorized' && id !== 'dashboard') {
-                settingsBtn.classList.remove('hidden');
-            } else {
-                settingsBtn.classList.add('hidden');
-            }
+            console.warn('页面暂未找到新文件夹节点，已默认高亮根目录');
         }
 
         // 🌟 动态隐藏默写按钮
@@ -803,7 +923,7 @@ async function submitCategorySettings() {
     const type = document.getElementById('edit-cat-type').value;
     if (!name) return alert('名称不能为空！');
     try {
-        await fetch(`/api/categories/${currentCategoryId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, parentId, type }) });
+        await oopsyFetch(`/api/categories/${currentCategoryId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, parentId, type }) });
         closeAllModals(); await loadCategories();
         document.getElementById('current-view-title').innerText = name;
         const navItems = document.querySelectorAll('.nav-item');
@@ -823,7 +943,7 @@ async function deleteCurrentCategory() {
     }
 
     console.log("🔥 准备删除文件夹，当前获取到的 ID:", window.currentCategoryId);
-    
+
     // 如果还是拿不到，说明真的没选中任何具体的文件夹
     if (!window.currentCategoryId || window.currentCategoryId === 'all' || window.currentCategoryId === 'uncategorized' || window.currentCategoryId === 'starred') {
         alert("系统提示：无法删除当前系统保留的分类或未选中的文件夹！");
@@ -831,12 +951,12 @@ async function deleteCurrentCategory() {
     }
 
     if (!confirm('确定要彻底删除该文件夹吗？\n\n放心，里面的卡片会被自动移入【未分类区】！')) return;
-    
+
     try {
-        const res = await fetch(`/api/categories/${window.currentCategoryId}`, { 
-            method: 'DELETE' 
+        const res = await oopsyFetch(`/api/categories/${window.currentCategoryId}`, {
+            method: 'DELETE'
         });
-        
+
         if (!res.ok) throw new Error(`删除失败，状态码: ${res.status}`);
 
         console.log("✅ 删除成功！");
@@ -845,37 +965,94 @@ async function deleteCurrentCategory() {
         // 强制跳回“所有卡片”
         const rootItem = document.querySelector('.root-nav');
         selectSidebarItem('all', '所有卡片', 'vocabulary', rootItem);
-        
-    } catch (error) { 
-        console.error("❌ 删除出错:", error); 
+
+    } catch (error) {
+        console.error("❌ 删除出错:", error);
         alert("删除失败: " + error.message);
     }
 }
 
 // --- 4. 卡片管理与渲染 ---
+// 📁 修改前端：新建分类/文件夹的逻辑
+// 📁 精确对齐修复版：新建分类/文件夹
 async function confirmCategory() {
-    const name = document.getElementById('new-category-input').value;
-    const parentId = document.getElementById('parent-category-select') ? document.getElementById('parent-category-select').value : null;
-    const type = document.getElementById('category-type-select') ? document.getElementById('category-type-select').value : 'vocabulary';
-    if (!name) return alert('请输入名称');
-    try {
-        await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, parentId: parentId || null, type }) });
-        closeAllModals();
-        await loadCategories();
+    // 🌟 核心对齐：根据你的截图，ID 是 new-category-input
+    const nameInput = document.getElementById('new-category-input');
 
-        // 🌟 自动导达新文件夹！
-        const createdCat = allCategories.find(c => c.name === name && (c.parentId || null) === (parentId || null));
-        if (createdCat) {
-            selectSidebarItem(createdCat._id, createdCat.name, createdCat.type, null);
-            if (window.innerWidth <= 768) window.handleBottomNav('all'); // 手机端切回词库看数据
+    // 🌟 下拉框对齐：根据你截图里显示的“归属于...”，通常 ID 可能是这个
+    const parentSelect = document.getElementById('parent-category-select') ||
+        document.querySelector('select'); // 如果 ID 还不准，就抓页面唯一的 select
+
+    const name = nameInput ? nameInput.value.trim() : "";
+    const parentId = parentSelect ? parentSelect.value : null;
+
+    // 调试：如果还是弹空，请看浏览器 Console 里的这两行
+    console.log("抓取的输入框元素:", nameInput);
+    console.log("抓取到的值内容:", name);
+
+    if (!name) {
+        return alert('文件夹名字不能为空哦！');
+    }
+
+    try {
+        const response = await oopsyFetch('/api/categories', {
+            method: 'POST',
+            body: JSON.stringify({
+                name: name,
+                parentId: (parentId && parentId !== "" && parentId !== "null") ? parentId : null,
+                type: 'vocabulary'
+            })
+        });
+
+        if (response.ok) {
+            // 🌟 1. 拿到后端刚建好的这个文件夹的“完整档案”（包含 _id）
+            const newCategoryData = await response.json();
+            console.log('✅ 分类创建成功！', newCategoryData);
+
+            if (nameInput) nameInput.value = ''; // 清空输入
+
+            // 🌟 2. 刷新左侧边栏，让新文件夹显示出来
+            await loadCategories();
+
+            // 🌟 3. 关闭弹窗
+            if (typeof closeAllModals === 'function') {
+                closeAllModals();
+            } else {
+                const modal = document.querySelector('.modal-overlay') || document.getElementById('category-modal');
+                if (modal) modal.classList.add('hidden');
+            }
+
+            // 🎯 4. 核心修复：镜头精准跳转到这个新文件夹！
+            // 完美复用你之前写过的 selectSidebarItem 逻辑
+            if (typeof selectSidebarItem === 'function') {
+                setTimeout(() => {
+                    try {
+                        selectSidebarItem(newCategoryData._id, newCategoryData.name, newCategoryData.type, newCategoryData.parentId);
+                    } catch (e) {
+                        console.warn("跳转时遇到小问题，走兜底逻辑:", e);
+                        window.currentCategoryId = newCategoryData._id;
+                        if (typeof filterCards === 'function') filterCards();
+                    }
+                }, 100); // 👈 核心：等 0.1 秒
+            } else {
+                // 备用兜底逻辑
+                window.currentCategoryId = newCategoryData._id;
+                if (typeof filterCards === 'function') filterCards();
+                if (typeof showMainView === 'function') showMainView('manage-view');
+            }
+        } else {
+            const errorData = await response.json();
+            alert(`创建失败: ${errorData.details || '服务器拒收'}`);
         }
-    } catch (error) { console.error(error); }
+    } catch (error) {
+        console.error('💥 创建分类崩溃:', error);
+    }
 }
 
 async function loadFlashcards() {
     try {
         // 👇 1. 纯净的 await 写法 + 时间戳防缓存魔法
-        const response = await fetch(`/api/flashcards?t=${new Date().getTime()}`, {
+        const response = await oopsyFetch(`/api/flashcards?t=${new Date().getTime()}`, {
             method: 'GET',
             cache: 'no-store', // 🍎 核心：专门击穿苹果等手机浏览器的终极物理缓存！
             headers: {
@@ -1000,7 +1177,7 @@ function renderCards(cardsToRender = null) {
             `;
 
             // 🚀 UI 刚渲染完，立刻在后台悄悄去查词！
-            fetch(`/api/dict?word=${encodeURIComponent(searchTerm)}`)
+            oopsyFetch(`/api/dict?word=${encodeURIComponent(searchTerm)}`)
                 .then(res => res.json())
                 .then(data => {
                     let transText = (data.translation && data.translation !== "未找到确切释义") ? data.translation : "未查到完整词性，可先添加后修改";
@@ -1130,7 +1307,7 @@ function renderCards(cardsToRender = null) {
     </div>`;
 
 
-    
+
     }).join('');
 }
 
@@ -1415,7 +1592,7 @@ function updateDashboardMainButton() {
     if (displayReview > 0) {
         // 🔵 状态 A：有老词欠债！(优先复习)
         btnMain.innerText = `开始复习 (${displayReview})`;
-        btnMain.style.background = '#4f46e5';
+        btnMain.style.background = 'ffa500';
         btnMain.style.color = 'white';
         btnMain.style.boxShadow = '0 4px 6px -1px rgba(59, 130, 246, 0.3)';
         btnMain.disabled = false;
@@ -1433,7 +1610,7 @@ function updateDashboardMainButton() {
     else {
         // ⚪ 状态 C：大满贯！
         btnMain.innerText = '今日任务已达标';
-        btnMain.style.background = '#4f46e5';
+        btnMain.style.background = '#ffa500';
         btnMain.style.color = '#ffffff';
         btnMain.style.boxShadow = 'none';
         btnMain.disabled = true;
@@ -1611,7 +1788,7 @@ function renderUrgentTasks(now) {
 
     if (urgentFolders.length === 0) {
         tasksContainer.innerHTML = `
-            <div style="grid-column: 1 / -1; color: #4f46e5; font-size: 1rem; padding: 40px 20px; background: #fcfdff; border-radius: 20px; border: 2px dashed #e0e7ff; text-align: center; transition: all 0.3s ease;">
+            <div style="grid-column: 1 / -1; color: #ffa500; font-size: 1rem; padding: 40px 20px; background: #fcfdff; border-radius: 20px; border: 2px dashed #e0e7ff; text-align: center; transition: all 0.3s ease;">
                 <div style="font-size: 2rem; margin-bottom: 12px;">👻</div>
                 <strong style="display: block; margin-bottom: 4px;">太棒了！今日任务全部清空</strong>
                 <span style="color: #94a3b8; font-size: 0.85rem;">你的记忆曲线非常健康，休息一下吧。</span>
@@ -1741,7 +1918,7 @@ async function createFlashcardFromModal() {
         if (!inboxCat) {
             try {
                 console.log("⚙️ 正在为您自动创建真实的【默认卡片夹】...");
-                const catRes = await fetch('/api/categories', {
+                const catRes = await oopsyFetch('/api/categories', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: '默认卡片夹', type: 'vocabulary' }) // 顶层文件夹
@@ -1768,12 +1945,12 @@ async function createFlashcardFromModal() {
     const payload = {
         question: question.trim(),
         answer: answer.trim(),
-        categoryId: finalCategoryId
+        category: finalCategoryId
     };
 
     try {
         // 🚀 发送给后端
-        const response = await fetch('/api/flashcards', {
+        const response = await oopsyFetch('/api/flashcards', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1868,7 +2045,7 @@ async function updateCard() {
     const categoryId = document.getElementById('edit-category-select').value || null;
 
     try {
-        const response = await fetch(`/api/flashcards/${editingCardId}`, {
+        const response = await oopsyFetch(`/api/flashcards/${editingCardId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question, answer, categoryId })
@@ -1897,7 +2074,7 @@ function editCard(id) {
     openModal('edit-card-modal');
 }
 
-async function deleteCard(id) { if (confirm('确定要彻底删除这张卡片吗？')) { try { await fetch(`/api/flashcards/${id}`, { method: 'DELETE' }); loadFlashcards(); } catch (error) { console.error(error); } } }
+async function deleteCard(id) { if (confirm('确定要彻底删除这张卡片吗？')) { try { await oopsyFetch(`/api/flashcards/${id}`, { method: 'DELETE' }); loadFlashcards(); } catch (error) { console.error(error); } } }
 
 async function confirmBatchImport(event) {
     const textInput = document.getElementById('batch-input') || document.getElementById('import-text');
@@ -1972,7 +2149,7 @@ async function confirmBatchImport(event) {
 
             const promises = chunk.map(card =>
                 // 👇 🌟 核心修复：把这里的 GET 也换回 POST！
-                fetch('/api/flashcards', {
+                oopsyFetch('/api/flashcards', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(card)
@@ -2019,13 +2196,33 @@ async function confirmBatchImport(event) {
 let studyCards = []; let currentStudyIndex = 0;
 let spellCards = []; let currentSpellIndex = 0;
 
+// 🔊 语音朗读 (安卓防卡死强化版)
 function speakWord(text, event) {
-    if (event) event.stopPropagation();
+    // 阻止点击事件冒泡，防止一点发音按钮卡片就翻面了
+    if (event) {
+        event.stopPropagation();
+    }
+
+    if (!('speechSynthesis' in window)) {
+        return alert('哎呀，你的浏览器不支持语音朗读功能哦！');
+    }
+
+    // 🚨 安卓核心修复：发音前必须先清除上一个可能卡死的队列！(极其关键)
     window.speechSynthesis.cancel();
+
     const utterance = new SpeechSynthesisUtterance(text);
-    const isChinese = /[\u4e00-\u9fa5]/.test(text);
-    utterance.lang = isChinese ? 'zh-CN' : 'en-US';
-    utterance.rate = isChinese ? 1.0 : 0.9;
+
+    // 智能判断语言：如果里面包含中文，就用中文读；否则一律强制用纯正美式英语
+    if (/[\u4e00-\u9fa5]/.test(text)) {
+        utterance.lang = 'zh-CN';
+    } else {
+        utterance.lang = 'en-US'; // 明确指定 en-US，安卓非常吃这一套
+    }
+
+    // 稍微放慢一点语速，听得更清楚
+    utterance.rate = 0.9;
+
+    // 开口！
     window.speechSynthesis.speak(utterance);
 }
 
@@ -2056,7 +2253,7 @@ async function toggleStudyStar(event) {
 
     try {
         // 3. 呼叫后端 PATCH 接口
-        const res = await fetch(`/api/flashcards/${cardId}/star`, {
+        const res = await oopsyFetch(`/api/flashcards/${cardId}/star`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -2296,7 +2493,7 @@ function submitReview(isKnown) {
             nextReviewDate: currentCard.nextReviewDate
         };
 
-        fetch(`/api/flashcards/${currentCard._id}/review`, {
+        oopsyFetch(`/api/flashcards/${currentCard._id}/review`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -2807,7 +3004,7 @@ async function executeClearUncategorized() {
     }
 
     try {
-        const deletePromises = targetCards.map(card => fetch(`/api/flashcards/${card._id}`, { method: 'DELETE' }));
+        const deletePromises = targetCards.map(card => oopsyFetch(`/api/flashcards/${card._id}`, { method: 'DELETE' }));
         await Promise.all(deletePromises);
 
         document.getElementById('clear-confirm-modal').style.display = 'none';
@@ -3110,9 +3307,9 @@ function updateBatchActionBar() {
                 <span style="font-weight: 500; opacity: 0.9;">已选 ${selectedCount} 项</span>
                 <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.2);"></div>
                 <button onclick="exitManageMode()" style="background: transparent; border: none; color: #616365; cursor: pointer;">取消</button>
-                <button onclick="promptBatchMove()" style="background: transparent; border: none; color: white; cursor: pointer;">移动</button>
-                <button onclick="executeBatchDelete()" style="background: transparent; border: none; color: #f87171; cursor: pointer; font-weight: 500;">删除</button>
-                <button onclick="batchExportCards()" style="background: transparent; border: none; color: white ; cursor: pointer;">导出</button>
+                <button onclick="promptBatchMove()" style="background: transparent; border: none; color: #ffa500; cursor: pointer;">移动</button>
+                <button onclick="executeBatchDelete()" style="background: transparent; border: none; color: #616365; cursor: pointer; font-weight: 500;">删除</button>
+                <button onclick="batchExportCards()" style="background: transparent; border: none; color: #ffa500 ; cursor: pointer;">导出</button>
             `;
         }
     } else {
@@ -3308,7 +3505,7 @@ async function executeBatchDelete() {
     }
 
     try {
-        const deletePromises = Array.from(selectedCards).map(id => fetch(`/api/flashcards/${id}`, { method: 'DELETE' }));
+        const deletePromises = Array.from(selectedCards).map(id => oopsyFetch(`/api/flashcards/${id}`, { method: 'DELETE' }));
         await Promise.all(deletePromises);
         exitManageMode();
         if (typeof loadFlashcards === 'function') loadFlashcards();
@@ -3325,9 +3522,9 @@ async function executeBatchDelete() {
 
 function promptBatchMove() {
     console.log("🔥 纯净版移动函数已启动！绝对没有空目录字眼！");
-    
+
     if (selectedCards.size === 0) return;
-    
+
     const textEl = document.getElementById('batch-move-text');
     if (textEl) {
         textEl.innerText = `将已选的 ${selectedCards.size} 张卡片移动到：`;
@@ -3340,10 +3537,10 @@ function promptBatchMove() {
 
     parents.forEach(p => {
         // 让所有的大类（包括默认卡片夹）都变成可选的！绑定真实的 ID！
-        optionsHtml += `<option value="${p._id}" style="font-weight: bold; color: #4f46e5;">📁 ${p.name}</option>`;
+        optionsHtml += `<option value="${p._id}" style="font-weight: bold; color: #ffa500;">📁 ${p.name}</option>`;
 
         const myChildren = children.filter(c => c.parentId === p._id);
-        
+
         // 子包正常显示，不再做任何多余的空目录判断！
         myChildren.forEach(c => {
             optionsHtml += `<option value="${c._id}" style="color: #1e293b;">&nbsp;&nbsp;&nbsp;&nbsp;↳ 📦 ${c.name}</option>`;
@@ -3375,7 +3572,7 @@ async function executeBatchMove() {
         const movePromises = Array.from(selectedCards).map(id => {
             const card = allCards.find(c => c._id === id);
             if (!card) return Promise.resolve();
-            return fetch(`/api/flashcards/${id}`, {
+            return oopsyFetch(`/api/flashcards/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ question: card.question, answer: card.answer, categoryId: targetCategoryId })
@@ -3495,7 +3692,7 @@ async function submitInlineCategory(event) {
     btn.disabled = true;
 
     try {
-        await fetch('/api/categories', {
+        await oopsyFetch('/api/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, parentId: parentId || null, type: 'vocabulary' })
@@ -3641,7 +3838,7 @@ async function submitQuickCategory() {
         let finalParentId = parentSelect;
 
         if (parentSelect === 'CREATE_NEW_PARENT') {
-            await fetch('/api/categories', {
+            await oopsyFetch('/api/categories', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: newParentName, parentId: null, type: 'vocabulary' })
@@ -3653,7 +3850,7 @@ async function submitQuickCategory() {
             finalParentId = createdParent._id;
         }
 
-        await fetch('/api/categories', {
+        await oopsyFetch('/api/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: childName, parentId: finalParentId, type: 'vocabulary' })
@@ -3746,7 +3943,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 </div>
                 
                 <div style="padding: 16px; text-align: center;">
-                    <button onclick="createNewFolder()" style="background: transparent; color: #3b82f6; border: none; font-size: 0.95rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <button onclick="var m = document.getElementById('category-modal'); if(m){ m.classList.remove('hidden'); m.style.display='flex'; m.style.zIndex='99999'; } else { alert('找不到弹窗'); }" style="position: relative; z-index: 9999; background: transparent; color: #3b82f6; border: none; font-size: 0.95rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         新建词库分类
                     </button>
@@ -3882,7 +4079,7 @@ async function submitSmartDeckAndAddCard() {
 
     try {
         // 1. 后台静默创建卡包
-        await fetch('/api/categories', {
+        await oopsyFetch('/api/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: deckName, parentId: window.smartDeckParentId, type: 'vocabulary' })
@@ -4267,7 +4464,7 @@ async function searchWebForWord(word) {
         // 2. 📡 发起查词请求（使用 MyMemory 免费公共翻译 API 作为演示）
         // 如果你以后有自己的后端查词接口，把这里换成你的接口即可
         const fetchUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|zh-CN`;
-        const res = await fetch(fetchUrl);
+        const res = await oopsyFetch(fetchUrl);
         const data = await res.json();
 
         // 提取翻译结果 (MyMemory API 的数据结构)
@@ -4304,7 +4501,7 @@ async function searchWebForWord(word) {
             // 如果没有真实的收藏夹，当场建一个！
             if (!inboxCat) {
                 try {
-                    const catRes = await fetch('/api/categories', {
+                    const catRes = await oopsyFetch('/api/categories', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ name: '默认卡片夹', type: 'vocabulary' })
@@ -4341,7 +4538,7 @@ async function searchWebForWord(word) {
         console.log(`🚀 准备发送给后端的卡片数据 (目标: ${targetFolderName}):`, payload);
 
         // 4. 🚀 默默保存到你的数据库
-        const saveRes = await fetch('/api/flashcards', {
+        const saveRes = await oopsyFetch('/api/flashcards', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
@@ -4459,13 +4656,13 @@ function filterMarket() {
                 let transText = "正在尝试获取词性..."; // 默认值
 
                 // 【请将下面这块 fetch 替换成你昨天的有道查词代码】
-                const res = await fetch(`/api/dict?word=${encodeURIComponent(searchTerm)}`);// 假设你有这个后端接口
+                const res = await oopsyFetch(`/api/dict?word=${encodeURIComponent(searchTerm)}`);// 假设你有这个后端接口
                 if (res.ok) {
                     const data = await res.json();
                     transText = data.translation; // 假设返回的数据里有 "n. 苹果; 公司" 这种带词性的格式
                 } else {
                     // 如果后端接口没写好，这里用个临时备用方案顶上
-                    const fallbackRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=en|zh-CN`);
+                    const fallbackRes = await oopsyFetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=en|zh-CN`);
                     const fallbackData = await fallbackRes.json();
                     transText = fallbackData.responseData.translatedText;
                 }
@@ -4528,7 +4725,7 @@ async function quickAddMarketWord(word, btnElement) {
         let inboxCat = typeof allCategories !== 'undefined' ?
             allCategories.find(c => c.name.includes('默认卡片夹') || c.name.includes('收件箱') || c.name.includes('未分类')) : null;
         if (!inboxCat) {
-            const catRes = await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: '默认卡片夹', type: 'vocabulary' }) });
+            const catRes = await oopsyFetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: '默认卡片夹', type: 'vocabulary' }) });
             if (catRes.ok) { if (typeof loadCategories === 'function') await loadCategories(); inboxCat = allCategories.find(c => c.name.includes('默认卡片夹')); }
         }
         let finalCategoryId = (inboxCat && inboxCat._id) ? inboxCat._id : "";
@@ -4538,7 +4735,7 @@ async function quickAddMarketWord(word, btnElement) {
         let finalTranslation = currentLiveTranslation || "未匹配到释义，请手动编辑";
 
         // 3. 发送给后端保存
-        const saveRes = await fetch('/api/flashcards', {
+        const saveRes = await oopsyFetch('/api/flashcards', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question: word, answer: finalTranslation, categoryId: finalCategoryId })
@@ -4605,7 +4802,7 @@ async function showStarredCards(element) {
         }
 
         // 8. 获取数据并过滤
-        const response = await fetch('/api/flashcards'); 
+        const response = await oopsyFetch('/api/flashcards');
         const allCards = await response.json();
         const starredCards = allCards.filter(card => card.isStarred === true);
 
@@ -4620,5 +4817,43 @@ async function showStarredCards(element) {
 
     } catch (err) {
         console.error("⭐ [Debug] 星标收藏夹加载出错:", err);
+    }
+}
+
+
+// 🚪 退出登录
+function logout() {
+    // 1. 撕毁通行证和本地记录
+    localStorage.removeItem('oopsy_token');
+    localStorage.removeItem('oopsy_username');
+
+    // 2. 弹窗提示一下
+    alert('已安全退出账号，期待你的下次复习 👋');
+
+    // 3. 强制刷新页面，让保安重新查票！
+    window.location.reload();
+}
+
+// 👤 渲染用户信息 (把名字挂到墙上)
+function renderUserInfo() {
+    // 从本地兜里掏出名字，如果没有，就默认叫 "记忆大师"
+    const username = localStorage.getItem('oopsy_username') || '记忆大师';
+
+    // 1. 替换主页问候语
+    const greetingEl = document.getElementById('dash-greeting');
+    if (greetingEl) {
+        greetingEl.innerText = `欢迎回来，${username} 👋`;
+    }
+
+    // 2. 替换设置页的名字
+    const profileNameEl = document.getElementById('profile-username');
+    if (profileNameEl) {
+        profileNameEl.innerText = username;
+    }
+
+    // 3. 替换设置页的头像 (取名字的第一个字)
+    const profileAvatarEl = document.getElementById('profile-avatar');
+    if (profileAvatarEl) {
+        profileAvatarEl.innerText = username.charAt(0).toUpperCase();
     }
 }
