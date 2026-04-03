@@ -9,7 +9,13 @@ import authRoutes from './routes/auth';
 dotenv.config();
 
 const app = express();
+// 获取 Render 分配的端口，如果是在本地则默认用 3000
 const PORT = process.env.PORT || 3000;
+
+// 🚨 注意：这里加了 '0.0.0.0' 是 Render 的强制要求，表示允许外部网络访问
+app.listen(PORT as number, '0.0.0.0', () => {
+  console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
+});
 
 // 中间件
 app.use(cors());
